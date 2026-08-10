@@ -6,13 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from claude_agent_sdk import (
-    HookContext,
-    HookMatcher,
-    PermissionResultAllow,
-    PermissionResultDeny,
-    ToolPermissionContext,
-)
+from claude_agent_sdk import HookContext, HookMatcher
 from claude_agent_sdk.types import HookInput, HookJSONOutput
 
 _ASK_USER_QUESTION_DENY_MESSAGE = (
@@ -31,20 +25,26 @@ AUTONOMY_SYSTEM_PROMPT_FRAGMENT = (
 )
 
 
-async def can_use_tool(
-    tool_name: str,
-    tool_input: dict[str, Any],
-    context: ToolPermissionContext,
-) -> PermissionResultAllow | PermissionResultDeny:
-    """Defensive callback: never awaits input, and specifically denies
-    AskUserQuestion with guidance rather than fabricating an answer — see the
-    ADR above for why a denial beats a synthesized choice."""
-    del context  # unused — every path below is context-independent by design
-    if tool_name == "AskUserQuestion":
-        return PermissionResultDeny(message=_ASK_USER_QUESTION_DENY_MESSAGE, interrupt=False)
-    if tool_name == "ExitPlanMode":
-        return PermissionResultAllow(updated_input=tool_input)
-    return PermissionResultAllow(updated_input=tool_input)
+async def _deny_ask_user_question(
+    input_data: HookInput,
+    tool_use_id: str | None,
+    context: HookContext,
+) -> HookJSONOutput:
+    """PreToolUse hook, not `can_use_tool`: with permission_mode="bypassPermissions"
+    the SDK auto-approves every tool call before `can_use_tool` is ever consulted
+    (confirmed live — the SDK itself warns CanUseToolShadowedWarning on startup),
+    so that callback is dead code for gating anything. A PreToolUse hook still
+    fires under bypassPermissions and is the only way to actually deny a tool."""
+    del tool_use_id, context
+    if input_data.get("tool_name") != "AskUserQuestion":
+        return {}
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": _ASK_USER_QUESTION_DENY_MESSAGE,
+        }
+    }
 
 
 async def _auto_allow_permission_request(
@@ -77,6 +77,7 @@ def build_hooks() -> dict[Any, list[HookMatcher]]:
     # the keys used below are valid at the ClaudeAgentOptions(hooks=...) call
     # site in options.py.
     return {
+        "PreToolUse": [HookMatcher(matcher="AskUserQuestion", hooks=[_deny_ask_user_question])],
         "PermissionRequest": [HookMatcher(hooks=[_auto_allow_permission_request])],
         "Notification": [HookMatcher(hooks=[_log_notification])],
     }

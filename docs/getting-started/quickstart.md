@@ -1,12 +1,5 @@
 # Quickstart
 
-!!! note "Roadmap"
-    The commands below describe the intended M2 CLI surface — the runner
-    itself isn't wired up yet (see
-    [project status](installation.md#project-status)). This page will be
-    updated to match as milestones land; until then, treat it as the target
-    UX the domain layer already implements the decision logic for.
-
 ## Run a plan file to completion, unattended
 
 ```bash

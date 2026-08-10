@@ -14,7 +14,6 @@ from claude_agent_sdk import ClaudeAgentOptions
 from autoclaude.infrastructure.agent.autonomy import (
     AUTONOMY_SYSTEM_PROMPT_FRAGMENT,
     build_hooks,
-    can_use_tool,
 )
 from autoclaude.infrastructure.agent.translate import COMPLETION_OUTPUT_SCHEMA
 
@@ -28,6 +27,7 @@ def build_turn_options(
     max_turns: int | None = None,
     max_budget_usd: float | None = None,
     retry_watchdog: bool = False,
+    model: str | None = None,
 ) -> ClaudeAgentOptions:
     env: dict[str, str] = {"CLAUDE_CODE_MAX_RETRIES": "10"}
     if retry_watchdog:
@@ -39,7 +39,6 @@ def build_turn_options(
         resume=resume,
         continue_conversation=continue_conversation,
         permission_mode="bypassPermissions",
-        can_use_tool=can_use_tool,
         hooks=build_hooks(),
         system_prompt={
             "type": "preset",
@@ -49,6 +48,7 @@ def build_turn_options(
         output_format={"type": "json_schema", "schema": COMPLETION_OUTPUT_SCHEMA},
         max_turns=max_turns,
         max_budget_usd=max_budget_usd,
+        model=model,
         env=env,
     )
 
@@ -61,7 +61,7 @@ def build_probe_options(*, cwd: str, resume: str | None = None) -> ClaudeAgentOp
         cwd=cwd,
         resume=resume,
         permission_mode="bypassPermissions",
-        can_use_tool=can_use_tool,
+        hooks=build_hooks(),
         setting_sources=None,
         tools=[],
         max_turns=1,

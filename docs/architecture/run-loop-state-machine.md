@@ -3,7 +3,7 @@
 `src/autoclaude/domain/loop.py` implements the autonomous run loop as a pure
 state machine: every transition is a function of `(RunState, an event, now)`
 returning `(new RunState, Decision)`. Nothing in this module performs I/O —
-`application/runner.py` (planned, M2) is the layer that will actually execute
+`application/runner.py` is the layer that actually executes
 a `Decision` against real ports. This separation is what makes the loop's
 logic — including the parts that matter most, like never treating a rate
 limit as "done" — testable without a live Claude Code session, a real clock,
@@ -106,7 +106,7 @@ way this scenario can ever resolve is a policy that keeps checking.
 Decision = SendTurn | RunProbe | ScheduleProbe | Finish
 ```
 
-The executor (`application/runner.py`, planned M2) will pattern-match
+The executor (`application/runner.py`) pattern-matches
 exhaustively on this union rather than the state machine reaching out and
 performing the action itself. Keeping "decide what to do" and "do it"
 strictly separate is what lets the entire state machine — including the

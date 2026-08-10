@@ -10,7 +10,7 @@ allowed-tools: Read Grep Glob Bash(pytest *)
 
 ```
 tests/domain/        # pure unit + Hypothesis property tests, mirrors src/autoclaude/domain/
-tests/application/    # planned (M2+) — fakes for every port, zero real I/O
+tests/application/    # fakes for every port (fakes.py), zero real I/O
 ```
 
 Run: `pytest`. One file: `pytest tests/domain/test_classify.py -v`.
@@ -40,7 +40,7 @@ tempted to `from unittest.mock import Mock` for a port, write a small
 
 `domain/waiting.py` is designed entirely around instants
 (`next_probe_instant() -> datetime`), never durations, specifically so
-tests never call real `time.sleep()`. Pattern (planned, M2+):
+tests never call real `time.sleep()`. Pattern (tests/application/fakes.py):
 
 ```python
 clock = FakeClock(start=NOW)

@@ -46,6 +46,7 @@ def build_runner(
         max_turns=config.max_turns,
         max_budget_usd=config.max_dollars,
         retry_watchdog=config.retry_watchdog,
+        model=config.model,
     )
     probe = ClaudeCapacityProbe(cwd=str(cwd))
     clock = SystemClock()

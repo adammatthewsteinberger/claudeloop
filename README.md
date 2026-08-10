@@ -86,12 +86,15 @@ readable directly under [`docs/`](docs/) in this repo:
 
 ## Project status
 
-Pre-1.0. Milestone **M1 (the pure domain core)** is complete: a fully tested
-set of value objects and a pure state machine modeling every hard decision
-the runner makes (rate-limit classification, adaptive waiting, completion
-detection, budget tracking). Milestones **M2–M5** — the actual agent
-integration, the CLI, the generated REST surface, and final polish — are
-roadmap. See [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
+Pre-1.0, but functional. Milestone **M2** is complete: the CLI above genuinely
+works — `run`/`resume` drive a real Claude Code session through
+`claude-agent-sdk`, `sessions` and `doctor` run against your real
+environment, and `domain`/`application` carry a CI-enforced 100% test-coverage
+gate, verified further by a live test suite (`tests/live/`) that exercises
+the actual installed console script against a real account. Milestone **M4**
+(the generated 1:1 REST surface, `autoclaude api ...`) and **M5** (final
+polish) are still roadmap. See
+[`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
 
 ## Contributing
 

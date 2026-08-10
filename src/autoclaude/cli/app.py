@@ -11,8 +11,8 @@ import typer
 
 from autoclaude import __version__
 from autoclaude.cli.commands.doctor import app as doctor_app
-from autoclaude.cli.commands.resume import app as resume_app
-from autoclaude.cli.commands.run import app as run_app
+from autoclaude.cli.commands.resume import resume
+from autoclaude.cli.commands.run import run
 from autoclaude.cli.commands.sessions import app as sessions_app
 
 app = typer.Typer(
@@ -26,8 +26,8 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 
-app.add_typer(run_app, name="run")
-app.add_typer(resume_app, name="resume")
+app.command(name="run")(run)
+app.command(name="resume")(resume)
 app.add_typer(sessions_app, name="sessions")
 app.add_typer(doctor_app, name="doctor")
 

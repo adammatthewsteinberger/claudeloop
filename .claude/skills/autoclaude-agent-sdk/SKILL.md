@@ -6,7 +6,7 @@ allowed-tools: Read Grep Glob
 
 # autoclaude + claude-agent-sdk integration
 
-`infrastructure/agent/` (planned, M2/M3) is the only place `claude_agent_sdk`
+`infrastructure/agent/` is the only place `claude_agent_sdk`
 may be imported — see the `autoclaude-architecture` skill for the enforced
 onion rule. This skill covers the SDK integration specifics; consult
 `autoclaude-domain-model` for how the resulting signals get classified.
@@ -17,7 +17,7 @@ onion rule. This skill covers the SDK integration specifics; consult
 error `ResultMessage`, and the underlying process exits non-zero. A
 streaming-input `ClaudeSDKClient` **stays alive** across error results — you
 can keep sending messages on one live process with no resume/respawn. The
-planned `AgentGateway` adapter MUST use `ClaudeSDKClient`, not `query()`, or
+`AgentGateway` adapter (infrastructure/agent/gateway.py::ClaudeAgentGateway) MUST use `ClaudeSDKClient`, not `query()`, or
 the whole point of collapsing the legacy respawn loop is lost. See ADR 0002
 for the full reasoning.
 
@@ -55,7 +55,7 @@ for the full reasoning.
 | `Notification` hooks | Logged, never awaited |
 | Model asks "Shall I proceed?" in plain text | No tool call to intercept — mitigated via an appended system-prompt fragment establishing autonomous operation |
 | TTY-dependent stdin | Never inherit a TTY — must be safe under `nohup`/systemd |
-| MCP OAuth | Genuinely cannot complete unattended — the planned `doctor` command checks configured MCP servers up front and fails fast, naming them, rather than discovering the problem mid-run |
+| MCP OAuth | Genuinely cannot complete unattended — the `doctor` command checks configured MCP servers up front and fails fast, naming them, rather than discovering the problem mid-run |
 
 If you're adding a new tool-interception path, apply the same test every
 time: **can this ever wait on stdin or a human response?** If yes, it needs

@@ -32,6 +32,7 @@ class RunnerConfig:
     log_level: str = "INFO"
     log_file: str | None = None
     retry_watchdog: bool = False
+    model: str | None = None
 
 
 def _from_env() -> dict[str, Any]:

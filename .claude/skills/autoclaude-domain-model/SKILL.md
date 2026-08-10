@@ -110,7 +110,7 @@ Three pure decision functions:
   probe while waiting.
 
 `Decision = SendTurn | RunProbe | ScheduleProbe | Finish` — a closed union
-the (planned) `application/runner.py` executor will pattern-match
+the `application/runner.py` executor pattern-matches
 exhaustively, never partially.
 
 ## `plan.py` / `session.py`

@@ -15,17 +15,16 @@ from autoclaude.domain.errors import InvalidSessionSelectorError
 from autoclaude.infrastructure.config import load_config
 from autoclaude.infrastructure.logging import configure_logging
 
-app = typer.Typer(add_completion=False)
 
-
-@app.callback(invoke_without_command=True)
 def resume(
-    ctx: typer.Context,
     session_id: str | None = typer.Option(
         None, "--session-id", help="Resume this specific session id"
     ),
     max_turns: int | None = typer.Option(None, "--max-turns"),
     max_dollars: float | None = typer.Option(None, "--max-dollars"),
+    model: str | None = typer.Option(
+        None, "--model", help="Claude model id to use for this run, e.g. claude-haiku-4-5"
+    ),
     log_level: str = typer.Option("INFO", "--log-level"),
     log_file: Path | None = typer.Option(None, "--log-file"),
 ) -> None:
@@ -33,12 +32,11 @@ def resume(
     With --session-id, resumes that specific session. Without it, auto-selects
     the most recently modified session for the current directory and prints a
     warning banner naming exactly which one before doing anything."""
-    if ctx.invoked_subcommand is not None:
-        return
     _resume(
         session_id=session_id,
         max_turns=max_turns,
         max_dollars=max_dollars,
+        model=model,
         log_level=log_level,
         log_file=log_file,
     )
@@ -50,6 +48,7 @@ async def _resume(
     session_id: str | None,
     max_turns: int | None,
     max_dollars: float | None,
+    model: str | None,
     log_level: str,
     log_file: Path | None,
 ) -> None:
@@ -69,7 +68,12 @@ async def _resume(
 
     config = load_config(
         cwd=cwd,
-        cli_overrides={"max_turns": max_turns, "max_dollars": max_dollars, "log_level": log_level},
+        cli_overrides={
+            "max_turns": max_turns,
+            "max_dollars": max_dollars,
+            "model": model,
+            "log_level": log_level,
+        },
     )
     context = bootstrap.build_runner(
         cwd=cwd, config=config, session_id=resolved_id, resume=resolved_id, log_file=log_file

@@ -29,6 +29,7 @@ class ClaudeAgentGateway:
         max_turns: int | None = None,
         max_budget_usd: float | None = None,
         retry_watchdog: bool = False,
+        model: str | None = None,
     ) -> None:
         self._cwd = cwd
         self._session_id = session_id
@@ -37,6 +38,7 @@ class ClaudeAgentGateway:
         self._max_turns = max_turns
         self._max_budget_usd = max_budget_usd
         self._retry_watchdog = retry_watchdog
+        self._model = model
         self._client: ClaudeSDKClient | None = None
 
     def _options(self) -> ClaudeAgentOptions:
@@ -48,6 +50,7 @@ class ClaudeAgentGateway:
             max_turns=self._max_turns,
             max_budget_usd=self._max_budget_usd,
             retry_watchdog=self._retry_watchdog,
+            model=self._model,
         )
 
     async def _ensure_connected(self) -> ClaudeSDKClient:

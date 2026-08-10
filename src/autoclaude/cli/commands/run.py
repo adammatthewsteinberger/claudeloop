@@ -11,18 +11,17 @@ from autoclaude.domain.errors import InvalidPlanError
 from autoclaude.infrastructure.config import load_config
 from autoclaude.infrastructure.logging import configure_logging
 
-app = typer.Typer(add_completion=False)
 
-
-@app.callback(invoke_without_command=True)
 def run(
-    ctx: typer.Context,
     plan_file: Path = typer.Argument(
         ..., exists=True, readable=True, help="Markdown plan file to seed a fresh session with"
     ),
     max_turns: int | None = typer.Option(None, "--max-turns"),
     max_dollars: float | None = typer.Option(None, "--max-dollars"),
     max_wait_seconds: float | None = typer.Option(None, "--max-wait"),
+    model: str | None = typer.Option(
+        None, "--model", help="Claude model id to use for this run, e.g. claude-haiku-4-5"
+    ),
     log_level: str = typer.Option("INFO", "--log-level"),
     log_file: Path | None = typer.Option(None, "--log-file"),
 ) -> None:
@@ -30,13 +29,12 @@ def run(
     autonomously to completion — across turns, across rate-limit windows,
     across a credits top-up — never blocking on a human. See
     docs/guides/autonomous-runs.md."""
-    if ctx.invoked_subcommand is not None:
-        return
     _run(
         plan_file=plan_file,
         max_turns=max_turns,
         max_dollars=max_dollars,
         max_wait_seconds=max_wait_seconds,
+        model=model,
         log_level=log_level,
         log_file=log_file,
     )
@@ -49,6 +47,7 @@ async def _run(
     max_turns: int | None,
     max_dollars: float | None,
     max_wait_seconds: float | None,
+    model: str | None,
     log_level: str,
     log_file: Path | None,
 ) -> None:
@@ -60,6 +59,7 @@ async def _run(
             "max_turns": max_turns,
             "max_dollars": max_dollars,
             "max_wait_seconds": max_wait_seconds,
+            "model": model,
             "log_level": log_level,
         },
     )
