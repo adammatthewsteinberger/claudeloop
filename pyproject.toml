@@ -1,0 +1,126 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "autoclaude"
+version = "0.1.0"
+description = "Onion-architected, autonomous Claude Code session runner and full Anthropic SDK CLI — never blocks on a human, distinguishes rate limits from exhausted credits, and resumes safely across usage windows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+keywords = [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "cli",
+    "automation",
+    "agent",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer>=0.12",
+    "structlog>=24.1",
+    "claude-agent-sdk>=0.2.134",
+    "anthropic>=0.40",
+]
+
+[project.urls]
+Homepage = "https://github.com/adammatthewsteinberger/autoclaude"
+Repository = "https://github.com/adammatthewsteinberger/autoclaude"
+Documentation = "https://adammatthewsteinberger.github.io/autoclaude/"
+Issues = "https://github.com/adammatthewsteinberger/autoclaude/issues"
+Changelog = "https://github.com/adammatthewsteinberger/autoclaude/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.100",
+    "mypy>=1.10",
+    "ruff>=0.6",
+    "import-linter>=2.0",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "build>=1.2",
+    "twine>=5.0",
+    "pyyaml>=6.0",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
+
+[project.scripts]
+autoclaude = "autoclaude.cli.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/autoclaude"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["autoclaude"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# No blanket --cov-fail-under here: coverage is enforced per-layer in CI
+# (100% on domain and application, a lower floor on the whole tree), since a
+# single global number would either be trivially met while a pure layer
+# regresses, or block every commit before infrastructure/cli exist at all.
+# See docs/contributing/testing.md and .github/workflows/ci.yml.
+addopts = "--cov=autoclaude --cov-report=term-missing"
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+branch = true
+source = ["src/autoclaude"]
+
+[tool.importlinter]
+root_package = "autoclaude"
+
+[[tool.importlinter.contracts]]
+name = "Onion layering"
+type = "layers"
+layers = [
+    "autoclaude.cli",
+    "autoclaude.bootstrap",
+    "autoclaude.application",
+    "autoclaude.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure only reachable from bootstrap"
+type = "forbidden"
+source_modules = ["autoclaude.domain", "autoclaude.application"]
+forbidden_modules = ["autoclaude.infrastructure"]
