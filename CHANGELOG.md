@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.2.0...claudeloop-v0.2.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **ci:** adopt GitHub Actions v5 for Pages and release-please ([c5f5744](https://github.com/adammatthewsteinberger/claudeloop/commit/c5f5744fc7b9f6f6d88b4a55432f51288927c828))
+
 ## [0.2.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.1.0...claudeloop-v0.2.0) (2026-08-10)
 
 
