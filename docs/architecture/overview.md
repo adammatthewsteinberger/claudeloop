@@ -80,16 +80,11 @@ property-tested without spinning up a CLI process.
 
 ## Status
 
-Milestone M2 is complete: `domain/`, `application/`, `infrastructure/`, and
-`cli/` are all implemented, and the `claudeloop` console script genuinely
-works — `run`, `resume`, `sessions`, and `doctor` all run against a real
-Claude Code environment. `domain/` and `application/` carry a CI-enforced
-100% test-coverage gate (137 tests across the full offline suite); a live
-test suite in `tests/live/` additionally exercises the real installed CLI
-against a real account — see
-[`../guides/live-testing.md`](../guides/live-testing.md). See
-[`ports-and-adapters.md`](ports-and-adapters.md) for how the ports map to
-their concrete adapters, and
+Milestones **M2–M5** from the architecture plan are implemented: autonomous
+`run`/`resume`/`sessions`/`doctor`, resilient waiting (M3), the generated
+`claudeloop api ...` REST surface with drift gate (M4), and release polish
+including expanded `doctor` checks and packaging verification (M5).
+`domain/` and `application/` carry a CI-enforced 100% test-coverage gate;
+see [`ports-and-adapters.md`](ports-and-adapters.md) for adapter mapping and
 [`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md)
-for what M3–M5 (resilient waiting refinements, the generated REST surface,
-final polish) still cover.
+for the original milestone definitions.

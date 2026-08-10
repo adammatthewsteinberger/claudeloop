@@ -45,6 +45,7 @@ claudeloop run handoff.md      # seed a session from a plan file and run to comp
 claudeloop resume               # resume whatever you were last working on
 claudeloop resume --session-id <id>
 claudeloop doctor                # pre-flight checks before a long unattended run
+claudeloop api models list       # any Anthropic SDK endpoint (generated; see docs)
 ```
 
 Full walkthrough: [`docs/getting-started/quickstart.md`](docs/getting-started/quickstart.md).
@@ -80,15 +81,13 @@ readable directly under [`docs/`](docs/) in this repo:
 
 ## Project status
 
-Pre-1.0, but functional. Milestone **M2** is complete: the CLI above genuinely
-works — `run`/`resume` drive a real Claude Code session through
-`claude-agent-sdk`, `sessions` and `doctor` run against your real
-environment, and `domain`/`application` carry a CI-enforced 100% test-coverage
-gate, verified further by a live test suite (`tests/live/`) that exercises
-the actual installed console script against a real account. Milestone **M4**
-(the generated 1:1 REST surface, `claudeloop api ...`) and **M5** (final
-polish) are still roadmap. See
-[`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
+Pre-1.0, but functional through milestone **M5**. The CLI above genuinely
+works — `run`/`resume` drive Claude Code through `claude-agent-sdk`,
+`sessions` and `doctor` run against your environment, and **`claudeloop api`**
+exposes a generated 1:1 Anthropic SDK REST surface with a CI drift gate.
+`domain`/`application` carry a CI-enforced 100% test-coverage gate, with a
+live test suite (`tests/live/`) exercising the installed console script.
+See [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
 
 ## Contributing
 

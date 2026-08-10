@@ -35,7 +35,7 @@ def test_help_flag_lists_all_commands() -> None:
     result = _invoke("--help")
     assert result.exit_code == 0
     stdout = _plain(result.stdout)
-    for command in ("run", "resume", "sessions", "doctor"):
+    for command in ("run", "resume", "sessions", "doctor", "api"):
         assert command in stdout
 
 
@@ -74,3 +74,20 @@ def test_sessions_help() -> None:
 def test_doctor_help() -> None:
     result = _invoke("doctor", "--help")
     assert result.exit_code == 0
+
+
+def test_api_dispatch_via_main(monkeypatch) -> None:
+    import sys
+
+    from claudeloop.cli import app as app_module
+
+    called: list[list[str]] = []
+
+    class _FakeGroup:
+        def main(self, *, args: list[str], prog_name: str, standalone_mode: bool) -> None:
+            called.append(args)
+
+    monkeypatch.setattr(app_module, "build_api_click_group", lambda: _FakeGroup())
+    monkeypatch.setattr(sys, "argv", ["claudeloop", "api", "models", "list", "--help"])
+    assert app_module.main() == 0
+    assert called == [["models", "list", "--help"]]

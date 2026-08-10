@@ -17,9 +17,9 @@ claudeloop resume [--session-id]  Resume a specific session, or auto-select the 
                                    [--max-turns] [--max-dollars] [--log-level] [--log-file]
 claudeloop sessions [--cwd]       List known sessions, read-only
 claudeloop doctor                 Pre-flight checks: claude CLI present, authentication,
-                                   configured MCP servers, working-directory safety
-claudeloop api ...                 Generated 1:1 surface over the anthropic REST SDK — not yet
-                                    implemented (M4); see guides/rest-api-surface.md
+                                   configured MCP servers, anthropic SDK, api surface, cwd safety
+claudeloop api ...                 Generated 1:1 Anthropic SDK REST commands; see
+                                   guides/rest-api-surface.md
 ```
 
 See [`../getting-started/quickstart.md`](../getting-started/quickstart.md)

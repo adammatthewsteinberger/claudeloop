@@ -107,11 +107,15 @@ class _FakeDoctorEnv:
         version: str | None,
         authed: bool,
         mcp_servers: list[str],
+        anthropic_version: str | None = "0.0.0",
+        api_count: int | None = 137,
     ) -> None:
         self._cli_path = cli_path
         self._version = version
         self._authed = authed
         self._mcp_servers = mcp_servers
+        self._anthropic_version = anthropic_version
+        self._api_count = api_count
 
     def find_claude_cli(self) -> str | None:
         return self._cli_path
@@ -125,6 +129,12 @@ class _FakeDoctorEnv:
     def configured_mcp_servers(self) -> list[str]:
         return self._mcp_servers
 
+    def anthropic_sdk_version(self) -> str | None:
+        return self._anthropic_version
+
+    def api_surface_method_count(self) -> int | None:
+        return self._api_count
+
 
 def test_run_doctor_all_green(tmp_path: Path) -> None:
     (tmp_path / ".git").mkdir()
@@ -135,6 +145,8 @@ def test_run_doctor_all_green(tmp_path: Path) -> None:
         "claude-cli",
         "authentication",
         "mcp-servers",
+        "anthropic-sdk",
+        "api-surface",
         "working-directory",
     }
 
@@ -166,6 +178,21 @@ def test_run_doctor_flags_non_git_working_directory(tmp_path: Path) -> None:
     checks = run_doctor(env, cwd=tmp_path)  # type: ignore[arg-type]
     wd_check = next(c for c in checks if c.name == "working-directory")
     assert wd_check.passed is False
+
+
+def test_run_doctor_reports_missing_api_surface_verification(tmp_path: Path) -> None:
+    (tmp_path / ".git").mkdir()
+    env = _FakeDoctorEnv(
+        cli_path="/usr/bin/claude",
+        version="1.0",
+        authed=True,
+        mcp_servers=[],
+        api_count=None,
+    )
+    checks = run_doctor(env, cwd=tmp_path)  # type: ignore[arg-type]
+    api_check = next(c for c in checks if c.name == "api-surface")
+    assert api_check.passed is False
+    assert "baseline" in api_check.detail
 
 
 def test_doctor_check_is_a_plain_value_object() -> None:

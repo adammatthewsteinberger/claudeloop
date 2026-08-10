@@ -10,6 +10,7 @@ from __future__ import annotations
 import typer
 
 from claudeloop import __version__
+from claudeloop.bootstrap import build_api_click_group
 from claudeloop.cli.commands.doctor import app as doctor_app
 from claudeloop.cli.commands.resume import resume
 from claudeloop.cli.commands.run import run
@@ -32,6 +33,16 @@ app.add_typer(sessions_app, name="sessions")
 app.add_typer(doctor_app, name="doctor")
 
 
+@app.command(
+    "api",
+    help="Generated 1:1 Anthropic SDK REST surface — run `claudeloop api <resource> ...`.",
+    add_help_option=False,
+)
+def api_stub() -> None:
+    """Show the generated API command tree."""
+    build_api_click_group()(["--help"])
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"claudeloop {__version__}")
@@ -52,7 +63,19 @@ def main_callback(
 
 
 def main() -> int:
-    app()
+    import sys
+
+    import click
+
+    if len(sys.argv) > 1 and sys.argv[1] == "api":
+        group = build_api_click_group()
+        try:
+            group.main(args=sys.argv[2:], prog_name="claudeloop api", standalone_mode=True)
+        except click.exceptions.Exit as exc:
+            code = 0 if exc.exit_code is None else exc.exit_code
+            raise SystemExit(code) from exc
+        return 0
+    app(prog_name="claudeloop")
     return 0
 
 

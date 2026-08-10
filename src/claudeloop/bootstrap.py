@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
+import click
+
 from claudeloop.application.runner import AutonomousRunner
 from claudeloop.application.usecases.doctor import DoctorEnvironment
 from claudeloop.domain.budget import Budget
@@ -91,3 +93,15 @@ def build_session_catalog() -> SdkSessionCatalog:
 
 def build_doctor_environment() -> DoctorEnvironment:
     return RealDoctorEnvironment()
+
+
+_CACHED_API_GROUP: click.Group | None = None
+
+
+def build_api_click_group() -> click.Group:
+    from claudeloop.infrastructure.api.binder import build_api_click_group as _build
+
+    global _CACHED_API_GROUP
+    if _CACHED_API_GROUP is None:
+        _CACHED_API_GROUP = _build()
+    return _CACHED_API_GROUP

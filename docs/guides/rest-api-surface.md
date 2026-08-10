@@ -1,9 +1,9 @@
-# The generated REST API surface (planned — M4)
+# The generated REST API surface
 
-!!! note "Roadmap"
-    Not yet implemented. This page documents the target design from
-    [ADR 0006](../architecture/decisions/0006-generated-rest-surface-not-hand-written.md)
-    so early contributors have a stable spec to build against.
+`claudeloop api ...` covers the `anthropic` Python SDK's endpoint-backed
+methods without hand-writing each command. Discovery walks the SDK resource
+class tree at build time; a CI drift gate asserts 1:1 parity with the
+installed SDK. See [ADR 0006](../architecture/decisions/0006-generated-rest-surface-not-hand-written.md).
 
 ## Why this exists alongside `ant`
 

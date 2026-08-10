@@ -52,8 +52,7 @@ If `claudeloop` isn't on your `PATH` after a `pipx install`, run
 
 ## Project status
 
-`claudeloop` is pre-1.0 and under active development. The domain core
-(milestone M1) is complete and tested; the CLI, the agent runner, and the
-generated REST surface (M2–M5) are still being built. See
-[`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md)
-for the roadmap.
+`claudeloop` is pre-1.0. Milestones M1–M5 from the architecture plan are
+implemented, including `run`/`resume`, `claudeloop api`, and the CI drift
+gate that keeps the REST surface aligned with the installed `anthropic` SDK.
+See [`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md).

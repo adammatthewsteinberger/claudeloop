@@ -32,7 +32,7 @@ abstract base class. Two reasons:
 | `AgentGateway` | Drive a live `ClaudeSDKClient` session — never `query()`, which raises after an error result and exits the process (see [ADR 0002](decisions/0002-agent-sdk-over-subprocess.md)) | `infrastructure/agent/gateway.py::ClaudeAgentGateway` | `FakeAgentGateway` — replays a scripted list of `TurnOutcome`s |
 | `CapacityProbe` | Run the cheap, throwaway turn used while waiting | `infrastructure/agent/gateway.py::ClaudeCapacityProbe` | `FakeCapacityProbe` — replays scripted `TurnSignals` |
 | `SessionCatalog` | List/resolve sessions via the SDK's `list_sessions()` | `infrastructure/agent/catalog.py::SdkSessionCatalog` | a plain stub class in `tests/application/test_usecases.py` |
-| `ApiGateway` | Invoke a generated REST command against `anthropic.Anthropic()` | not yet implemented — M4, see [ADR 0006](decisions/0006-generated-rest-surface-not-hand-written.md) | — |
+| `ApiGateway` | Invoke a generated REST command against `anthropic.Anthropic()` | `infrastructure/api/gateway.py::AnthropicApiGateway` | — |
 | `Clock` | `now()` | `infrastructure/clock.py::SystemClock` | `FakeClock` — settable, doesn't advance on its own |
 | `Sleeper` | `await sleep_until(instant)` | `infrastructure/clock.py::AnyioSleeper` | `FakeSleeper` — advances the paired `FakeClock` instantly, records what it was asked to wait for |
 | `ProgressReporter` | Human-readable progress to the console | `infrastructure/progress.py::ConsoleProgressReporter` | `FakeProgressReporter` — records calls |

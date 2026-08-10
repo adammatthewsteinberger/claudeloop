@@ -29,6 +29,8 @@ class DoctorEnvironment(Protocol):
     def claude_cli_version(self, path: str) -> str | None: ...
     def is_authenticated(self) -> bool: ...
     def configured_mcp_servers(self) -> list[str]: ...
+    def anthropic_sdk_version(self) -> str | None: ...
+    def api_surface_method_count(self) -> int | None: ...
 
 
 def run_doctor(env: DoctorEnvironment, *, cwd: Path) -> list[DoctorCheck]:
@@ -77,6 +79,35 @@ def run_doctor(env: DoctorEnvironment, *, cwd: Path) -> list[DoctorCheck]:
         )
     else:
         checks.append(DoctorCheck(name="mcp-servers", passed=True, detail="none configured"))
+
+    sdk_version = env.anthropic_sdk_version()
+    checks.append(
+        DoctorCheck(
+            name="anthropic-sdk",
+            passed=sdk_version is not None,
+            detail=(
+                f"anthropic {sdk_version}" if sdk_version else "anthropic package not importable"
+            ),
+        )
+    )
+
+    api_count = env.api_surface_method_count()
+    if api_count is None:
+        checks.append(
+            DoctorCheck(
+                name="api-surface",
+                passed=False,
+                detail="could not verify generated REST surface baseline",
+            )
+        )
+    else:
+        checks.append(
+            DoctorCheck(
+                name="api-surface",
+                passed=True,
+                detail=f"{api_count} SDK methods bound under `claudeloop api`",
+            )
+        )
 
     is_git_repo = (cwd / ".git").is_dir()
     checks.append(

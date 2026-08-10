@@ -84,3 +84,17 @@ class RealDoctorEnvironment:
                 continue
             servers.append(line.split(":", 1)[0].strip())
         return servers
+
+    def anthropic_sdk_version(self) -> str | None:
+        try:
+            import anthropic
+        except ImportError:
+            return None
+        return anthropic.__version__
+
+    def api_surface_method_count(self) -> int | None:
+        try:
+            from claudeloop.infrastructure.api.introspect import discover_surface
+        except ImportError:
+            return None
+        return len(discover_surface())

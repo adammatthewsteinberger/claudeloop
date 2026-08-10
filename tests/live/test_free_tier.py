@@ -73,7 +73,7 @@ def test_installed_console_script_help_renders_without_a_traceback(
     )
     assert result.returncode == 0
     assert "Traceback" not in result.stderr
-    for command in ("run", "resume", "sessions", "doctor"):
+    for command in ("run", "resume", "sessions", "doctor", "api"):
         assert command in result.stdout
 
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, scoped for M4. Not yet implemented.
+Accepted, implemented (M4).
 
 ## Context
 
