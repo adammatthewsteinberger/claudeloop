@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.2.1...claudeloop-v0.3.0) (2026-08-10)
+
+
+### Features
+
+* **api:** add generated Anthropic SDK REST surface (M4) ([1b0a601](https://github.com/adammatthewsteinberger/claudeloop/commit/1b0a601c6f1387fdd40982e2dc1793cdd8b61121))
+
 ## [0.2.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.2.0...claudeloop-v0.2.1) (2026-08-10)
 
 
