@@ -14,7 +14,7 @@ glance, like it makes most of this project's waiting logic unnecessary.
 
 ## Decision
 
-The outer `autoclaude` run loop does **not** set
+The outer `claudeloop` run loop does **not** set
 `CLAUDE_CODE_RETRY_WATCHDOG=1` by default. A `--retry-watchdog` flag is
 planned to opt into it for users who prefer the built-in behavior.
 
@@ -24,7 +24,7 @@ Setting the watchdog would mean the `claude` subprocess itself blocks for
 however long a limit lasts — potentially hours or days — with none of the
 following available to the caller during that time:
 
-- **No progress reporting.** `autoclaude`'s `ProgressReporter` port and
+- **No progress reporting.** `claudeloop`'s `ProgressReporter` port and
   audit log exist specifically so a human (or a monitoring system) can see
   *why* nothing is happening right now, not just that nothing is happening.
 - **No credit-vs-window discrimination.** The watchdog retries 429s
@@ -33,7 +33,7 @@ following available to the caller during that time:
   so it cannot fire the `Notifier` port to tell a human "this one needs you
   to act, waiting alone will never resolve it."
 - **No `--max-wait`.** The watchdog's backoff is unbounded by design;
-  `autoclaude`'s policy has an explicit, configurable ceiling after which a
+  `claudeloop`'s policy has an explicit, configurable ceiling after which a
   run gives up cleanly rather than hanging indefinitely with no operator
   visibility.
 - **Nothing in the audit log.** A multi-hour in-process retry inside the SDK
@@ -43,7 +43,7 @@ following available to the caller during that time:
 
 The watchdog remains a reasonable choice for simpler use cases, which is why
 it's exposed as an explicit opt-in rather than removed as an option — but
-`autoclaude`'s own probe-based waiting (see
+`claudeloop`'s own probe-based waiting (see
 [ADR 0004](0004-adaptive-waiting-with-probes-not-sleep.md)) is the default
 specifically because it's observable and can distinguish the one case
 (exhausted credits) where waiting is never going to work.

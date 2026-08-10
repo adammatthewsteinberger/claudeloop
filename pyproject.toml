@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "autoclaude"
+name = "claudeloop"
 version = "0.1.0"
 description = "Onion-architected, autonomous Claude Code session runner and full Anthropic SDK CLI — never blocks on a human, distinguishes rate limits from exhausted credits, and resumes safely across usage windows."
 readme = "README.md"
@@ -43,14 +43,15 @@ dependencies = [
     "structlog>=24.1",
     "claude-agent-sdk>=0.2.134",
     "anthropic>=0.40",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/autoclaude"
-Repository = "https://github.com/adammatthewsteinberger/autoclaude"
-Documentation = "https://adammatthewsteinberger.github.io/autoclaude/"
-Issues = "https://github.com/adammatthewsteinberger/autoclaude/issues"
-Changelog = "https://github.com/adammatthewsteinberger/autoclaude/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/adammatthewsteinberger/claudeloop"
+Repository = "https://github.com/adammatthewsteinberger/claudeloop"
+Documentation = "https://adammatthewsteinberger.github.io/claudeloop/"
+Issues = "https://github.com/adammatthewsteinberger/claudeloop/issues"
+Changelog = "https://github.com/adammatthewsteinberger/claudeloop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -66,6 +67,7 @@ dev = [
     "build>=1.2",
     "twine>=5.0",
     "pyyaml>=6.0",
+    "pre-commit>=3.7",
 ]
 docs = [
     "mkdocs>=1.6",
@@ -74,10 +76,10 @@ docs = [
 ]
 
 [project.scripts]
-autoclaude = "autoclaude.cli.app:main"
+claudeloop = "claudeloop.cli.app:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/autoclaude"]
+packages = ["src/claudeloop"]
 
 [tool.ruff]
 line-length = 100
@@ -89,49 +91,64 @@ extend-exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# Typer's own idiom is `param: T = typer.Option(...)` / `typer.Argument(...)`
+# in a function signature default — B008 (no function calls in defaults)
+# exists to catch a different, real mutable-default bug and doesn't know
+# Typer's sentinels are safe here. This is the standard fix for Typer/FastAPI
+# projects rather than restructuring every command against the library's own
+# documented pattern.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
 
 [tool.mypy]
 python_version = "3.10"
 strict = true
-packages = ["autoclaude"]
+packages = ["claudeloop"]
 mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# No blanket --cov-fail-under here: coverage is enforced per-layer in CI
-# (100% on domain and application, a lower floor on the whole tree), since a
-# single global number would either be trivially met while a pure layer
-# regresses, or block every commit before infrastructure/cli exist at all.
-# See docs/contributing/testing.md and .github/workflows/ci.yml.
-addopts = "--cov=autoclaude --cov-report=term-missing"
+# Deliberately NO --cov=... and NO --cov-fail-under here. pytest-cov MERGES
+# (unions) every --cov=X flag it sees rather than letting the last one win —
+# so a blanket `--cov=claudeloop` baked into addopts would silently widen
+# every explicitly-scoped invocation (e.g. CI's
+# `--cov=claudeloop.domain --cov=claudeloop.application --cov-fail-under=100`)
+# back out to the whole package, defeating the per-layer gate without any
+# error. Coverage scope and its gate are passed explicitly at each call site
+# instead — see docs/contributing/testing.md and .github/workflows/ci.yml.
+addopts = "--cov-report=term-missing -m \"not live\""
 asyncio_mode = "auto"
+markers = [
+    "live: exercises a real Claude account (free tier — no token spend). Opt in with -m live.",
+    "paid: additionally spends real tokens/turns. Requires --run-paid-live. Always paired with 'live'.",
+]
 
 [tool.coverage.run]
 branch = true
-source = ["src/autoclaude"]
+source = ["src/claudeloop"]
 # bootstrap.py is an intentional composition-root stub until M2 wires real
 # adapters into it (see docs/architecture/ports-and-adapters.md) — it has no
 # behavior to test yet. Omitting it here (rather than lowering the domain +
 # application 100% gate, or padding it with a placeholder test) keeps the
 # coverage floor an honest measure of tested behavior. Remove this omit the
 # moment bootstrap.py gains real content.
-omit = ["src/autoclaude/bootstrap.py"]
+omit = ["src/claudeloop/bootstrap.py"]
 
 [tool.importlinter]
-root_package = "autoclaude"
+root_package = "claudeloop"
 
 [[tool.importlinter.contracts]]
 name = "Onion layering"
 type = "layers"
 layers = [
-    "autoclaude.cli",
-    "autoclaude.bootstrap",
-    "autoclaude.application",
-    "autoclaude.domain",
+    "claudeloop.cli",
+    "claudeloop.bootstrap",
+    "claudeloop.application",
+    "claudeloop.domain",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Infrastructure only reachable from bootstrap"
 type = "forbidden"
-source_modules = ["autoclaude.domain", "autoclaude.application"]
-forbidden_modules = ["autoclaude.infrastructure"]
+source_modules = ["claudeloop.domain", "claudeloop.application"]
+forbidden_modules = ["claudeloop.infrastructure"]

@@ -1,20 +1,20 @@
 # How an autonomous run works, end to end
 
-This walks through the full lifecycle of `autoclaude run handoff.md`,
+This walks through the full lifecycle of `claudeloop run handoff.md`,
 tying together the pieces documented individually elsewhere.
 
 ## 1. Preflight
 
 Before spending a single real turn, the runner checks whether it's already
 mid-cooldown — for example if a prior manual session hit its limit right
-before you started `autoclaude`. `domain.loop.decide_preflight` handles
+before you started `claudeloop`. `domain.loop.decide_preflight` handles
 this; see [`../architecture/run-loop-state-machine.md`](../architecture/run-loop-state-machine.md).
 
 ## 2. The first turn
 
-For `autoclaude run handoff.md`, the plan file's contents seed a brand-new
+For `claudeloop run handoff.md`, the plan file's contents seed a brand-new
 Claude Code session (`domain.plan.WorkPlan.parse` turns any checkbox items
-in it into tracked work). For `autoclaude resume`, a continuation prompt is
+in it into tracked work). For `claudeloop resume`, a continuation prompt is
 sent to the resolved session instead. Every prompt gets a runtime-appended
 instruction establishing autonomous operation — see
 [never-blocking.md](never-blocking.md).

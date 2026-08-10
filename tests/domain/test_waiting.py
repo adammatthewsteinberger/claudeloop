@@ -4,8 +4,8 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from autoclaude.domain.capacity import Available, CreditsExhausted, WindowExhausted
-from autoclaude.domain.waiting import WaitPolicyConfig, next_probe_instant, wait_exceeded
+from claudeloop.domain.capacity import Available, CreditsExhausted, WindowExhausted
+from claudeloop.domain.waiting import WaitPolicyConfig, next_probe_instant, wait_exceeded
 
 NOW = datetime(2026, 8, 9, 12, 0, tzinfo=timezone.utc)
 

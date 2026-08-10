@@ -1,9 +1,9 @@
 # The run-loop state machine
 
-`src/autoclaude/domain/loop.py` implements the autonomous run loop as a pure
+`src/claudeloop/domain/loop.py` implements the autonomous run loop as a pure
 state machine: every transition is a function of `(RunState, an event, now)`
 returning `(new RunState, Decision)`. Nothing in this module performs I/O —
-`application/runner.py` (planned, M2) is the layer that will actually execute
+`application/runner.py` is the layer that actually executes
 a `Decision` against real ports. This separation is what makes the loop's
 logic — including the parts that matter most, like never treating a rate
 limit as "done" — testable without a live Claude Code session, a real clock,
@@ -34,7 +34,7 @@ or real waiting.
 |---|---|---|
 | `PREFLIGHT` | Run starts | Check capacity before spending a real attempt — mirrors `preflight_wait()` in the legacy script, so a run started right after a manual session hit its limit doesn't immediately burn another attempt into the same wall. |
 | `RUNNING` | Capacity is available | `SendTurn` — either the plan-file text (first turn) or a continuation prompt. |
-| `WAITING` | Capacity is exhausted | `ScheduleProbe(at=...)` — never a blind sleep; see [`domain-model.md`](domain-model.md#waitingpy-adaptivewaitpolicy). |
+| `WAITING` | Capacity is exhausted | `ScheduleProbe(at=...)` — never a blind sleep; see [`domain-model.md`](domain-model.md#waitingpy-waitpolicyconfig-next_probe_instant). |
 | (implicit, inside `WAITING`) | A scheduled probe fires | `RunProbe` — a cheap, throwaway turn purely to re-check capacity. |
 | `COMPLETE` | A real turn returned `Done` while capacity was `Available` | `Finish(success=True, reason=summary)` |
 | `FAILED` | Authentication failure, a `Blocked` verdict, budget exhaustion, or `max_wait` exceeded | `Finish(success=False, reason=...)` |
@@ -91,7 +91,7 @@ and it has a dedicated test
 2. Four consecutive probes each return `CreditsExhausted` again — each call
    to `decide_after_probe` reschedules with a longer backoff, capped at the
    configured ceiling (default 600s).
-3. On the sixth probe, capacity has returned (a human added credits) —
+3. On a later probe, capacity has returned (a human added credits) —
    `decide_after_probe` sees `Available` and transitions straight back to
    `RUNNING`, producing `SendTurn`.
 
@@ -106,7 +106,7 @@ way this scenario can ever resolve is a policy that keeps checking.
 Decision = SendTurn | RunProbe | ScheduleProbe | Finish
 ```
 
-The executor (`application/runner.py`, planned M2) will pattern-match
+The executor (`application/runner.py`) pattern-matches
 exhaustively on this union rather than the state machine reaching out and
 performing the action itself. Keeping "decide what to do" and "do it"
 strictly separate is what lets the entire state machine — including the

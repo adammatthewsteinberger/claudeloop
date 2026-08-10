@@ -37,7 +37,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: mypy src/autoclaude
+      - run: mypy src/claudeloop
 
   imports:
     name: import-linter (onion contract)
@@ -61,7 +61,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - run: bandit -q -r src/autoclaude
+      - run: bandit -q -r src/claudeloop
       - run: pip-audit
 
   test:
@@ -81,7 +81,7 @@ jobs:
       - name: Run domain + application tests at the 100% coverage floor
         run: |
           pytest tests/domain tests/application \
-            --cov=autoclaude.domain --cov=autoclaude.application \
+            --cov=claudeloop.domain --cov=claudeloop.application \
             --cov-report=term-missing --cov-fail-under=100
       - name: Run the full suite (lower floor — infrastructure/cli are still being built)
         run: pytest --cov-report=term-missing --cov-fail-under=0
@@ -111,3 +111,12 @@ jobs:
       - run: twine check --strict dist/*
       - name: Confirm py.typed ships in the wheel
         run: unzip -l dist/*.whl | grep -q py.typed
+      - name: Install the built wheel into a clean venv and run the console script
+        # This is the check whose absence let a broken [project.scripts] entry
+        # point ship undetected — installing editable never validates it.
+        run: |
+          python -m venv /tmp/claudeloop-smoke
+          /tmp/claudeloop-smoke/bin/pip install --upgrade pip
+          /tmp/claudeloop-smoke/bin/pip install dist/*.whl
+          /tmp/claudeloop-smoke/bin/claudeloop --version
+          /tmp/claudeloop-smoke/bin/claudeloop --help

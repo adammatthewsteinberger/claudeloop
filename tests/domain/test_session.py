@@ -1,7 +1,7 @@
 import pytest
 
-from autoclaude.domain.errors import InvalidSessionSelectorError
-from autoclaude.domain.session import (
+from claudeloop.domain.errors import InvalidSessionSelectorError
+from claudeloop.domain.session import (
     ExplicitSessionSelector,
     MostRecentSessionSelector,
     PlanFileSelector,

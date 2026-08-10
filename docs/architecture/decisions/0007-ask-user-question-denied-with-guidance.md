@@ -6,7 +6,7 @@ Accepted, scoped for M2/M3. Not yet implemented.
 
 ## Context
 
-`autoclaude` must never stall waiting for a human — that's the entire point
+`claudeloop` must never stall waiting for a human — that's the entire point
 of an autonomous runner. Claude Code exposes an `AskUserQuestion` tool the
 model can call when it genuinely wants a decision from the user. Two ways to
 prevent this from blocking an unattended run were considered:

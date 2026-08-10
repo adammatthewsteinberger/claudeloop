@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "python",
-      "package-name": "autoclaude",
+      "package-name": "claudeloop",
       "changelog-path": "CHANGELOG.md",
       "bump-minor-pre-major": true,
       "draft": false,

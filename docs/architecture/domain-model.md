@@ -1,6 +1,6 @@
 # Domain model reference
 
-Every type below lives in `src/autoclaude/domain/`, has zero third-party
+Every type below lives in `src/claudeloop/domain/`, has zero third-party
 imports, and is fully covered by `tests/domain/`. This page documents what
 each module contains and *why* it's shaped the way it is — for line-level API
 docs, see the mkdocstrings-generated [reference](../reference/api.md).
@@ -8,7 +8,7 @@ docs, see the mkdocstrings-generated [reference](../reference/api.md).
 ## `errors.py` — the error hierarchy
 
 ```python
-AutoclaudeError                    # base for every error autoclaude raises itself
+AutoclaudeError                    # base for every error claudeloop raises itself
 ├── InvalidPlanError               # a plan file couldn't be parsed into work items
 ├── InvalidSessionSelectorError    # a session selector is malformed
 ├── BudgetExceededError            # a run exceeded its turn/dollar/attempt budget
@@ -140,14 +140,14 @@ Primary source: a structured JSON verdict the model returns every turn via
 `blocked_on` outranking `complete` — a turn can't claim done and blocked at
 once. When `structured` is `None` (older model, or structured output
 unsupported), it falls back to substring-matching a legacy marker
-(`AUTOCLAUDE_TASK_FULLY_COMPLETE` by default) in the raw output text, exactly
+(`CLAUDELOOP_TASK_FULLY_COMPLETE` by default) in the raw output text, exactly
 as `claude_autoresume.py` does today — but only as a fallback, not the
 primary mechanism, because a marker can collide with the user's own prompt
 text or appear inside a truncated limit message. The run loop (below) never
 trusts a `Done` verdict over a real capacity rejection, regardless of which
 detection path produced it.
 
-## `waiting.py` — `AdaptiveWaitPolicy`
+## `waiting.py` — `WaitPolicyConfig` & `next_probe_instant()`
 
 The direct replacement for `time.sleep(wait_seconds)` in the legacy script
 (line 655). `next_probe_instant()` returns *the next instant to check again*

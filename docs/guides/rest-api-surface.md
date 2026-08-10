@@ -9,32 +9,32 @@
 
 Anthropic's own `ant` CLI already covers the full 131-endpoint REST surface
 of the `anthropic` Python SDK — generated from the same OpenAPI spec.
-`autoclaude api ...` is not trying to replace it; it exists so the same
+`claudeloop api ...` is not trying to replace it; it exists so the same
 binary that drives autonomous Claude Code sessions can also reach any
 Anthropic API endpoint directly, without a second tool install, for
 workflows that mix both (e.g. an autonomous run that also needs to check
-`autoclaude api messages count-tokens` before kicking off a large plan).
+`claudeloop api messages count-tokens` before kicking off a large plan).
 
 ## How it's generated
 
 At import time, `infrastructure/api/introspect.py` walks the *class* tree
 under `anthropic.resources` — via the `cached_property` descriptors, not a
 live client instance, so this works with zero credentials configured. Every
-discovered method becomes a Typer command under `autoclaude api`, following
-the SDK's own nesting (`autoclaude api beta sessions events send`, mirroring
+discovered method becomes a Typer command under `claudeloop api`, following
+the SDK's own nesting (`claudeloop api beta sessions events send`, mirroring
 `client.beta.sessions.events.send(...)`).
 
 ## Command shape
 
 ```bash
-autoclaude api messages create \
+claudeloop api messages create \
   --model claude-opus-5 \
   --max-tokens 1024 \
   --json '{"messages": [{"role": "user", "content": "hello"}]}'
 
-autoclaude api messages create --json-file request.json --stream
+claudeloop api messages create --json-file request.json --stream
 
-autoclaude api beta:sessions list --max-items 20 --raw
+claudeloop api beta:sessions list --max-items 20 --raw
 ```
 
 - **Path and scalar parameters** become real, typed Typer options.
@@ -59,7 +59,7 @@ autoclaude api beta:sessions list --max-items 20 --raw
 ## The drift gate
 
 A CI test enumerates every endpoint-backed method the installed `anthropic`
-SDK exposes and asserts each one has a registered `autoclaude api` command.
+SDK exposes and asserts each one has a registered `claudeloop api` command.
 The test also checks the discovered method count against a committed
 baseline, so a method *disappearing* from a newer SDK version is caught,
 not just one appearing. This is what makes "1:1 parity" a claim CI enforces

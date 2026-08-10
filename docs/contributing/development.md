@@ -3,8 +3,8 @@
 ## Clone and install
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/autoclaude.git
-cd autoclaude
+git clone https://github.com/adammatthewsteinberger/claudeloop.git
+cd claudeloop
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,docs]"
@@ -86,10 +86,10 @@ set, in the order CI runs them:
 ```bash
 ruff check src tests
 ruff format --check src tests
-mypy src/autoclaude
+mypy src/claudeloop
 pytest
 lint-imports
-bandit -q -r src/autoclaude
+bandit -q -r src/claudeloop
 pip-audit
 ```
 
@@ -101,6 +101,6 @@ needing to remember each command individually.
 
 See [`../architecture/overview.md`](../architecture/overview.md#where-new-code-belongs-a-quick-test)
 for the decision test, and the
-[`autoclaude-architecture`](https://github.com/adammatthewsteinberger/autoclaude/blob/main/.claude/skills/autoclaude-architecture/SKILL.md)
+[`claudeloop-architecture`](https://github.com/adammatthewsteinberger/claudeloop/blob/main/.claude/skills/claudeloop-architecture/SKILL.md)
 Claude Code skill if you're using Claude Code itself to contribute — it
 applies the same test automatically.

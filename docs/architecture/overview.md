@@ -1,6 +1,6 @@
 # Architecture overview
 
-`autoclaude` is built as an **onion** (a.k.a. hexagonal / ports-and-adapters):
+`claudeloop` is built as an **onion** (a.k.a. hexagonal / ports-and-adapters):
 four concentric layers, with dependencies pointing strictly inward. The
 practical reason for this — not ceremony — is that every hard decision the
 runner makes ("is this rate limit waitable?", "how long do we wait?", "is the
@@ -12,7 +12,7 @@ for the full design rationale this page distills.
 ## The four layers
 
 ```
-src/autoclaude/
+src/claudeloop/
 ├── domain/           # innermost. pure — no I/O, no third-party imports, no async
 ├── application/       # ports (Protocols) + use cases; depends only on domain
 ├── infrastructure/    # adapters; the ONLY layer allowed to import anthropic /
@@ -39,20 +39,20 @@ in `pyproject.toml`:
 name = "Onion layering"
 type = "layers"
 layers = [
-    "autoclaude.cli",
-    "autoclaude.bootstrap",
-    "autoclaude.application",
-    "autoclaude.domain",
+    "claudeloop.cli",
+    "claudeloop.bootstrap",
+    "claudeloop.application",
+    "claudeloop.domain",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Infrastructure only reachable from bootstrap"
 type = "forbidden"
-source_modules = ["autoclaude.domain", "autoclaude.application"]
-forbidden_modules = ["autoclaude.infrastructure"]
+source_modules = ["claudeloop.domain", "claudeloop.application"]
+forbidden_modules = ["claudeloop.infrastructure"]
 ```
 
-A PR that adds `from autoclaude.infrastructure.agent import gateway` inside
+A PR that adds `from claudeloop.infrastructure.agent import gateway` inside
 `domain/loop.py` fails CI with a specific, named contract violation — not a
 code-review nit someone might miss. See
 [`decisions/0001-onion-architecture-with-import-linter.md`](decisions/0001-onion-architecture-with-import-linter.md)
@@ -80,10 +80,16 @@ property-tested without spinning up a CLI process.
 
 ## Status
 
-The domain layer described in
-[`domain-model.md`](domain-model.md) is complete and tested (86 tests,
-99.5%+ coverage). `application/`, `infrastructure/`, and `cli/` are scaffolded
-(package directories and `__init__.py` files exist so the import-linter
-contracts are checkable today) but not yet implemented — that is milestones
-M2–M5 in the roadmap. See
-[`ports-and-adapters.md`](ports-and-adapters.md) for the planned port shapes.
+Milestone M2 is complete: `domain/`, `application/`, `infrastructure/`, and
+`cli/` are all implemented, and the `claudeloop` console script genuinely
+works — `run`, `resume`, `sessions`, and `doctor` all run against a real
+Claude Code environment. `domain/` and `application/` carry a CI-enforced
+100% test-coverage gate (137 tests across the full offline suite); a live
+test suite in `tests/live/` additionally exercises the real installed CLI
+against a real account — see
+[`../guides/live-testing.md`](../guides/live-testing.md). See
+[`ports-and-adapters.md`](ports-and-adapters.md) for how the ports map to
+their concrete adapters, and
+[`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md)
+for what M3–M5 (resilient waiting refinements, the generated REST surface,
+final polish) still cover.
