@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.3.1...claudeloop-v0.4.0) (2026-08-10)
+
+
+### Features
+
+* **cli:** show manual-page help on root --help ([3a6a0a2](https://github.com/adammatthewsteinberger/claudeloop/commit/3a6a0a274e17d985000a01d02a994185ff8920a1))
+
 ## [0.3.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.3.0...claudeloop-v0.3.1) (2026-08-10)
 
 
