@@ -15,6 +15,13 @@ from claudeloop.cli.commands.doctor import app as doctor_app
 from claudeloop.cli.commands.resume import resume
 from claudeloop.cli.commands.run import run
 from claudeloop.cli.commands.sessions import app as sessions_app
+from claudeloop.cli.man_page import write_man_page
+
+
+def _root_wants_man_help(argv: list[str]) -> bool:
+    """True for ``claudeloop --help`` / ``-h`` / ``--man`` with no subcommand."""
+    return len(argv) == 2 and argv[1] in ("--help", "-h", "--man")
+
 
 app = typer.Typer(
     name="claudeloop",
@@ -66,6 +73,10 @@ def main() -> int:
     import sys
 
     import click
+
+    if _root_wants_man_help(sys.argv):
+        write_man_page()
+        return 0
 
     if len(sys.argv) > 1 and sys.argv[1] == "api":
         group = build_api_click_group()

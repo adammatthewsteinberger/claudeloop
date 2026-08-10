@@ -31,10 +31,41 @@ def test_version_flag() -> None:
     assert __version__ in _plain(result.stdout)
 
 
+def test_root_help_is_man_page(monkeypatch) -> None:
+    import io
+    import sys
+
+    from claudeloop.cli import app as app_module
+
+    buffer = io.StringIO()
+    monkeypatch.setattr(sys, "argv", ["claudeloop", "--help"])
+    monkeypatch.setattr(sys, "stdout", buffer)
+    assert app_module.main() == 0
+    stdout = buffer.getvalue()
+    assert "NAME" in stdout
+    assert "SYNOPSIS" in stdout
+    assert "claudeloop run" in stdout
+    assert "SEE ALSO" in stdout
+
+
 def test_help_flag_lists_all_commands() -> None:
-    result = _invoke("--help")
-    assert result.exit_code == 0
-    stdout = _plain(result.stdout)
+    """Installed entry point uses main(), which renders the manual for root --help."""
+    import io
+    import sys
+
+    from claudeloop.cli import app as app_module
+
+    buffer = io.StringIO()
+    old_argv = sys.argv
+    old_stdout = sys.stdout
+    try:
+        sys.argv = ["claudeloop", "--help"]
+        sys.stdout = buffer
+        assert app_module.main() == 0
+        stdout = _plain(buffer.getvalue())
+    finally:
+        sys.argv = old_argv
+        sys.stdout = old_stdout
     for command in ("run", "resume", "sessions", "doctor", "api"):
         assert command in stdout
 

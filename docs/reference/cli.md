@@ -9,6 +9,8 @@ improvement, but isn't in place yet.
 
 ```
 claudeloop --version              Show the installed version and exit
+claudeloop --help                 Manual-page style overview (NAME, SYNOPSIS, …)
+claudeloop --man                  Same as --help
 claudeloop run <plan-file>        Seed a fresh session from a markdown plan and run to completion
                                    [--max-turns] [--max-dollars] [--max-wait]
                                    [--log-level] [--log-file]
