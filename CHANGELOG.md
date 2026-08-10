@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.2.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.1.0...claudeloop-v0.2.0) (2026-08-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename package from autoclaude to claudeloop
+
+### Features
+
+* build M2 -- a genuinely working autonomous CLI ([feca00d](https://github.com/adammatthewsteinberger/claudeloop/commit/feca00d6955587b966b59d036d4bd041a826463f))
+* FOSS release infrastructure, documentation, and Claude skills ([cd154f4](https://github.com/adammatthewsteinberger/claudeloop/commit/cd154f43d3ba9f6e21687e43f0fb02734080bf9c))
+* initial autoclaude M1 domain core ([3f7417e](https://github.com/adammatthewsteinberger/claudeloop/commit/3f7417ecc15101b3c4d76a08f3bcc9df0d54c524))
+
+
+### Bug Fixes
+
+* **cli:** make help tests color-stable under Rich ([a63d9cf](https://github.com/adammatthewsteinberger/claudeloop/commit/a63d9cfad48dd230c51dfa648d3e8177cc3b54b6))
+* refine agent autonomy path and sync M2 docs ([0781cc5](https://github.com/adammatthewsteinberger/claudeloop/commit/0781cc571afc96602b1e26d79fe717b96f9ec003))
+
+
+### Code Refactoring
+
+* rename package from autoclaude to claudeloop ([3a97b83](https://github.com/adammatthewsteinberger/claudeloop/commit/3a97b83007f018f88786b220e719545f955bbc60))
+
+## Changelog
+
 All notable changes to this project are documented in this file.
 
 This file is maintained automatically by
