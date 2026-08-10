@@ -116,6 +116,23 @@ def test_max_wait_clamps_candidate_to_deadline():
     assert at == NOW + timedelta(minutes=5)
 
 
+def test_max_wait_set_but_candidate_already_within_it_is_unclamped():
+    """The complementary case to test_max_wait_clamps_candidate_to_deadline:
+    max_wait is configured, but the computed candidate already falls inside
+    it, so the clamp's `if candidate > deadline` branch must NOT fire."""
+    config = WaitPolicyConfig(
+        window_probe_interval=timedelta(minutes=5), max_wait=timedelta(hours=1)
+    )
+    at = next_probe_instant(
+        WindowExhausted(rate_limit_type="unknown"),
+        now=NOW,
+        started_waiting_at=NOW,
+        probe_count=0,
+        config=config,
+    )
+    assert at == NOW + timedelta(minutes=5)
+
+
 def test_wait_exceeded_false_when_max_wait_unset():
     config = WaitPolicyConfig(max_wait=None)
     assert (

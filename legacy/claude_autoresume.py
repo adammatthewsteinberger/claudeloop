@@ -157,9 +157,7 @@ def find_most_recent_session(cwd: str) -> dict[str, object] | None:
     if not project_dir.is_dir():
         return None
 
-    transcripts = sorted(
-        project_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True
-    )
+    transcripts = sorted(project_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
     if not transcripts:
         return None
 
@@ -366,9 +364,7 @@ def _parse_reset_time_from_text(text: str) -> datetime | None:
             except ValueError:
                 continue
             now = datetime.now()
-            candidate = now.replace(
-                hour=parsed.hour, minute=parsed.minute, second=0, microsecond=0
-            )
+            candidate = now.replace(hour=parsed.hour, minute=parsed.minute, second=0, microsecond=0)
             if candidate <= now:
                 candidate += timedelta(days=1)
             return candidate
