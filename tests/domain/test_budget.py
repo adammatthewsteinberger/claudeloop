@@ -1,6 +1,6 @@
 import pytest
 
-from autoclaude.domain.budget import Budget, BudgetLedger
+from claudeloop.domain.budget import Budget, BudgetLedger
 
 
 @pytest.mark.parametrize("field", ["max_turns", "max_dollars", "max_attempts"])

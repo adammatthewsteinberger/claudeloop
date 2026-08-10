@@ -1,6 +1,6 @@
-# Plan: autoclaude — FOSS release infrastructure, documentation, and Claude skills
+# Plan: claudeloop — FOSS release infrastructure, documentation, and Claude skills
 
-> **Status.** This is the approved plan being executed to turn `autoclaude` into a
+> **Status.** This is the approved plan being executed to turn `claudeloop` into a
 > published FOSS project. Preserved here verbatim as the design record; the
 > gitflow branch originally called `dev` throughout this document was renamed to
 > `develop` immediately after `git init`, and every reference below reflects
@@ -9,7 +9,7 @@
 
 ## Context
 
-The `autoclaude` package currently exists as a working but unpublished M1 core: a tested domain layer under `src/autoclaude/domain/`, 86 passing tests at 99.5% coverage, and quality tooling configured in `pyproject.toml`. What it is *not* yet is a project anyone else can find, install, trust, or contribute to.
+The `claudeloop` package currently exists as a working but unpublished M1 core: a tested domain layer under `src/claudeloop/domain/`, 86 passing tests at 99.5% coverage, and quality tooling configured in `pyproject.toml`. What it is *not* yet is a project anyone else can find, install, trust, or contribute to.
 
 **It is not even a git repository.** There is no `.git`, no `.gitignore` (despite `.mypy_cache/`, `.ruff_cache/`, `.import_linter_cache/`, `.coverage`, and `.venv/` already sitting in the tree), no `LICENSE` file, no CI, and `.claude/` holds nothing but `settings.local.json`.
 
@@ -19,16 +19,16 @@ This plan turns it into a published, self-explanatory MIT-licensed project on Py
 
 | Decision | Choice | Why |
 |---|---|---|
-| Distribution name | **`autoclaude`** | Verified free: `pypi.org/simple/autoclaude/` and the JSON API both 404. GitHub `adammatthewsteinberger/autoclaude` also 404. |
+| Distribution name | **`claudeloop`** | Verified free: `pypi.org/simple/claudeloop/` and the JSON API both 404. GitHub `adammatthewsteinberger/claudeloop` also 404. |
 | Release automation | **release-please** | Opens a reviewable release PR instead of bot-pushing to `main`, which is what a protected-`main` gitflow needs. |
 | Documentation | **Markdown + MkDocs Material** | Files stay plainly readable in-repo so `CLAUDE.md` and skills link straight to paths, while GitHub Pages gets a searchable site for the PyPI metadata URL. |
 
 ### Findings from the deep scan that this plan fixes
 
-1. **Brand collision, accepted with mitigation.** `autoclaude-cli` **v2.8.5** (Grezy Software, `github.com/grezy-software/autoclaude-cli`) already ships in this exact domain — *"Local runner for AutoClaude. Executes orchestration plans with your Claude Max/Pro subscription."* We take the shorter name; the README opens with an explicit "not affiliated with" disambiguation.
-2. **The name is not reserved until first publish.** A PyPI *pending* publisher reserves nothing. Given an active competitor in the namespace, publishing a real `0.1.0` early is the mitigation, not an afterthought.
+1. **PyPI name collision forced a rename.** The working title `autoclaude` was rejected by PyPI as too similar to existing packages (`auto-claude`, `autoclaude-cli`). The distribution, import, and CLI name is therefore **`claudeloop`**.
+2. **The name is not reserved until first publish.** A PyPI *pending* publisher reserves nothing. Publishing a real `0.1.0` early is the mitigation, not an afterthought.
 3. **The license is asserted but not granted.** `pyproject.toml` says `license = { text = "MIT" }` — the deprecated PEP 621 spelling — and there is no `LICENSE` file on disk at all. Migrate to PEP 639 (`license = "MIT"` + `license-files`) and add the actual file.
-4. **`mypy --strict` benefits nobody downstream.** There is no `src/autoclaude/py.typed` marker, so every type in this package is invisible to consumers. For a package billed as a library, that is a real gap.
+4. **`mypy --strict` benefits nobody downstream.** There is no `src/claudeloop/py.typed` marker, so every type in this package is invisible to consumers. For a package billed as a library, that is a real gap.
 5. **PyPI metadata is bare.** No classifiers, no keywords, no `[project.urls]`, and `authors = [{ name = "Adam" }]` with no email.
 
 ## Deliverables
@@ -45,7 +45,7 @@ Move `claude_autoresume.py` to `legacy/claude_autoresume.py` with a header comme
 
 ### 2. Packaging and PyPI metadata (`pyproject.toml`)
 
-Fix the five scan findings: PEP 639 license fields, full trove classifiers, `keywords`, `[project.urls]` (Homepage, Repository, Documentation, Issues, Changelog), a real author name and email, and create **`src/autoclaude/py.typed`** (picked up automatically by the existing `packages = ["src/autoclaude"]` config).
+Fix the five scan findings: PEP 639 license fields, full trove classifiers, `keywords`, `[project.urls]` (Homepage, Repository, Documentation, Issues, Changelog), a real author name and email, and create **`src/claudeloop/py.typed`** (picked up automatically by the existing `packages = ["src/claudeloop"]` config).
 
 Tighten the coverage gate as layers land rather than leaving one global `--cov-fail-under=95`: per-package thresholds, 100% for `domain` and `application`.
 
@@ -76,7 +76,7 @@ jobs:
     needs: build
     environment:
       name: pypi
-      url: https://pypi.org/p/autoclaude
+      url: https://pypi.org/p/claudeloop
     permissions:
       id-token: write     # job-scoped, mandatory for Trusted Publishing
     # actions/download-artifact@v8   ← note: v8, while upload is v7
@@ -88,8 +88,8 @@ Pin every action to a commit SHA with a trailing version comment, and let Depend
 Add **`.github/dependabot.yml`** covering `pip`, `github-actions`, and `pre-commit`.
 
 **Manual steps the maintainer must perform** (documented in `docs/contributing/release-process.md`, since they cannot be automated):
-1. Create the GitHub repo `adammatthewsteinberger/autoclaude`, push `main` and `develop`, set `main` as default.
-2. On PyPI → Publishing → add a **pending publisher**: project `autoclaude`, owner `adammatthewsteinberger`, repo `autoclaude`, workflow **`publish-to-pypi.yml`**, environment `pypi`.
+1. Create the GitHub repo `adammatthewsteinberger/claudeloop`, push `main` and `develop`, set `main` as default.
+2. On PyPI → Publishing → add a **pending publisher**: project `claudeloop`, owner `adammatthewsteinberger`, repo `claudeloop`, workflow **`publish-to-pypi.yml`**, environment `pypi`.
 3. Create the GitHub environment `pypi` with himself as required reviewer — this is the human gate that makes Trusted Publishing stronger than a repo-scoped token, given that anyone with commit access can otherwise modify publishing workflows.
 4. Protect `main`: require CI green, no force-push.
 5. Enable GitHub Pages (source: Actions).
@@ -120,7 +120,7 @@ Skipping as cargo cult for a solo project at this stage: `CITATION.cff`, `FUNDIN
 
 ```
 docs/
-├── index.md                        # what it is, why it exists, the autoclaude-cli disambiguation
+├── index.md                        # what it is, why it exists
 ├── getting-started/                # installation, quickstart, configuration
 ├── guides/                         # autonomous-runs, rate-limits-and-credits,
 │                                   #   never-blocking, completion-detection, rest-api-surface
@@ -139,22 +139,22 @@ docs/
 
 The ADRs are where the hard-won research belongs, so the reasoning survives the people who did it. At minimum: why the Agent SDK replaced subprocess; why `CreditsExhausted` is a distinct state from `WindowExhausted`; why waiting probes instead of sleeping; why `CLAUDE_CODE_RETRY_WATCHDOG` is off by default; why the REST surface is generated rather than hand-written; why `AskUserQuestion` is denied-with-guidance rather than auto-answered.
 
-**`README.md`** is rewritten as the project's front door: the disambiguation line, badges, what problem it solves, install, a 30-second quickstart, a feature overview, a link map into `docs/`, and project status honestly stating that M1 is complete and M2–M5 are roadmap.
+**`README.md`** is rewritten as the project's front door: badges, what problem it solves, install, a 30-second quickstart, a feature overview, a link map into `docs/`, and project status honestly stating that M1 is complete and M2–M5 are roadmap.
 
 ### 7. Claude Code skills (`.claude/skills/`)
 
-Eight skills, each `.claude/skills/<name>/SKILL.md` — exactly one level deep, since category subdirectories are not scanned. All prefixed `autoclaude-` because **personal skills override project skills of the same name**, so an unprefixed `testing` skill in someone's `~/.claude/skills/` would silently shadow ours.
+Eight skills, each `.claude/skills/<name>/SKILL.md` — exactly one level deep, since category subdirectories are not scanned. All prefixed `claudeloop-` because **personal skills override project skills of the same name**, so an unprefixed `testing` skill in someone's `~/.claude/skills/` would silently shadow ours.
 
 | Skill | Covers |
 |---|---|
-| `autoclaude-architecture` | Onion layers, where new code belongs, the import-linter contract, composition root |
-| `autoclaude-domain-model` | Every value object and ADT; capacity/classification/waiting/completion semantics |
-| `autoclaude-agent-sdk` | `ClaudeAgentOptions` fields, `RateLimitEvent`, the credits-vs-window distinction, never-block mechanisms, the probe design |
-| `autoclaude-rest-surface` | Introspection, the Typer binder, the drift gate |
-| `autoclaude-testing` | pytest layout, fakes over mocks, `FakeClock`/`FakeSleeper`, property tests, coverage gates |
-| `autoclaude-quality-gates` | Running and *fixing* ruff, mypy, import-linter, bandit, pip-audit |
-| `autoclaude-releasing` | gitflow, conventional commits, release-please, Trusted Publishing |
-| `autoclaude-docs` | Writing and building docs, where each kind of content belongs |
+| `claudeloop-architecture` | Onion layers, where new code belongs, the import-linter contract, composition root |
+| `claudeloop-domain-model` | Every value object and ADT; capacity/classification/waiting/completion semantics |
+| `claudeloop-agent-sdk` | `ClaudeAgentOptions` fields, `RateLimitEvent`, the credits-vs-window distinction, never-block mechanisms, the probe design |
+| `claudeloop-rest-surface` | Introspection, the Typer binder, the drift gate |
+| `claudeloop-testing` | pytest layout, fakes over mocks, `FakeClock`/`FakeSleeper`, property tests, coverage gates |
+| `claudeloop-quality-gates` | Running and *fixing* ruff, mypy, import-linter, bandit, pip-audit |
+| `claudeloop-releasing` | gitflow, conventional commits, release-please, Trusted Publishing |
+| `claudeloop-docs` | Writing and building docs, where each kind of content belongs |
 
 Authoring rules, from verified guidance:
 
@@ -176,7 +176,7 @@ Contents: one-paragraph project identity; the layer map with the import rule in 
 1. Git init, `.gitignore`, `.gitattributes`, `.editorconfig`, move legacy script, initial commit on `main`, branch `develop`.
 2. `LICENSE`, `py.typed`, `pyproject.toml` metadata fixes.
 3. `.pre-commit-config.yaml`; install hooks; verify the commit-msg hook rejects a non-conventional message.
-4. Deep read of `src/autoclaude/domain/` and `tests/domain/` so docs and skills describe what the code *does*, not what the plan intended.
+4. Deep read of `src/claudeloop/domain/` and `tests/domain/` so docs and skills describe what the code *does*, not what the plan intended.
 5. `docs/` tree, `mkdocs.yml`, both plan documents migrated into `docs/plans/`.
 6. `README.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `CHANGELOG.md`, issue/PR templates.
 7. `.claude/skills/` — eight skills plus the frontmatter CI check.
@@ -187,7 +187,7 @@ Contents: one-paragraph project identity; the layer map with the import rule in 
 
 - **Hooks** — attempt a commit with the message `wip` and confirm the `commit-msg` hook rejects it; confirm `feat: add x` passes. Run `pre-commit run --all-files` clean.
 - **Quality gates locally** — `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` with coverage gate, `lint-imports`, `bandit -r src`, `pip-audit`. All must pass before the first push.
-- **Package builds and is installable** — `python -m build`, then `twine check --strict dist/*`, then `pipx install dist/*.whl` in a scratch dir and confirm the `autoclaude` entry point resolves.
+- **Package builds and is installable** — `python -m build`, then `twine check --strict dist/*`, then `pipx install dist/*.whl` in a scratch dir and confirm the `claudeloop` entry point resolves.
 - **Typing ships** — confirm `py.typed` is present inside the built wheel (`unzip -l dist/*.whl`); without it the `mypy --strict` investment is invisible downstream.
 - **Docs build** — `mkdocs build --strict` must pass with zero warnings, which catches every broken internal link.
 - **Skills load** — run `claude --debug` in the repo and confirm all eight skills are discovered with non-empty descriptions and no parse errors; confirm the CI frontmatter check fails when a `description` is deliberately removed.

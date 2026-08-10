@@ -15,13 +15,13 @@ one that fails loudly — at least a failure shows up in monitoring.
 | `Notification` hooks | Logged, never awaited |
 | The model asking "Shall I proceed?" in plain text | No tool call exists to intercept here — handled by an appended system-prompt fragment establishing autonomous operation, and by the completion evaluator treating an incomplete-with-no-progress turn as a continuation, not a stop |
 | A TTY-dependent stdin read | The runner never inherits a TTY; it's designed to run safely under `nohup` or as a systemd unit |
-| MCP OAuth flows | Genuinely can't complete unattended — `autoclaude doctor` checks configured MCP servers *before* a run starts and fails fast, naming the servers that need attention, rather than discovering the problem hours in |
+| MCP OAuth flows | Genuinely can't complete unattended — `claudeloop doctor` checks configured MCP servers *before* a run starts and fails fast, naming the servers that need attention, rather than discovering the problem hours in |
 
 ## Why "deny with guidance" instead of "fabricate an answer"
 
 It would be easy to make `AskUserQuestion` always return, say, the first
 listed option. That silently invents a decision nobody made. Instead,
-`autoclaude` denies the call with a message along the lines of:
+`claudeloop` denies the call with a message along the lines of:
 
 > "Running autonomously, no user available — choose the option you would
 > recommend, note the assumption, and proceed."

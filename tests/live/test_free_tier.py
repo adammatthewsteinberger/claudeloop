@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from autoclaude import __version__
+from claudeloop import __version__
 
 pytestmark = pytest.mark.live
 
@@ -51,7 +51,7 @@ def installed_wheel_venv(tmp_path_factory: pytest.TempPathFactory) -> Path:
 
 def test_installed_console_script_reports_the_right_version(installed_wheel_venv: Path) -> None:
     result = subprocess.run(  # nosec B603
-        [str(installed_wheel_venv / "autoclaude"), "--version"],
+        [str(installed_wheel_venv / "claudeloop"), "--version"],
         capture_output=True,
         text=True,
         timeout=15,
@@ -65,7 +65,7 @@ def test_installed_console_script_help_renders_without_a_traceback(
     installed_wheel_venv: Path,
 ) -> None:
     result = subprocess.run(  # nosec B603
-        [str(installed_wheel_venv / "autoclaude"), "--help"],
+        [str(installed_wheel_venv / "claudeloop"), "--help"],
         capture_output=True,
         text=True,
         timeout=15,
@@ -83,7 +83,7 @@ def test_doctor_runs_against_the_real_environment_without_crashing() -> None:
     check names, which is what proves the real subprocess calls to `claude`
     work end to end."""
     result = subprocess.run(  # nosec B603 B607
-        ["autoclaude", "doctor"],
+        ["claudeloop", "doctor"],
         capture_output=True,
         text=True,
         timeout=90,  # claude mcp list health-checks every configured server
@@ -100,7 +100,7 @@ def test_sessions_lists_the_real_session_store_read_only(sandbox_repo: Path) -> 
     proves is that the real list_sessions() call succeeds and renders
     without error, not that it finds anything."""
     result = subprocess.run(  # nosec B603 B607
-        ["autoclaude", "sessions", "--cwd", str(sandbox_repo)],
+        ["claudeloop", "sessions", "--cwd", str(sandbox_repo)],
         capture_output=True,
         text=True,
         timeout=15,

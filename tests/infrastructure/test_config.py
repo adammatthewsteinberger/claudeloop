@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from autoclaude.infrastructure.config import RunnerConfig, load_config
+from claudeloop.infrastructure.config import RunnerConfig, load_config
 
 
 def test_defaults_when_nothing_set(tmp_path: Path) -> None:
@@ -11,7 +11,7 @@ def test_defaults_when_nothing_set(tmp_path: Path) -> None:
 
 
 def test_file_overrides_defaults(tmp_path: Path) -> None:
-    (tmp_path / "autoclaude.toml").write_text('max_turns = 5\nlog_level = "DEBUG"\n')
+    (tmp_path / "claudeloop.toml").write_text('max_turns = 5\nlog_level = "DEBUG"\n')
     config = load_config(cwd=tmp_path, home=tmp_path)
     assert config.max_turns == 5
     assert config.log_level == "DEBUG"
@@ -20,12 +20,12 @@ def test_file_overrides_defaults(tmp_path: Path) -> None:
 def test_home_config_applies_then_cwd_config_overrides_it(tmp_path: Path) -> None:
     home = tmp_path / "home"
     cwd = tmp_path / "cwd"
-    (home / ".config" / "autoclaude").mkdir(parents=True)
-    (home / ".config" / "autoclaude" / "config.toml").write_text(
+    (home / ".config" / "claudeloop").mkdir(parents=True)
+    (home / ".config" / "claudeloop" / "config.toml").write_text(
         'max_turns = 1\nlog_level = "DEBUG"\n'
     )
     cwd.mkdir()
-    (cwd / "autoclaude.toml").write_text("max_turns = 2\n")
+    (cwd / "claudeloop.toml").write_text("max_turns = 2\n")
 
     config = load_config(cwd=cwd, home=home)
     assert config.max_turns == 2  # cwd config wins over home config
@@ -33,39 +33,39 @@ def test_home_config_applies_then_cwd_config_overrides_it(tmp_path: Path) -> Non
 
 
 def test_env_overrides_file(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "autoclaude.toml").write_text("max_turns = 5\n")
-    monkeypatch.setenv("AUTOCLAUDE_MAX_TURNS", "9")
+    (tmp_path / "claudeloop.toml").write_text("max_turns = 5\n")
+    monkeypatch.setenv("CLAUDELOOP_MAX_TURNS", "9")
     config = load_config(cwd=tmp_path, home=tmp_path)
     assert config.max_turns == 9
 
 
 def test_cli_overrides_env_and_file(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    (tmp_path / "autoclaude.toml").write_text("max_turns = 5\n")
-    monkeypatch.setenv("AUTOCLAUDE_MAX_TURNS", "9")
+    (tmp_path / "claudeloop.toml").write_text("max_turns = 5\n")
+    monkeypatch.setenv("CLAUDELOOP_MAX_TURNS", "9")
     config = load_config(cwd=tmp_path, home=tmp_path, cli_overrides={"max_turns": 42})
     assert config.max_turns == 42
 
 
 def test_cli_overrides_with_none_values_are_ignored(tmp_path: Path) -> None:
-    (tmp_path / "autoclaude.toml").write_text("max_turns = 5\n")
+    (tmp_path / "claudeloop.toml").write_text("max_turns = 5\n")
     config = load_config(cwd=tmp_path, home=tmp_path, cli_overrides={"max_turns": None})
     assert config.max_turns == 5  # None means "not provided", not "clear it"
 
 
 def test_env_bool_coercion(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    monkeypatch.setenv("AUTOCLAUDE_RETRY_WATCHDOG", "true")
+    monkeypatch.setenv("CLAUDELOOP_RETRY_WATCHDOG", "true")
     config = load_config(cwd=tmp_path, home=tmp_path)
     assert config.retry_watchdog is True
 
 
 def test_env_float_coercion(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    monkeypatch.setenv("AUTOCLAUDE_MAX_DOLLARS", "12.5")
+    monkeypatch.setenv("CLAUDELOOP_MAX_DOLLARS", "12.5")
     config = load_config(cwd=tmp_path, home=tmp_path)
     assert config.max_dollars == 12.5
 
 
 def test_unknown_keys_in_file_are_ignored(tmp_path: Path) -> None:
-    (tmp_path / "autoclaude.toml").write_text('not_a_real_field = "x"\nmax_turns = 3\n')
+    (tmp_path / "claudeloop.toml").write_text('not_a_real_field = "x"\nmax_turns = 3\n')
     config = load_config(cwd=tmp_path, home=tmp_path)
     assert config.max_turns == 3
 

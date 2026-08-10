@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta, timezone
 
-from autoclaude.domain.budget import Budget, BudgetLedger
-from autoclaude.domain.capacity import (
+from claudeloop.domain.budget import Budget, BudgetLedger
+from claudeloop.domain.capacity import (
     AuthenticationFailed,
     Available,
     CreditsExhausted,
     WindowExhausted,
 )
-from autoclaude.domain.completion import Blocked, Continue, Done
-from autoclaude.domain.loop import (
+from claudeloop.domain.completion import Blocked, Continue, Done
+from claudeloop.domain.loop import (
     Finish,
     Phase,
     RunState,
@@ -19,7 +19,7 @@ from autoclaude.domain.loop import (
     decide_preflight,
     start,
 )
-from autoclaude.domain.waiting import WaitPolicyConfig
+from claudeloop.domain.waiting import WaitPolicyConfig
 
 NOW = datetime(2026, 8, 9, 12, 0, tzinfo=timezone.utc)
 _DEFAULT_BUDGET = Budget()

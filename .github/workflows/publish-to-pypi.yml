@@ -1,7 +1,7 @@
 name: Publish to PyPI
 
 # This filename is load-bearing: PyPI's Trusted Publisher configuration for
-# the `autoclaude` project matches on the workflow FILENAME
+# the `claudeloop` project matches on the workflow FILENAME
 # `publish-to-pypi.yml` exactly. Renaming this file requires updating that
 # configuration at pypi.org first, or every subsequent release will fail
 # with an OIDC identity mismatch. See docs/contributing/release-process.md.
@@ -50,11 +50,11 @@ jobs:
 
       - name: Install the built wheel into a clean venv and run the console script
         run: |
-          python -m venv /tmp/autoclaude-smoke
-          /tmp/autoclaude-smoke/bin/pip install --upgrade pip
-          /tmp/autoclaude-smoke/bin/pip install dist/*.whl
-          /tmp/autoclaude-smoke/bin/autoclaude --version
-          /tmp/autoclaude-smoke/bin/autoclaude --help
+          python -m venv /tmp/claudeloop-smoke
+          /tmp/claudeloop-smoke/bin/pip install --upgrade pip
+          /tmp/claudeloop-smoke/bin/pip install dist/*.whl
+          /tmp/claudeloop-smoke/bin/claudeloop --version
+          /tmp/claudeloop-smoke/bin/claudeloop --help
 
       - uses: actions/upload-artifact@v7.0.1
         with:
@@ -75,7 +75,7 @@ jobs:
       # modify this workflow, but they still can't approve their own
       # publish without a second reviewer.
       name: pypi
-      url: https://pypi.org/p/autoclaude
+      url: https://pypi.org/p/claudeloop
     permissions:
       id-token: write  # job-scoped, mandatory for Trusted Publishing — nothing else needs it
     steps:
@@ -100,7 +100,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/autoclaude
+      url: https://test.pypi.org/p/claudeloop
     permissions:
       id-token: write
     steps:

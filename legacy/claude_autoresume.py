@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""LEGACY REFERENCE IMPLEMENTATION — not part of the `autoclaude` package.
+"""LEGACY REFERENCE IMPLEMENTATION — not part of the `claudeloop` package.
 
-This is the original single-file script `autoclaude` is replacing. It is kept
+This is the original single-file script `claudeloop` is replacing. It is kept
 here, unmodified in behavior, because it is the source of truth for every
 behavioral requirement the new implementation must satisfy or deliberately
 improve on (see docs/architecture/decisions/ for the specific supersessions:
 structured rate-limit signals replacing the regex scraping below, the
 credits-vs-window distinction, list_sessions() replacing the glob-based
 session discovery, etc.). Do not add new features here — extend
-`src/autoclaude/` instead. This file may be deleted once `autoclaude` reaches
+`src/claudeloop/` instead. This file may be deleted once `claudeloop` reaches
 feature parity (milestone M2) and the team is confident nothing here was
 missed.
 

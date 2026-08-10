@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-from autoclaude.application.runner import AutonomousRunner
-from autoclaude.domain.budget import Budget
-from autoclaude.domain.classify import TurnSignals
-from autoclaude.domain.completion import StructuredVerdict
-from autoclaude.domain.waiting import WaitPolicyConfig
+from claudeloop.application.runner import AutonomousRunner
+from claudeloop.domain.budget import Budget
+from claudeloop.domain.classify import TurnSignals
+from claudeloop.domain.completion import StructuredVerdict
+from claudeloop.domain.waiting import WaitPolicyConfig
 from tests.application.fakes import (
     CONTINUE_VERDICT,
     DONE_VERDICT,

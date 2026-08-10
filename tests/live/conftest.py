@@ -39,21 +39,21 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 @pytest.fixture
 def sandbox_repo(tmp_path: Path) -> Path:
     """A fresh, empty git repo — never a real project directory — so any
-    session `autoclaude` creates during a live test is namespaced away from
-    real work and easy to spot in `autoclaude sessions` output."""
+    session `claudeloop` creates during a live test is namespaced away from
+    real work and easy to spot in `claudeloop sessions` output."""
     repo = tmp_path / "sandbox"
     repo.mkdir()
     subprocess.run(  # nosec B603 B607
         ["git", "init", "-q"], cwd=repo, check=True, capture_output=True
     )
     subprocess.run(  # nosec B603 B607
-        ["git", "config", "user.email", "autoclaude-live-test@example.com"],
+        ["git", "config", "user.email", "claudeloop-live-test@example.com"],
         cwd=repo,
         check=True,
         capture_output=True,
     )
     subprocess.run(  # nosec B603 B607
-        ["git", "config", "user.name", "autoclaude live test"],
+        ["git", "config", "user.name", "claudeloop live test"],
         cwd=repo,
         check=True,
         capture_output=True,

@@ -1,10 +1,10 @@
-# Plan: autoclaude — autonomous Claude session runner + full Anthropic SDK CLI
+# Plan: claudeloop — autonomous Claude session runner + full Anthropic SDK CLI
 
-> **Status.** This is the original approved architecture plan (milestone M1–M5). **M1 is complete** — the pure domain core described below exists at `src/autoclaude/domain/`, fully tested. M2–M5 are roadmap, not yet built. This document is preserved verbatim as the design record; see [`../architecture/overview.md`](../architecture/overview.md) for the living description of what's actually implemented, and [`decisions/`](../architecture/decisions/) for individual ADRs distilled from the reasoning below.
+> **Status.** This is the original approved architecture plan (milestone M1–M5). **M1 is complete** — the pure domain core described below exists at `src/claudeloop/domain/`, fully tested. M2–M5 are roadmap, not yet built. This document is preserved verbatim as the design record; see [`../architecture/overview.md`](../architecture/overview.md) for the living description of what's actually implemented, and [`decisions/`](../architecture/decisions/) for individual ADRs distilled from the reasoning below.
 
 ## Context
 
-`claude_autoresume.py` (now [`legacy/claude_autoresume.py`](https://github.com/adammatthewsteinberger/autoclaude/blob/main/legacy/claude_autoresume.py)) is a 663-line single-file script that drives a Claude Code session to completion unattended. It shells out to `claude -p --dangerously-skip-permissions --output-format stream-json --verbose`, scrapes the stream for usage-limit signals with regexes, sleeps until a parsed reset time, and re-invokes with `--continue`/`--resume` until a done-marker string appears. It works, but it is a script: no package, no tests, no types, hand-rolled string matching against an undocumented stream format, and session discovery by globbing `~/.claude/projects/` — a path the docs explicitly warn against parsing because the format changes between releases.
+`claude_autoresume.py` (now [`legacy/claude_autoresume.py`](https://github.com/adammatthewsteinberger/claudeloop/blob/main/legacy/claude_autoresume.py)) is a 663-line single-file script that drives a Claude Code session to completion unattended. It shells out to `claude -p --dangerously-skip-permissions --output-format stream-json --verbose`, scrapes the stream for usage-limit signals with regexes, sleeps until a parsed reset time, and re-invokes with `--continue`/`--resume` until a done-marker string appears. It works, but it is a script: no package, no tests, no types, hand-rolled string matching against an undocumented stream format, and session discovery by globbing `~/.claude/projects/` — a path the docs explicitly warn against parsing because the format changes between releases.
 
 The goal is to turn it into a proper pip-installable library and CLI: onion architecture, OOP, Typer, near-total coverage, extensive debug logging, security controls, and CI quality gates — covering both the **Claude Agent SDK** (the autonomous session runner) and the **Anthropic REST SDK** (full 1:1 command parity).
 
@@ -25,7 +25,7 @@ One deliberate non-finding: the official `ant` CLI already covers all 131 REST e
 Onion, four layers, dependencies strictly inward. The point is not ceremony: it is that every hard decision (is this limit waitable? how long do we wait? is the work done?) becomes a pure function over value objects, which is what makes near-100% coverage honest rather than a mocking exercise.
 
 ```
-src/autoclaude/
+src/claudeloop/
 ├── domain/              # pure. no I/O, no third-party imports, no async
 │   ├── errors.py        # AutoclaudeError hierarchy
 │   ├── plan.py          # WorkPlan, PlanItem  (parsed from the md handoff)
@@ -117,13 +117,13 @@ The hard requirement is that the run never stalls waiting for an answer. Notifyi
 
 `domain/completion.py` maps that to `Done` / `Continue(remaining)` / `Blocked(reason)`. This kills both current failure modes: a marker colliding with the user's own prompt text, and a truncated limit message coincidentally containing marker-like text — the guard in `legacy/claude_autoresume.py` (the `if not limited and done:` check near the end of the retry loop) becomes unnecessary because completion is a typed field, not a substring.
 
-The existing `AUTOCLAUDE_TASK_FULLY_COMPLETE` marker is retained as a fallback for when `structured_output` is absent, with the instruction-appending logic ported from `with_done_marker_instruction()` in the legacy script. A limit always outranks a completion claim, as today.
+The existing `CLAUDELOOP_TASK_FULLY_COMPLETE` marker is retained as a fallback for when `structured_output` is absent, with the instruction-appending logic ported from `with_done_marker_instruction()` in the legacy script. A limit always outranks a completion claim, as today.
 
 When the input is an md plan, `WorkPlan` parses it into items and `remaining_work` is tracked per item, so the log shows what is actually left rather than one boolean.
 
 ## The generated REST surface
 
-`autoclaude api …` covers all 131 endpoints without hand-writing any of them.
+`claudeloop api …` covers all 131 endpoints without hand-writing any of them.
 
 - **Discovery** walks the *class* tree under `anthropic.resources` via the `cached_property` descriptors, not a live client — so no credentials are needed at import time. Each leaf yields resource path, method name, and `inspect.signature`.
 - **Binding** maps path and scalar params to real typed Typer options; the request body goes to `--json` / `--json-file` with `@path` inlining. Mapping every nested TypedDict to flags is not worth it — `ant` reaches the same conclusion with relaxed-YAML structured flags.
@@ -171,4 +171,4 @@ Each milestone leaves the tree working, and M2 already replaces the current scri
 - **Never-block** — run a plan that explicitly instructs the model to ask a clarifying question, and confirm the runner denies `AskUserQuestion` with guidance and continues instead of hanging.
 - **Limit handling without waiting for a real limit** — a fake gateway scripted to emit a `rejected` `RateLimitEvent` with a `resets_at`, then a `credits_required` rejection, asserting the first schedules a bounded probe and the second never schedules a blind sleep.
 - **Credit top-up, live** — the honest test is opportunistic: when a real `credits_required` rejection occurs, add credits mid-wait and confirm the runner resumes on the next probe rather than at the window boundary. Until then the scripted probe sequence in M3 covers the logic.
-- **Install check** — `pipx install .` on macOS and Linux, confirm the `autoclaude` entry point resolves and `--help` renders.
+- **Install check** — `pipx install .` on macOS and Linux, confirm the `claudeloop` entry point resolves and `--help` renders.

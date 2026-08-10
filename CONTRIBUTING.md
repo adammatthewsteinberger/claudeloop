@@ -1,4 +1,4 @@
-# Contributing to autoclaude
+# Contributing to claudeloop
 
 Thank you for considering a contribution. This document is meant to be
 command-level and specific — if something here is unclear or you hit a
@@ -19,8 +19,8 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/autoclaude.git
-cd autoclaude
+git clone https://github.com/adammatthewsteinberger/claudeloop.git
+cd claudeloop
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,docs]"
@@ -137,10 +137,10 @@ Run the full set locally before opening a PR:
 ```bash
 ruff check src tests
 ruff format --check src tests
-mypy src/autoclaude
+mypy src/claudeloop
 pytest
 lint-imports
-bandit -q -r src/autoclaude
+bandit -q -r src/claudeloop
 pip-audit
 ```
 
@@ -159,7 +159,7 @@ pre-commit run --all-files
 | `mypy` | Type error | Add/correct type annotations. `domain/` and `application/` run under `--strict` — no `Any` escape hatches without a documented reason |
 | `pytest` | A test fails or coverage drops below the per-package floor | See [Testing philosophy](#testing-philosophy) below |
 | `lint-imports` | An onion-layering violation | See [The onion architecture import rule](#the-onion-architecture-import-rule) |
-| `bandit` | A flagged security pattern | Either fix it, or — if it's a genuine false positive like an exhaustiveness `assert` — add a `# nosec B1xx` with an inline comment explaining *why* it's not a real issue (two examples already exist in `src/autoclaude/domain/loop.py`) |
+| `bandit` | A flagged security pattern | Either fix it, or — if it's a genuine false positive like an exhaustiveness `assert` — add a `# nosec B1xx` with an inline comment explaining *why* it's not a real issue (two examples already exist in `src/claudeloop/domain/loop.py`) |
 | `pip-audit` | A dependency has a known CVE | Bump the dependency; if no fix is available yet, document the exposure and mitigation in the PR |
 
 ## Testing philosophy

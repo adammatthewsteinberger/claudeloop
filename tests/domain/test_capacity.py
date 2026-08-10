@@ -1,4 +1,4 @@
-from autoclaude.domain.capacity import (
+from claudeloop.domain.capacity import (
     AuthenticationFailed,
     Available,
     CreditsExhausted,

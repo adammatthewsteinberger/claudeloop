@@ -1,12 +1,12 @@
 from datetime import datetime, timezone
 
-from autoclaude.domain.capacity import (
+from claudeloop.domain.capacity import (
     AuthenticationFailed,
     Available,
     CreditsExhausted,
     WindowExhausted,
 )
-from autoclaude.domain.classify import TurnSignals, classify
+from claudeloop.domain.classify import TurnSignals, classify
 
 NOW = datetime(2026, 8, 9, tzinfo=timezone.utc)
 

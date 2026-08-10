@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from autoclaude import __version__
-from autoclaude.cli.app import app
+from claudeloop import __version__
+from claudeloop.cli.app import app
 
 runner = CliRunner()
 

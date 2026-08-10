@@ -3,7 +3,7 @@
 ## Run a plan file to completion, unattended
 
 ```bash
-autoclaude run handoff.md
+claudeloop run handoff.md
 ```
 
 Seeds a brand-new Claude Code session with the contents of `handoff.md`, then
@@ -15,13 +15,13 @@ directory the session and any file edits happen in.
 ## Resume a specific session
 
 ```bash
-autoclaude resume --session-id <id>
+claudeloop resume --session-id <id>
 ```
 
 ## Resume whatever you were last working on
 
 ```bash
-autoclaude resume
+claudeloop resume
 ```
 
 Auto-selects the most recently modified Claude Code session for the current
@@ -33,13 +33,13 @@ anything, so you can interrupt it if it guessed wrong.
 ## See what's running or waiting
 
 ```bash
-autoclaude sessions
+claudeloop sessions
 ```
 
 ## Check your setup before starting a long unattended run
 
 ```bash
-autoclaude doctor
+claudeloop doctor
 ```
 
 Verifies Claude Code is installed and authenticated, checks any configured
@@ -49,12 +49,12 @@ and confirms the working directory is safe to bypass permissions in.
 
 ## Configuration
 
-`autoclaude` reads configuration in this precedence order (highest wins):
+`claudeloop` reads configuration in this precedence order (highest wins):
 
 1. Command-line flags (`--max-wait`, `--max-turns`, `--log-level`, ...)
-2. Environment variables (`AUTOCLAUDE_*`)
-3. A config file (`autoclaude.toml` in the working directory, or
-   `~/.config/autoclaude/config.toml`)
+2. Environment variables (`CLAUDELOOP_*`)
+3. A config file (`claudeloop.toml` in the working directory, or
+   `~/.config/claudeloop/config.toml`)
 4. Built-in defaults
 
 See [`../guides/never-blocking.md`](../guides/never-blocking.md) and

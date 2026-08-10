@@ -1,7 +1,7 @@
 import pytest
 
-from autoclaude.domain.errors import InvalidPlanError
-from autoclaude.domain.plan import PlanItem, WorkPlan
+from claudeloop.domain.errors import InvalidPlanError
+from claudeloop.domain.plan import PlanItem, WorkPlan
 
 
 def test_plan_item_rejects_blank_text():

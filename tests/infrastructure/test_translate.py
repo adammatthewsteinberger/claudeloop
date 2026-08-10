@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from autoclaude.infrastructure.agent.translate import TurnAccumulator, _to_datetime
+from claudeloop.infrastructure.agent.translate import TurnAccumulator, _to_datetime
 
 
 def test_to_datetime_none_stays_none() -> None:

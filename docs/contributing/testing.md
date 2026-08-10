@@ -4,7 +4,7 @@
 
 ```
 tests/
-├── domain/          # pure unit tests + Hypothesis property tests; mirrors src/autoclaude/domain/
+├── domain/          # pure unit tests + Hypothesis property tests; mirrors src/claudeloop/domain/
 └── application/      # planned (M2+) — fakes for every port, no real I/O
 ```
 

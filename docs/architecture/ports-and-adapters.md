@@ -15,7 +15,7 @@ abstract base class. Two reasons:
    `infrastructure/`.** A `Protocol` describes a shape; nothing has to
    inherit from it. `import-linter`'s "infrastructure only reachable from
    bootstrap" contract would reject an ABC-based design the moment a
-   concrete adapter needed to `from autoclaude.application.ports import
+   concrete adapter needed to `from claudeloop.application.ports import
    AgentGatewayBase` — with `Protocol`, the adapter simply implements the
    right methods and duck-types into place.
 2. **Fakes for tests are trivial.** `FakeAgentGateway` and friends in

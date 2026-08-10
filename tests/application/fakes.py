@@ -7,9 +7,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
-from autoclaude.application.dto import TurnOutcome
-from autoclaude.domain.classify import TurnSignals
-from autoclaude.domain.completion import StructuredVerdict
+from claudeloop.application.dto import TurnOutcome
+from claudeloop.domain.classify import TurnSignals
+from claudeloop.domain.completion import StructuredVerdict
 
 
 class FakeClock:

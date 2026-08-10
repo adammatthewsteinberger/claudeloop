@@ -1,4 +1,4 @@
-from autoclaude.domain.completion import (
+from claudeloop.domain.completion import (
     Blocked,
     Continue,
     Done,
@@ -23,7 +23,7 @@ def test_structured_blocked_outranks_complete_flag():
 
 
 def test_fallback_marker_present_is_done():
-    result = evaluate(structured=None, output_text="...\nAUTOCLAUDE_TASK_FULLY_COMPLETE\n")
+    result = evaluate(structured=None, output_text="...\nCLAUDELOOP_TASK_FULLY_COMPLETE\n")
     assert result == Done(summary="")
 
 

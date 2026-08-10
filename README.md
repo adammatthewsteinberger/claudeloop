@@ -1,19 +1,13 @@
-# autoclaude
+# claudeloop
 
-[![PyPI](https://img.shields.io/pypi/v/autoclaude)](https://pypi.org/project/autoclaude/)
-[![Python versions](https://img.shields.io/pypi/pyversions/autoclaude)](https://pypi.org/project/autoclaude/)
-[![CI](https://github.com/adammatthewsteinberger/autoclaude/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/autoclaude/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/claudeloop)](https://pypi.org/project/claudeloop/)
+[![Python versions](https://img.shields.io/pypi/pyversions/claudeloop)](https://pypi.org/project/claudeloop/)
+[![CI](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Onion-architected, autonomous Claude Code session runner and full Anthropic
 SDK CLI** — never blocks on a human, distinguishes an exhausted rate-limit
 window from exhausted credits, and resumes safely across usage windows.
-
-> **Not affiliated with `autoclaude-cli`.** There is a separate, unrelated
-> PyPI package named `autoclaude-cli` (`github.com/grezy-software/autoclaude-cli`)
-> in a similar problem space. **This project is `autoclaude`** (no `-cli`
-> suffix), published by [`adammatthewsteinberger`](https://github.com/adammatthewsteinberger).
-> The two share no code and are not connected.
 
 ## What problem this solves
 
@@ -23,14 +17,14 @@ when a rate limit rejects you, you can't tell from the outside whether
 waiting will ever help — a five-hour window resets on its own; an exhausted
 credits balance never will, no matter how long you wait.
 
-`autoclaude` exists to get all three of those distinctions right,
+`claudeloop` exists to get all three of those distinctions right,
 automatically, so you can hand it a plan and walk away — including handling
 the case where you top up your account's credits while it's mid-wait, which
 it notices on the next probe rather than at some fixed deadline.
 
 This project began as [`legacy/claude_autoresume.py`](legacy/claude_autoresume.py),
 a single-file script that did this by shelling out to `claude -p` and
-regex-scraping its output. `autoclaude` replaces that with a tested,
+regex-scraping its output. `claudeloop` replaces that with a tested,
 typed, onion-architected package built on the official `claude-agent-sdk`.
 See [`docs/architecture/decisions/`](docs/architecture/decisions/) for why
 each specific change was made.
@@ -38,7 +32,7 @@ each specific change was made.
 ## Install
 
 ```bash
-pipx install autoclaude
+pipx install claudeloop
 ```
 
 See [`docs/getting-started/installation.md`](docs/getting-started/installation.md)
@@ -47,17 +41,17 @@ for requirements and a from-source setup.
 ## Quickstart
 
 ```bash
-autoclaude run handoff.md      # seed a session from a plan file and run to completion
-autoclaude resume               # resume whatever you were last working on
-autoclaude resume --session-id <id>
-autoclaude doctor                # pre-flight checks before a long unattended run
+claudeloop run handoff.md      # seed a session from a plan file and run to completion
+claudeloop resume               # resume whatever you were last working on
+claudeloop resume --session-id <id>
+claudeloop doctor                # pre-flight checks before a long unattended run
 ```
 
 Full walkthrough: [`docs/getting-started/quickstart.md`](docs/getting-started/quickstart.md).
 
 ## Why it's different from just retrying on 429
 
-| | Naive retry | `autoclaude` |
+| | Naive retry | `claudeloop` |
 |---|---|---|
 | Sees an HTTP 429 | Sleeps a fixed duration, retries | Classifies *why* — a waitable rate-limit window, or exhausted credits that only a human can fix |
 | Credits exhausted | Sleeps forever, no reset time exists | Probes on a bounded backoff and tells you it needs you |
@@ -72,7 +66,7 @@ full reasoning.
 ## Documentation
 
 Full docs (built with MkDocs Material) live at
-**https://adammatthewsteinberger.github.io/autoclaude/**, and are also
+**https://adammatthewsteinberger.github.io/claudeloop/**, and are also
 readable directly under [`docs/`](docs/) in this repo:
 
 | | |
@@ -92,7 +86,7 @@ works — `run`/`resume` drive a real Claude Code session through
 environment, and `domain`/`application` carry a CI-enforced 100% test-coverage
 gate, verified further by a live test suite (`tests/live/`) that exercises
 the actual installed console script against a real account. Milestone **M4**
-(the generated 1:1 REST surface, `autoclaude api ...`) and **M5** (final
+(the generated 1:1 REST surface, `claudeloop api ...`) and **M5** (final
 polish) are still roadmap. See
 [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
 

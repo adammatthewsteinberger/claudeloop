@@ -1,6 +1,6 @@
 # CLI reference
 
-`src/autoclaude/cli/app.py` is the real Typer root; every command below
+`src/claudeloop/cli/app.py` is the real Typer root; every command below
 works today. This page is hand-maintained rather than auto-generated for
 now — a `mkdocs-typer`-style auto-generated version is a reasonable future
 improvement, but isn't in place yet.
@@ -8,17 +8,17 @@ improvement, but isn't in place yet.
 ## Command tree
 
 ```
-autoclaude --version              Show the installed version and exit
-autoclaude run <plan-file>        Seed a fresh session from a markdown plan and run to completion
+claudeloop --version              Show the installed version and exit
+claudeloop run <plan-file>        Seed a fresh session from a markdown plan and run to completion
                                    [--max-turns] [--max-dollars] [--max-wait]
                                    [--log-level] [--log-file]
-autoclaude resume [--session-id]  Resume a specific session, or auto-select the most recently
+claudeloop resume [--session-id]  Resume a specific session, or auto-select the most recently
                                    modified one for the current directory
                                    [--max-turns] [--max-dollars] [--log-level] [--log-file]
-autoclaude sessions [--cwd]       List known sessions, read-only
-autoclaude doctor                 Pre-flight checks: claude CLI present, authentication,
+claudeloop sessions [--cwd]       List known sessions, read-only
+claudeloop doctor                 Pre-flight checks: claude CLI present, authentication,
                                    configured MCP servers, working-directory safety
-autoclaude api ...                 Generated 1:1 surface over the anthropic REST SDK — not yet
+claudeloop api ...                 Generated 1:1 surface over the anthropic REST SDK — not yet
                                     implemented (M4); see guides/rest-api-surface.md
 ```
 

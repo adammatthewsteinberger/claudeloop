@@ -57,14 +57,14 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        args: [src/autoclaude]
+        args: [src/claudeloop]
       - id: bandit
         name: bandit
         entry: bandit
         language: system
         types: [python]
         pass_filenames: false
-        args: [-q, -r, src/autoclaude]
+        args: [-q, -r, src/claudeloop]
       - id: import-linter
         name: import-linter (onion contract)
         entry: lint-imports

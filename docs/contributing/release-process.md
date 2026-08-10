@@ -26,15 +26,15 @@ hand-write a changelog entry, or hold a PyPI API token anywhere.
 
 ## One-time manual setup (already done for this repo, documented for forks)
 
-1. **Create the GitHub repo** `adammatthewsteinberger/autoclaude`, push
+1. **Create the GitHub repo** `adammatthewsteinberger/claudeloop`, push
    `main` and `develop`, set `main` as the default branch.
 2. **PyPI → Account settings → Publishing → Add a new pending publisher:**
 
    | Field | Value |
    |---|---|
-   | PyPI Project Name | `autoclaude` |
+   | PyPI Project Name | `claudeloop` |
    | Owner | `adammatthewsteinberger` |
-   | Repository name | `autoclaude` |
+   | Repository name | `claudeloop` |
    | Workflow name | `publish-to-pypi.yml` (the **filename** — this is load-bearing) |
    | Environment name | `pypi` |
 
@@ -48,10 +48,10 @@ hand-write a changelog entry, or hold a PyPI API token anywhere.
 5. **Enable GitHub Pages**, source: GitHub Actions (for `docs.yml`).
 
 A PyPI *pending* publisher reserves nothing — the project name isn't claimed
-until the first real publish succeeds. Given an existing, similarly-named
-package already active in this problem space (see
-[`../index.md`](../index.md)'s disambiguation note), the first `0.1.0`
-publish should happen promptly rather than being deferred indefinitely.
+until the first real publish succeeds. The working title `autoclaude` was
+rejected as too similar to existing packages, which is why this project
+ships as `claudeloop`; claim it promptly with a real `0.1.0` rather than
+deferring indefinitely.
 
 ## Doing a release dry run
 
@@ -62,7 +62,7 @@ pipeline against **TestPyPI**:
    separate account and publisher registry from `pypi.org`).
 2. Trigger the TestPyPI job manually (`workflow_dispatch`), or push a
    pre-release tag if the workflow is wired to react to one.
-3. `pip install -i https://test.pypi.org/simple/ autoclaude` in a scratch
+3. `pip install -i https://test.pypi.org/simple/ claudeloop` in a scratch
    virtual environment and confirm the CLI entry point resolves.
 4. Only once that round-trips cleanly, proceed with a real release-please
    PR merge against `main`.
@@ -83,5 +83,5 @@ artifacts as its only quality gate, keeping the publish job itself minimal
   automatically for Trusted Publishing flows (PEP 740) — visible on the
   PyPI project page under each release's files.
 - `py.typed` shipped in the wheel: `unzip -l dist/*.whl | grep py.typed`.
-- Metadata: `pypi.org/project/autoclaude/` should show the classifiers,
+- Metadata: `pypi.org/project/claudeloop/` should show the classifiers,
   keywords, and `[project.urls]` links configured in `pyproject.toml`.

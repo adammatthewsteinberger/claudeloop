@@ -23,11 +23,11 @@ pytestmark = [pytest.mark.live, pytest.mark.paid]
 _CHEAP_MODEL = "claude-haiku-4-5"
 
 
-def _run_autoclaude(
+def _run_claudeloop(
     args: list[str], *, cwd: Path, timeout: int = 300
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(  # nosec B603 B607
-        ["autoclaude", *args],
+        ["claudeloop", *args],
         cwd=cwd,
         capture_output=True,
         text=True,
@@ -48,7 +48,7 @@ def test_run_completes_a_trivial_plan_end_to_end(sandbox_repo: Path) -> None:
         "what a text editor would normally add). Do nothing else.\n"
     )
 
-    result = _run_autoclaude(
+    result = _run_claudeloop(
         [
             "run",
             str(plan),
@@ -67,7 +67,7 @@ def test_run_completes_a_trivial_plan_end_to_end(sandbox_repo: Path) -> None:
     assert created.is_file()
     assert created.read_text().strip() == "OK"
 
-    audit_log = sandbox_repo / "autoclaude.log.jsonl"
+    audit_log = sandbox_repo / "claudeloop.log.jsonl"
     assert audit_log.is_file()
     assert "finished" in audit_log.read_text()
 
@@ -83,14 +83,14 @@ def test_resume_continues_a_session_created_by_run(sandbox_repo: Path) -> None:
         "do not create step2.txt yet, even though a follow-up will ask for "
         "it later in a separate turn.\n"
     )
-    first = _run_autoclaude(
+    first = _run_claudeloop(
         ["run", str(plan), "--model", _CHEAP_MODEL, "--max-turns", "3", "--max-dollars", "0.30"],
         cwd=sandbox_repo,
     )
     assert first.returncode == 0, f"stdout={first.stdout!r} stderr={first.stderr!r}"
     assert (sandbox_repo / "step1.txt").is_file()
 
-    second = _run_autoclaude(
+    second = _run_claudeloop(
         ["resume", "--model", _CHEAP_MODEL, "--max-turns", "3", "--max-dollars", "0.30"],
         cwd=sandbox_repo,
     )
@@ -113,7 +113,7 @@ def test_never_blocks_on_a_clarifying_question(sandbox_repo: Path) -> None:
         "trivial valid content, and finish.\n"
     )
 
-    result = _run_autoclaude(
+    result = _run_claudeloop(
         [
             "run",
             str(plan),

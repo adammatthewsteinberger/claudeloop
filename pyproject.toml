@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "autoclaude"
+name = "claudeloop"
 version = "0.1.0"
 description = "Onion-architected, autonomous Claude Code session runner and full Anthropic SDK CLI — never blocks on a human, distinguishes rate limits from exhausted credits, and resumes safely across usage windows."
 readme = "README.md"
@@ -47,11 +47,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/autoclaude"
-Repository = "https://github.com/adammatthewsteinberger/autoclaude"
-Documentation = "https://adammatthewsteinberger.github.io/autoclaude/"
-Issues = "https://github.com/adammatthewsteinberger/autoclaude/issues"
-Changelog = "https://github.com/adammatthewsteinberger/autoclaude/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/adammatthewsteinberger/claudeloop"
+Repository = "https://github.com/adammatthewsteinberger/claudeloop"
+Documentation = "https://adammatthewsteinberger.github.io/claudeloop/"
+Issues = "https://github.com/adammatthewsteinberger/claudeloop/issues"
+Changelog = "https://github.com/adammatthewsteinberger/claudeloop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -76,10 +76,10 @@ docs = [
 ]
 
 [project.scripts]
-autoclaude = "autoclaude.cli.app:main"
+claudeloop = "claudeloop.cli.app:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/autoclaude"]
+packages = ["src/claudeloop"]
 
 [tool.ruff]
 line-length = 100
@@ -103,16 +103,16 @@ extend-immutable-calls = ["typer.Option", "typer.Argument"]
 [tool.mypy]
 python_version = "3.10"
 strict = true
-packages = ["autoclaude"]
+packages = ["claudeloop"]
 mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Deliberately NO --cov=... and NO --cov-fail-under here. pytest-cov MERGES
 # (unions) every --cov=X flag it sees rather than letting the last one win —
-# so a blanket `--cov=autoclaude` baked into addopts would silently widen
+# so a blanket `--cov=claudeloop` baked into addopts would silently widen
 # every explicitly-scoped invocation (e.g. CI's
-# `--cov=autoclaude.domain --cov=autoclaude.application --cov-fail-under=100`)
+# `--cov=claudeloop.domain --cov=claudeloop.application --cov-fail-under=100`)
 # back out to the whole package, defeating the per-layer gate without any
 # error. Coverage scope and its gate are passed explicitly at each call site
 # instead — see docs/contributing/testing.md and .github/workflows/ci.yml.
@@ -125,30 +125,30 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/autoclaude"]
+source = ["src/claudeloop"]
 # bootstrap.py is an intentional composition-root stub until M2 wires real
 # adapters into it (see docs/architecture/ports-and-adapters.md) — it has no
 # behavior to test yet. Omitting it here (rather than lowering the domain +
 # application 100% gate, or padding it with a placeholder test) keeps the
 # coverage floor an honest measure of tested behavior. Remove this omit the
 # moment bootstrap.py gains real content.
-omit = ["src/autoclaude/bootstrap.py"]
+omit = ["src/claudeloop/bootstrap.py"]
 
 [tool.importlinter]
-root_package = "autoclaude"
+root_package = "claudeloop"
 
 [[tool.importlinter.contracts]]
 name = "Onion layering"
 type = "layers"
 layers = [
-    "autoclaude.cli",
-    "autoclaude.bootstrap",
-    "autoclaude.application",
-    "autoclaude.domain",
+    "claudeloop.cli",
+    "claudeloop.bootstrap",
+    "claudeloop.application",
+    "claudeloop.domain",
 ]
 
 [[tool.importlinter.contracts]]
 name = "Infrastructure only reachable from bootstrap"
 type = "forbidden"
-source_modules = ["autoclaude.domain", "autoclaude.application"]
-forbidden_modules = ["autoclaude.infrastructure"]
+source_modules = ["claudeloop.domain", "claudeloop.application"]
+forbidden_modules = ["claudeloop.infrastructure"]

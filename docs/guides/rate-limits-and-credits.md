@@ -1,6 +1,6 @@
 # Rate limits vs. exhausted credits
 
-This is the distinction `autoclaude` exists to get right. Both look
+This is the distinction `claudeloop` exists to get right. Both look
 identical from the outside — an HTTP 429 — but only one of them will ever
 resolve by waiting.
 
@@ -12,7 +12,7 @@ resolve by waiting.
 | Resolves by waiting? | **Yes** — once `resets_at` passes | **No** — never, on its own |
 | Resolves by | The clock | A human buying more credits |
 | Carries a `resets_at`? | Usually | **Never** — the type has no such field |
-| `autoclaude`'s response | Probes near the reset time (with a fallback interval so it doesn't trust a far-future timestamp blindly) | Probes on a bounded backoff and notifies you that action is needed |
+| `claudeloop`'s response | Probes near the reset time (with a fallback interval so it doesn't trust a far-future timestamp blindly) | Probes on a bounded backoff and notifies you that action is needed |
 
 A real example of the second case, captured during development:
 
@@ -42,7 +42,7 @@ present.
 
 ## Handling a credit top-up mid-wait
 
-If `autoclaude` is waiting on `CreditsExhausted` and you add credits to your
+If `claudeloop` is waiting on `CreditsExhausted` and you add credits to your
 account, it notices on the **next scheduled probe** — not at some fixed
 deadline, because there isn't one to wait for. The probe cadence
 (`--credits-probe-interval`, default 120s, backing off to
@@ -55,7 +55,7 @@ for the exact state sequence, which is directly covered by a test.
 
 ## What the probe itself costs
 
-The throwaway turn `autoclaude` sends to re-check capacity is deliberately
+The throwaway turn `claudeloop` sends to re-check capacity is deliberately
 minimal — one token, no tools, no `CLAUDE.md` loaded, and configured not to
 persist a transcript — so it costs nothing meaningful and doesn't pollute
 your session history with "OK" turns. A rejected probe isn't billed by the

@@ -2,7 +2,7 @@
 
 ## Why this matters more than usual for this project
 
-`autoclaude` is designed to drive Claude Code **unattended, for potentially
+`claudeloop` is designed to drive Claude Code **unattended, for potentially
 multi-day runs**, which means it:
 
 - Bypasses Claude Code's interactive permission prompts by design
@@ -31,7 +31,7 @@ project is pre-1.0; there is no long-term-support branch.
 
 Report privately via one of:
 
-1. [GitHub Security Advisories](https://github.com/adammatthewsteinberger/autoclaude/security/advisories/new)
+1. [GitHub Security Advisories](https://github.com/adammatthewsteinberger/claudeloop/security/advisories/new)
    for this repository (preferred — supports coordinated disclosure).
 2. Email **adam@matthewsteinberger.com** with a clear description, steps to
    reproduce, and the version affected.
@@ -49,7 +49,7 @@ Report privately via one of:
 
 **In scope:**
 
-- Any way `autoclaude` could be induced to bypass its own "never block on a
+- Any way `claudeloop` could be induced to bypass its own "never block on a
   human" safety design in a way that causes *harmful* unattended action
   (as opposed to simply failing) — e.g. a prompt-injection path from tool
   output back into a decision the runner treats as authoritative.
@@ -61,7 +61,7 @@ Report privately via one of:
   session content, or CLI arguments — the project's explicit design goal is
   "no `shell=True` anywhere," and any path that reintroduces that class of
   risk is a real finding.
-- Any way the generated REST surface (`autoclaude api ...`, once built)
+- Any way the generated REST surface (`claudeloop api ...`, once built)
   could execute an unintended request against a live Anthropic account —
   destructive actions (archiving agents/environments/vaults, deleting
   resources) executed without a clear, deliberate invocation.
@@ -72,7 +72,7 @@ Report privately via one of:
   `claude-agent-sdk` packages themselves — report those to Anthropic
   directly.
 - Issues requiring an attacker to already have arbitrary code execution on
-  the machine running `autoclaude` (at that point, the OS has already been
+  the machine running `claudeloop` (at that point, the OS has already been
   compromised).
 - Missing rate-limiting on your own account's API usage — that's an
   Anthropic account/billing concern, not a vulnerability in this tool.

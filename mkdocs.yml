@@ -1,10 +1,10 @@
-site_name: autoclaude
+site_name: claudeloop
 site_description: >-
   Onion-architected, autonomous Claude Code session runner and full
   Anthropic SDK CLI.
-site_url: https://adammatthewsteinberger.github.io/autoclaude/
-repo_url: https://github.com/adammatthewsteinberger/autoclaude
-repo_name: adammatthewsteinberger/autoclaude
+site_url: https://adammatthewsteinberger.github.io/claudeloop/
+repo_url: https://github.com/adammatthewsteinberger/claudeloop
+repo_name: adammatthewsteinberger/claudeloop
 edit_uri: edit/main/docs/
 
 theme:

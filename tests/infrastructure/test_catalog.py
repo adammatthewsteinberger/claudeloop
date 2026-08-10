@@ -2,13 +2,13 @@
 account found in infrastructure/agent/catalog.py: last_modified is
 milliseconds, not seconds (a raw int caused `ValueError: year 58576 is out of
 range`), and some real sessions have a blank cwd (which used to raise
-InvalidSessionSelectorError and crash the whole `autoclaude sessions` listing)."""
+InvalidSessionSelectorError and crash the whole `claudeloop sessions` listing)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from autoclaude.infrastructure.agent.catalog import _to_session_ref
+from claudeloop.infrastructure.agent.catalog import _to_session_ref
 
 
 @dataclass
@@ -41,7 +41,7 @@ def test_blank_cwd_falls_back_to_a_visible_sentinel_instead_of_raising() -> None
     # some entries whose own `cwd` is empty, and the caller-supplied cwd
     # fallback can also be empty for a global listing. domain.SessionRef
     # requires a non-blank cwd, so this used to raise
-    # InvalidSessionSelectorError and crash `autoclaude sessions` entirely.
+    # InvalidSessionSelectorError and crash `claudeloop sessions` entirely.
     info = _FakeSDKSessionInfo(session_id="abc", cwd=None)
     ref = _to_session_ref(info, cwd="")  # type: ignore[arg-type]
     assert ref.cwd == "(unknown)"

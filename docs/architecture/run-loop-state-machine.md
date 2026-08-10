@@ -1,6 +1,6 @@
 # The run-loop state machine
 
-`src/autoclaude/domain/loop.py` implements the autonomous run loop as a pure
+`src/claudeloop/domain/loop.py` implements the autonomous run loop as a pure
 state machine: every transition is a function of `(RunState, an event, now)`
 returning `(new RunState, Decision)`. Nothing in this module performs I/O —
 `application/runner.py` is the layer that actually executes

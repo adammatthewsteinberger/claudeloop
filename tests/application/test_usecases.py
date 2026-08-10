@@ -2,16 +2,16 @@ from pathlib import Path
 
 import pytest
 
-from autoclaude.application.dto import RunResult
-from autoclaude.application.usecases.doctor import DoctorCheck, all_passed, run_doctor
-from autoclaude.application.usecases.list_sessions import list_sessions
-from autoclaude.application.usecases.resume_session import resolve_most_recent, resume_explicit
-from autoclaude.application.usecases.run_plan import (
+from claudeloop.application.dto import RunResult
+from claudeloop.application.usecases.doctor import DoctorCheck, all_passed, run_doctor
+from claudeloop.application.usecases.list_sessions import list_sessions
+from claudeloop.application.usecases.resume_session import resolve_most_recent, resume_explicit
+from claudeloop.application.usecases.run_plan import (
     run_from_plan_file,
     with_done_marker_instruction,
 )
-from autoclaude.domain.errors import InvalidSessionSelectorError
-from autoclaude.domain.session import SessionRef
+from claudeloop.domain.errors import InvalidSessionSelectorError
+from claudeloop.domain.session import SessionRef
 
 # --- run_plan ---
 
@@ -46,7 +46,7 @@ async def test_run_from_plan_file_reads_the_file_and_delegates_to_runner(tmp_pat
     assert len(stub.calls) == 1
     initial, continue_prompt = stub.calls[0]
     assert "do the thing" in initial
-    assert "AUTOCLAUDE_TASK_FULLY_COMPLETE" in initial
+    assert "CLAUDELOOP_TASK_FULLY_COMPLETE" in initial
     assert "Continue exactly where you left off." in continue_prompt
 
 

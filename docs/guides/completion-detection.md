@@ -5,7 +5,7 @@ task is genuinely finished, or just because that turn's response ended
 (ran out of steps, paused, whatever) while multi-part work still remains.
 From the outside — exit code 0, no limit language — the two look identical.
 This is the exact problem the legacy script's done-marker mechanism was
-built to solve, and `autoclaude` replaces it with something more reliable
+built to solve, and `claudeloop` replaces it with something more reliable
 while keeping the marker as a fallback.
 
 ## Primary mechanism: structured output
@@ -30,7 +30,7 @@ Every turn is asked to return a typed JSON verdict via
 
 If structured output isn't available (an older model, or a configuration
 that doesn't support it), `evaluate()` falls back to substring-matching a
-marker string — `AUTOCLAUDE_TASK_FULLY_COMPLETE` by default, overridable
+marker string — `CLAUDELOOP_TASK_FULLY_COMPLETE` by default, overridable
 with `--done-marker` — in the raw turn output, exactly as
 `legacy/claude_autoresume.py`'s `with_done_marker_instruction()` does today.
 This is a fallback, not the primary path, because a bare substring match has
@@ -55,5 +55,5 @@ for the exact rule and its dedicated test.
 When the input is a markdown plan with checkbox items
 (`domain.plan.WorkPlan.parse`), a `Continue` verdict's `remaining_work` list
 is reconciled back against the plan via `with_items_marked_done()`, so
-`autoclaude sessions` and the audit log can show which specific items are
+`claudeloop sessions` and the audit log can show which specific items are
 still open rather than a single "not done yet" boolean.

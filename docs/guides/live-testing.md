@@ -24,10 +24,10 @@ pytest -m live tests/live/test_free_tier.py
 ```
 
 Covers: building the wheel and installing it into a clean venv, then running
-`autoclaude --version`/`--help` from that install (the specific check that
+`claudeloop --version`/`--help` from that install (the specific check that
 would have caught the broken `[project.scripts]` entry point this project
-shipped with before M2); `autoclaude doctor` against your real environment;
-`autoclaude sessions` listing your real session store, read-only.
+shipped with before M2); `claudeloop doctor` against your real environment;
+`claudeloop sessions` listing your real session store, read-only.
 
 **Paid tier — spends real tokens/turns, requires an explicit flag:**
 
@@ -51,11 +51,11 @@ clear reason rather than running them — this is enforced in
 - Every live test that touches a session runs in a fresh temporary git
   repository (the `sandbox_repo` fixture in `tests/live/conftest.py`) —
   never a real project directory. This is also what keeps any session
-  `autoclaude` creates during a test easy to spot and namespaced away from
+  `claudeloop` creates during a test easy to spot and namespaced away from
   real work.
 - Paid tests are expected to pin the cheapest available model, set small
   `max_turns`/`max_budget_usd` caps, and use minimal prompts.
-- `autoclaude doctor`'s subprocess calls to `claude` use a generous timeout
+- `claudeloop doctor`'s subprocess calls to `claude` use a generous timeout
   (60–90s) rather than racing real, observed latency (`claude mcp list`
   against 37 configured servers took ~14s in testing) — a live test timing
   out is a false failure, not a safety property, so timeouts here are set
@@ -63,7 +63,7 @@ clear reason rather than running them — this is enforced in
 
 ## What isn't covered yet
 
-Paid-tier tests for `autoclaude run`/`autoclaude resume` completing a real
+Paid-tier tests for `claudeloop run`/`claudeloop resume` completing a real
 plan end-to-end, and the never-block `AskUserQuestion` test described in
 the original build plan, are not yet implemented — only the free tier
 above is. See `docs/plans/foss-and-documentation-plan.md` Phase C for the

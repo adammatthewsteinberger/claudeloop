@@ -1,19 +1,19 @@
 # API reference
 
-::: autoclaude.domain.errors
+::: claudeloop.domain.errors
 
-::: autoclaude.domain.plan
+::: claudeloop.domain.plan
 
-::: autoclaude.domain.session
+::: claudeloop.domain.session
 
-::: autoclaude.domain.capacity
+::: claudeloop.domain.capacity
 
-::: autoclaude.domain.classify
+::: claudeloop.domain.classify
 
-::: autoclaude.domain.completion
+::: claudeloop.domain.completion
 
-::: autoclaude.domain.waiting
+::: claudeloop.domain.waiting
 
-::: autoclaude.domain.budget
+::: claudeloop.domain.budget
 
-::: autoclaude.domain.loop
+::: claudeloop.domain.loop
