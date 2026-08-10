@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.3.0...claudeloop-v0.3.1) (2026-08-10)
+
+
+### Bug Fixes
+
+* **docs:** use absolute URLs in README for PyPI project page ([1a083a1](https://github.com/adammatthewsteinberger/claudeloop/commit/1a083a1087ca0ccda23414eea798110c050010c1))
+
 ## [0.3.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.2.1...claudeloop-v0.3.0) (2026-08-10)
 
 
