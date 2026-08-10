@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/claudeloop)](https://pypi.org/project/claudeloop/)
 [![Python versions](https://img.shields.io/pypi/pyversions/claudeloop)](https://pypi.org/project/claudeloop/)
 [![CI](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/claudeloop/blob/main/LICENSE)
 
 **Onion-architected, autonomous Claude Code session runner and full Anthropic
 SDK CLI** — never blocks on a human, distinguishes an exhausted rate-limit
@@ -22,11 +22,11 @@ automatically, so you can hand it a plan and walk away — including handling
 the case where you top up your account's credits while it's mid-wait, which
 it notices on the next probe rather than at some fixed deadline.
 
-This project began as [`legacy/claude_autoresume.py`](legacy/claude_autoresume.py),
+This project began as [`legacy/claude_autoresume.py`](https://github.com/adammatthewsteinberger/claudeloop/blob/main/legacy/claude_autoresume.py),
 a single-file script that did this by shelling out to `claude -p` and
 regex-scraping its output. `claudeloop` replaces that with a tested,
 typed, onion-architected package built on the official `claude-agent-sdk`.
-See [`docs/architecture/decisions/`](docs/architecture/decisions/) for why
+See the [architecture decision records](https://adammatthewsteinberger.github.io/claudeloop/architecture/decisions/0001-onion-architecture-with-import-linter/) for why
 each specific change was made.
 
 ## Install
@@ -35,7 +35,7 @@ each specific change was made.
 pipx install claudeloop
 ```
 
-See [`docs/getting-started/installation.md`](docs/getting-started/installation.md)
+See the [installation guide](https://adammatthewsteinberger.github.io/claudeloop/getting-started/installation/)
 for requirements and a from-source setup.
 
 ## Quickstart
@@ -48,7 +48,7 @@ claudeloop doctor                # pre-flight checks before a long unattended ru
 claudeloop api models list       # any Anthropic SDK endpoint (generated; see docs)
 ```
 
-Full walkthrough: [`docs/getting-started/quickstart.md`](docs/getting-started/quickstart.md).
+Full walkthrough: [quickstart](https://adammatthewsteinberger.github.io/claudeloop/getting-started/quickstart/).
 
 ## Why it's different from just retrying on 429
 
@@ -60,24 +60,24 @@ Full walkthrough: [`docs/getting-started/quickstart.md`](docs/getting-started/qu
 | Turn ends vs. task ends | No structured signal — a marker string, easily confused with a truncated limit message | Structured per-turn JSON verdict, with the legacy marker kept only as a fallback |
 | Asked a clarifying question | Hangs waiting for stdin, or fabricates an answer | Denies the tool call with guidance, so the model proceeds on a stated, auditable assumption |
 
-See [`docs/guides/rate-limits-and-credits.md`](docs/guides/rate-limits-and-credits.md)
-and [`docs/guides/never-blocking.md`](docs/guides/never-blocking.md) for the
+See [rate limits vs. credits](https://adammatthewsteinberger.github.io/claudeloop/guides/rate-limits-and-credits/)
+and [never blocking on a human](https://adammatthewsteinberger.github.io/claudeloop/guides/never-blocking/) for the
 full reasoning.
 
 ## Documentation
 
 Full docs (built with MkDocs Material) live at
-**https://adammatthewsteinberger.github.io/claudeloop/**, and are also
-readable directly under [`docs/`](docs/) in this repo:
+**https://adammatthewsteinberger.github.io/claudeloop/**. The same content
+is in the [`docs/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/docs) directory on GitHub.
 
 | | |
 |---|---|
-| [Getting started](docs/getting-started/) | Install, quickstart, configuration |
-| [Guides](docs/guides/) | How autonomous runs work, rate limits vs. credits, never blocking, completion detection |
-| [Architecture](docs/architecture/overview.md) | The onion layers, the domain model, the run-loop state machine |
-| [Decision records](docs/architecture/decisions/) | Why each hard call was made |
-| [Contributing](docs/contributing/) | Development setup, testing philosophy, release process |
-| [Plans](docs/plans/) | The original approved plans this project was built from |
+| [Getting started](https://adammatthewsteinberger.github.io/claudeloop/getting-started/installation/) | Install, quickstart, configuration |
+| [Guides](https://adammatthewsteinberger.github.io/claudeloop/guides/autonomous-runs/) | How autonomous runs work, rate limits vs. credits, never blocking, completion detection |
+| [Architecture](https://adammatthewsteinberger.github.io/claudeloop/architecture/overview/) | The onion layers, the domain model, the run-loop state machine |
+| [Decision records](https://adammatthewsteinberger.github.io/claudeloop/architecture/decisions/0001-onion-architecture-with-import-linter/) | Why each hard call was made |
+| [Contributing](https://adammatthewsteinberger.github.io/claudeloop/contributing/development/) | Development setup, testing philosophy, release process |
+| [Plans](https://adammatthewsteinberger.github.io/claudeloop/plans/architecture-and-roadmap/) | The original approved plans this project was built from |
 
 ## Project status
 
@@ -87,23 +87,23 @@ works — `run`/`resume` drive Claude Code through `claude-agent-sdk`,
 exposes a generated 1:1 Anthropic SDK REST surface with a CI drift gate.
 `domain`/`application` carry a CI-enforced 100% test-coverage gate, with a
 live test suite (`tests/live/`) exercising the installed console script.
-See [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
+See the [architecture roadmap](https://adammatthewsteinberger.github.io/claudeloop/plans/architecture-and-roadmap/).
 
 ## Contributing
 
-Contributions are welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the
+Contributions are welcome — see [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CONTRIBUTING.md) for the
 gitflow branch model, Conventional Commits requirement, and how to run every
 quality gate locally. This repo also ships a set of
-[Claude Code skills](.claude/skills/) that make Claude itself an effective
-contributor to this specific codebase — see [`CLAUDE.md`](CLAUDE.md).
+[Claude Code skills](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.claude/skills/) that make Claude itself an effective
+contributor to this specific codebase — see [CLAUDE.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CLAUDE.md).
 
 ## Security
 
 This tool bypasses Claude Code's interactive permission prompts by design
 (that's what makes autonomous operation possible) and handles API
-credentials. See [`SECURITY.md`](SECURITY.md) for the threat model and how
+credentials. See [SECURITY.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/SECURITY.md) for the threat model and how
 to report a vulnerability.
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+MIT — see [LICENSE](https://github.com/adammatthewsteinberger/claudeloop/blob/main/LICENSE).

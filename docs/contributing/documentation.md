@@ -48,7 +48,11 @@ means it would have failed for you too.
   should read correctly as plain text on GitHub, since `CLAUDE.md` and the
   skills link directly to file paths under `docs/`, not to built site URLs.
 - **Link by relative path**, not by absolute site URL, so links work both on
-  GitHub and in the built site.
+  GitHub and in the built site. **Exception: `README.md` at the repo root**
+  is also the PyPI project description — PyPI rewrites relative links under
+  `https://pypi.org/project/claudeloop/`, which 404s. Use absolute
+  `https://adammatthewsteinberger.github.io/claudeloop/...` and GitHub
+  `blob`/`tree` URLs in `README.md` only.
 - **State the "why," not just the "what."** A page that only restates what a
   function's signature already says isn't earning its place — the value is
   in explaining the reasoning a stranger can't get from reading the code
