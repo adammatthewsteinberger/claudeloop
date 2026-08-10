@@ -80,10 +80,16 @@ property-tested without spinning up a CLI process.
 
 ## Status
 
-The domain layer described in
-[`domain-model.md`](domain-model.md) is complete and tested (86 tests,
-99.5%+ coverage). `application/`, `infrastructure/`, and `cli/` are scaffolded
-(package directories and `__init__.py` files exist so the import-linter
-contracts are checkable today) but not yet implemented — that is milestones
-M2–M5 in the roadmap. See
-[`ports-and-adapters.md`](ports-and-adapters.md) for the planned port shapes.
+Milestone M2 is complete: `domain/`, `application/`, `infrastructure/`, and
+`cli/` are all implemented, and the `autoclaude` console script genuinely
+works — `run`, `resume`, `sessions`, and `doctor` all run against a real
+Claude Code environment. `domain/` and `application/` carry a CI-enforced
+100% test-coverage gate (137 tests across the full offline suite); a live
+test suite in `tests/live/` additionally exercises the real installed CLI
+against a real account — see
+[`../guides/live-testing.md`](../guides/live-testing.md). See
+[`ports-and-adapters.md`](ports-and-adapters.md) for how the ports map to
+their concrete adapters, and
+[`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md)
+for what M3–M5 (resilient waiting refinements, the generated REST surface,
+final polish) still cover.

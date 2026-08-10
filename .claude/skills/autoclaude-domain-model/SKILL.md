@@ -1,6 +1,6 @@
 ---
 name: autoclaude-domain-model
-description: Explains every value object and ADT in src/autoclaude/domain/ — CapacityState (Available/WindowExhausted/CreditsExhausted/AuthenticationFailed), TurnSignals classification, CompletionVerdict (Done/Continue/Blocked), the AdaptiveWaitPolicy, Budget/BudgetLedger, and the run-loop state machine in loop.py. Use this whenever reading, modifying, or extending anything in src/autoclaude/domain/ or tests/domain/, whenever the user asks about rate-limit classification, credits vs. rate limits, capacity states, completion detection, the waiting/backoff policy, or the run-loop state machine, and whenever adding a new domain type or branch. Make sure to consult this before touching domain/classify.py, domain/waiting.py, domain/completion.py, or domain/loop.py — the ordering of branches in each is deliberate and tested, and an out-of-order edit silently reintroduces bugs this project was specifically built to fix.
+description: Explains every value object and ADT in src/autoclaude/domain/ — CapacityState (Available/WindowExhausted/CreditsExhausted/AuthenticationFailed), TurnSignals classification, CompletionVerdict (Done/Continue/Blocked), the wait-probe policy in waiting.py, Budget/BudgetLedger, and the run-loop state machine in loop.py. Use this whenever reading, modifying, or extending anything in src/autoclaude/domain/ or tests/domain/, whenever the user asks about rate-limit classification, credits vs. rate limits, capacity states, completion detection, the waiting/backoff policy, or the run-loop state machine, and whenever adding a new domain type or branch. Make sure to consult this before touching domain/classify.py, domain/waiting.py, domain/completion.py, or domain/loop.py — the ordering of branches in each is deliberate and tested, and an out-of-order edit silently reintroduces bugs this project was specifically built to fix.
 allowed-tools: Read Grep Glob
 ---
 
@@ -61,7 +61,7 @@ marker) in raw output text — this is a fallback, not the primary path, and
 must stay that way; the substring approach has two documented failure modes
 (collision with user prompt text, truncation inside a limit message).
 
-## `waiting.py` — AdaptiveWaitPolicy
+## `waiting.py` — WaitPolicyConfig & next_probe_instant()
 
 `next_probe_instant(state, *, now, started_waiting_at, probe_count, config)
 -> datetime`. **Never returns a duration to sleep — always the next instant

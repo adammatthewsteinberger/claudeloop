@@ -147,7 +147,7 @@ text or appear inside a truncated limit message. The run loop (below) never
 trusts a `Done` verdict over a real capacity rejection, regardless of which
 detection path produced it.
 
-## `waiting.py` — `AdaptiveWaitPolicy`
+## `waiting.py` — `WaitPolicyConfig` & `next_probe_instant()`
 
 The direct replacement for `time.sleep(wait_seconds)` in the legacy script
 (line 655). `next_probe_instant()` returns *the next instant to check again*

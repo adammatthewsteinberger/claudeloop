@@ -48,7 +48,7 @@ durations, precisely so the application-layer tests never need to sleep for
 real. A `FakeClock` holds a settable "now"; `FakeSleeper.sleep_until(instant)`
 jumps the paired clock straight to `instant` instead of blocking. This is
 what lets a test simulate a **seven-day rate-limit wait, or a credit-top-up
-scenario with five failed probes before success, in microseconds of real
+scenario with several failed probes before success, in microseconds of real
 wall-clock test time** — see
 [`../contributing/testing.md`](../contributing/testing.md) for the pattern
 and why `unittest.mock.patch("time.sleep")` was rejected in favor of it (a

@@ -76,7 +76,7 @@ assert sleeper.wait_log == [...]  # exactly which instants it was asked to wait 
 ```
 
 This is what lets a test simulate a **seven-day rate-limit wait**, or the
-**credit-top-up scenario** (five failed probes, then success — already
+**credit-top-up scenario** (several failed probes, then success — already
 covered at the domain layer by
 `test_credit_topup_sequence_resumes_after_several_failed_probes` in
 `tests/domain/test_loop.py`), in a test that completes in milliseconds of
