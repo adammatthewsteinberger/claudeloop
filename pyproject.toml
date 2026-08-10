@@ -82,6 +82,10 @@ packages = ["src/autoclaude"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# legacy/ is a frozen historical reference (see its own module docstring and
+# .gitattributes' linguist-vendored marker) — it is deliberately not held to
+# the live lint config, since "unmodified in behavior" is the whole point.
+extend-exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
@@ -105,6 +109,13 @@ asyncio_mode = "auto"
 [tool.coverage.run]
 branch = true
 source = ["src/autoclaude"]
+# bootstrap.py is an intentional composition-root stub until M2 wires real
+# adapters into it (see docs/architecture/ports-and-adapters.md) — it has no
+# behavior to test yet. Omitting it here (rather than lowering the domain +
+# application 100% gate, or padding it with a placeholder test) keeps the
+# coverage floor an honest measure of tested behavior. Remove this omit the
+# moment bootstrap.py gains real content.
+omit = ["src/autoclaude/bootstrap.py"]
 
 [tool.importlinter]
 root_package = "autoclaude"
