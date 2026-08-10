@@ -9,6 +9,15 @@ name: Publish to PyPI
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Where to publish"
+        required: true
+        default: "testpypi"
+        type: choice
+        options:
+          - testpypi
 
 permissions:
   contents: read  # workflow-level default-deny baseline
@@ -39,6 +48,14 @@ jobs:
       - name: Confirm py.typed ships in the wheel
         run: unzip -l dist/*.whl | grep -q py.typed
 
+      - name: Install the built wheel into a clean venv and run the console script
+        run: |
+          python -m venv /tmp/autoclaude-smoke
+          /tmp/autoclaude-smoke/bin/pip install --upgrade pip
+          /tmp/autoclaude-smoke/bin/pip install dist/*.whl
+          /tmp/autoclaude-smoke/bin/autoclaude --version
+          /tmp/autoclaude-smoke/bin/autoclaude --help
+
       - uses: actions/upload-artifact@v7.0.1
         with:
           name: dist
@@ -48,6 +65,7 @@ jobs:
   publish:
     name: Publish to PyPI (Trusted Publishing)
     needs: build
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     environment:
       # Requires a manual approval gate configured on this GitHub
@@ -74,3 +92,26 @@ jobs:
         # No `user`/`password` — OIDC handles auth via the id-token above.
         # No `attestations: true` — it's the default for Trusted Publishing
         # flows (PEP 740); setting it explicitly would be redundant.
+
+  publish-testpypi:
+    name: Publish to TestPyPI (dry run)
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/autoclaude
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # TestPyPI accumulates junk from repeated dry runs; unlike the real
+          # `publish` job above, silently tolerating a re-upload of the same
+          # version here is correct, not a masked failure.
+          skip-existing: true

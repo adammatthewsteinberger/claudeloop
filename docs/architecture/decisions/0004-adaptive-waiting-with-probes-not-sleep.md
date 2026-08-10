@@ -6,7 +6,7 @@ Accepted. Implemented in M1 (policy); probe adapter planned for M2/M3.
 
 ## Context
 
-`claude_autoresume.py:655` does `time.sleep(wait_seconds)` — one sleep call
+`legacy/claude_autoresume.py` (lines 505 and 667) does `time.sleep(wait_seconds)` — one sleep call
 to either a parsed reset time or a fixed fallback, then a single retry.
 Two problems, both explicitly requested to be fixed during planning:
 

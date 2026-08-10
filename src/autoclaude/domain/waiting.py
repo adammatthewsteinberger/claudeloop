@@ -1,8 +1,9 @@
 """Adaptive wait policy — decides the next probe instant, never a blind sleep.
 
-This replaces `time.sleep(wait_seconds)` (claude_autoresume.py:655) with a policy
-that can notice a mid-wait credit top-up or an overage lift instead of blocking
-until a fixed deadline. See the plan's "Waiting that notices a credit top-up".
+This replaces the `time.sleep(wait_seconds)` calls in the legacy script
+(legacy/claude_autoresume.py:505,667) with a policy that can notice a mid-wait
+credit top-up or an overage lift instead of blocking until a fixed deadline. See
+docs/architecture/decisions/0004-adaptive-waiting-with-probes-not-sleep.md.
 """
 
 from __future__ import annotations

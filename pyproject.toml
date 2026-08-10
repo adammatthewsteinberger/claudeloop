@@ -43,6 +43,7 @@ dependencies = [
     "structlog>=24.1",
     "claude-agent-sdk>=0.2.134",
     "anthropic>=0.40",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 
 [project.urls]
@@ -66,6 +67,7 @@ dev = [
     "build>=1.2",
     "twine>=5.0",
     "pyyaml>=6.0",
+    "pre-commit>=3.7",
 ]
 docs = [
     "mkdocs>=1.6",
@@ -89,6 +91,14 @@ extend-exclude = ["legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# Typer's own idiom is `param: T = typer.Option(...)` / `typer.Argument(...)`
+# in a function signature default — B008 (no function calls in defaults)
+# exists to catch a different, real mutable-default bug and doesn't know
+# Typer's sentinels are safe here. This is the standard fix for Typer/FastAPI
+# projects rather than restructuring every command against the library's own
+# documented pattern.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -98,13 +108,20 @@ mypy_path = "src"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-# No blanket --cov-fail-under here: coverage is enforced per-layer in CI
-# (100% on domain and application, a lower floor on the whole tree), since a
-# single global number would either be trivially met while a pure layer
-# regresses, or block every commit before infrastructure/cli exist at all.
-# See docs/contributing/testing.md and .github/workflows/ci.yml.
-addopts = "--cov=autoclaude --cov-report=term-missing"
+# Deliberately NO --cov=... and NO --cov-fail-under here. pytest-cov MERGES
+# (unions) every --cov=X flag it sees rather than letting the last one win —
+# so a blanket `--cov=autoclaude` baked into addopts would silently widen
+# every explicitly-scoped invocation (e.g. CI's
+# `--cov=autoclaude.domain --cov=autoclaude.application --cov-fail-under=100`)
+# back out to the whole package, defeating the per-layer gate without any
+# error. Coverage scope and its gate are passed explicitly at each call site
+# instead — see docs/contributing/testing.md and .github/workflows/ci.yml.
+addopts = "--cov-report=term-missing -m \"not live\""
 asyncio_mode = "auto"
+markers = [
+    "live: exercises a real Claude account (free tier — no token spend). Opt in with -m live.",
+    "paid: additionally spends real tokens/turns. Requires --run-paid-live. Always paired with 'live'.",
+]
 
 [tool.coverage.run]
 branch = true

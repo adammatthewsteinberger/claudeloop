@@ -111,3 +111,12 @@ jobs:
       - run: twine check --strict dist/*
       - name: Confirm py.typed ships in the wheel
         run: unzip -l dist/*.whl | grep -q py.typed
+      - name: Install the built wheel into a clean venv and run the console script
+        # This is the check whose absence let a broken [project.scripts] entry
+        # point ship undetected — installing editable never validates it.
+        run: |
+          python -m venv /tmp/autoclaude-smoke
+          /tmp/autoclaude-smoke/bin/pip install --upgrade pip
+          /tmp/autoclaude-smoke/bin/pip install dist/*.whl
+          /tmp/autoclaude-smoke/bin/autoclaude --version
+          /tmp/autoclaude-smoke/bin/autoclaude --help

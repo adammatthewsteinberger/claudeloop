@@ -6,7 +6,7 @@ Accepted. Implemented in M1.
 
 ## Context
 
-The legacy `claude_autoresume.py` is a single 663-line file mixing regex
+The legacy `claude_autoresume.py` is a single 674-line file mixing regex
 parsing, subprocess I/O, CLI argument handling, and the actual limit/retry
 decision logic in one flat namespace. That's fine for a script one person
 runs, but it makes the hardest-to-get-right logic — is this limit waitable?

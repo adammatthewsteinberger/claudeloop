@@ -75,7 +75,11 @@ def start(ledger: BudgetLedger) -> RunState:
 
 
 def decide_preflight(
-    state: RunState, capacity: CapacityState, *, now: datetime
+    state: RunState,
+    capacity: CapacityState,
+    *,
+    now: datetime,
+    config: WaitPolicyConfig = DEFAULT_WAIT_POLICY_CONFIG,
 ) -> tuple[RunState, Decision]:
     """The very first thing a run does: check whether we're already mid-cooldown
     before spending a real attempt (mirrors preflight_wait() in the legacy script)."""
@@ -85,7 +89,7 @@ def decide_preflight(
         )
     if isinstance(capacity, Available):
         return RunState(phase=Phase.RUNNING, ledger=state.ledger), SendTurn()
-    return _enter_waiting(state, capacity, now=now)
+    return _enter_waiting(state, capacity, now=now, config=config)
 
 
 def decide_after_turn(
@@ -94,6 +98,7 @@ def decide_after_turn(
     capacity: CapacityState,
     verdict: CompletionVerdict,
     now: datetime,
+    config: WaitPolicyConfig = DEFAULT_WAIT_POLICY_CONFIG,
 ) -> tuple[RunState, Decision]:
     """Called once a real turn has completed. A capacity rejection always outranks a
     completion claim — a limit message truncating mid-response could coincidentally
@@ -106,7 +111,9 @@ def decide_after_turn(
         )
 
     if not isinstance(capacity, Available):
-        return _enter_waiting(RunState(phase=state.phase, ledger=new_ledger), capacity, now=now)
+        return _enter_waiting(
+            RunState(phase=state.phase, ledger=new_ledger), capacity, now=now, config=config
+        )
 
     if isinstance(verdict, Done):
         return (

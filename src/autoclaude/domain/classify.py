@@ -1,10 +1,13 @@
 """Pure classification of raw turn signals into a CapacityState.
 
 This is the direct replacement for `extract_limit_signals()` in the legacy script
-(claude_autoresume.py:276-333), except it operates on typed fields the Agent SDK
-already parsed, instead of regexing a raw JSON stream. Ordering is deliberate and
-tested: allowed_warning must never be mistaken for a rejection, and a credits
-rejection must never be mistaken for a waitable window.
+(legacy/claude_autoresume.py:290-333), except it operates on typed fields the
+Agent SDK already parsed, instead of regexing a raw JSON stream. `rate_limit_status
+== "allowed_warning"` is deliberately NOT checked as a rejection signal — it falls
+through the `rejected` computation below to `Available`, so it can never be
+mistaken for a hard limit. Once rejected, credit signals are checked before
+falling back to WindowExhausted, so a credits rejection can never be mistaken for
+a waitable window even if a stray resets_at rides along with it.
 """
 
 from __future__ import annotations
