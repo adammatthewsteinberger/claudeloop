@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from claudeloop.domain.chatter import truncate_chatter
+from claudeloop.domain.chatter import chatter_event_payload
 
 
 def chatter_payload(
@@ -15,25 +15,7 @@ def chatter_payload(
     extra: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Build a chatter payload for the given mode, or None when off."""
-    if mode == "off":
-        return None
-    if mode == "summary":
-        body = truncate_chatter(text, cap_bytes=512)
-        payload: dict[str, Any] = {
-            "preview": body.text,
-            "length": len(text),
-            "truncated": body.truncated or len(text) > len(body.text),
-        }
-    else:
-        body = truncate_chatter(text)
-        payload = {
-            "text": body.text,
-            "length": len(text),
-            "truncated": body.truncated,
-        }
-    if extra:
-        payload.update(extra)
-    return payload
+    return chatter_event_payload(text, mode=mode, extra=extra)
 
 
 def summarize_tool(name: str, raw: object, *, mode: str) -> dict[str, Any] | None:
@@ -43,5 +25,4 @@ def summarize_tool(name: str, raw: object, *, mode: str) -> dict[str, Any] | Non
         rendered = raw if isinstance(raw, str) else json.dumps(raw, default=str)
     except TypeError:
         rendered = repr(raw)
-    base = chatter_payload(rendered, mode=mode, extra={"name": name})
-    return base
+    return chatter_payload(rendered, mode=mode, extra={"name": name})

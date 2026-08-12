@@ -79,6 +79,11 @@ it via `.claudeloop/runs/<run_id>/`:
 | `claudeloop watch [--stream] [--replay]` | Bus follow, or Textual stream live/replay |
 | `claudeloop savepoints` | List git save points for the run |
 | `claudeloop unwind --to N` | Reset worktree to save point N (refuse if still active) |
+
+Save points are `refs/claudeloop/<run-id>/<n>` on the current HEAD. When a
+turn changes files, claudeloop commits them first; when the tree is
+unchanged (e.g. a wait/poll turn), it only updates the ref — no empty
+commits.
 | `claudeloop permission-mode MODE` | Mid-run permission mode (`bypass`/`manual`/`accept-edits`/`plan`/`auto`) |
 | `claudeloop cwd DIR` | Mid-run working directory (reconnects the agent session) |
 | `claudeloop tool approve\|deny ID` | Manual-mode tool decisions (timeout auto-denies — never stdin) |

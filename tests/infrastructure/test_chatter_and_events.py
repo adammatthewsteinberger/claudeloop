@@ -27,10 +27,29 @@ def test_chatter_payload_modes() -> None:
     assert chatter_payload("x", mode="off") is None
     summary = chatter_payload("hello world", mode="summary")
     assert summary is not None
+    assert summary["text"] == "hello world"
     assert "preview" in summary
+    assert summary["truncated"] is False
+    long = "x" * 2000
+    summary_long = chatter_payload(long, mode="summary")
+    assert summary_long is not None
+    assert summary_long["text"] == long
+    assert len(summary_long["preview"]) < len(long)
+    assert summary_long["preview_truncated"] is True
     full = chatter_payload("hello world", mode="full")
     assert full is not None
     assert full["text"] == "hello world"
+
+
+def test_chatter_payload_summary_keeps_full_prompt_text() -> None:
+    """Stream UI / events consumers need the full prompt; summary mode must not
+    drop text down to the 512-byte preview only."""
+    prompt = "Continue exactly where you left off.\n\n" + ("detail " * 200)
+    payload = chatter_payload(prompt, mode="summary")
+    assert payload is not None
+    assert payload["text"] == prompt
+    assert payload["length"] == len(prompt)
+    assert len(payload["preview"]) <= 512
 
 
 def test_dump_transcript(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
