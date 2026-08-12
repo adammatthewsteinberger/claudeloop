@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.4.0...claudeloop-v0.5.0) (2026-08-12)
+
+
+### Features
+
+* **ops:** add mid-run control plane and run snapshot handoff ([83c6b77](https://github.com/adammatthewsteinberger/claudeloop/commit/83c6b7708899b27e5e30603cb77165e43c89e33b))
+
 ## [0.4.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.3.1...claudeloop-v0.4.0) (2026-08-10)
 
 
