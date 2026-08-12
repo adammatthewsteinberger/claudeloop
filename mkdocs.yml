@@ -65,6 +65,8 @@ nav:
       - Completion detection: guides/completion-detection.md
       - The generated REST surface: guides/rest-api-surface.md
       - Live testing against a real account: guides/live-testing.md
+      - Logging and observability: guides/logging-and-observability.md
+      - Run resources and chat ops: guides/run-resources-and-chat-ops.md
   - Architecture:
       - Overview: architecture/overview.md
       - Domain model: architecture/domain-model.md

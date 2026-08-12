@@ -4,15 +4,27 @@
 
 ```
 tests/
-├── domain/          # pure unit tests + Hypothesis property tests; mirrors src/claudeloop/domain/
-└── application/      # planned (M2+) — fakes for every port, no real I/O
+├── domain/           # pure unit + Hypothesis; mirrors src/claudeloop/domain/
+├── application/      # fakes for every port (fakes.py), zero real I/O
+├── infrastructure/   # adapters (incl. scripted test agent unit tests)
+├── cli/              # Typer / man-page / api surface
+└── live/             # opt-in: system / free / paid (see guides/live-testing.md)
+    └── system/       # marker: system — real FS/git/CLI + scripted agent
 ```
 
-Run everything:
+Run everything (skips live + system by default):
 
 ```bash
 pytest
 ```
+
+System harness (no tokens):
+
+```bash
+pytest -m system
+```
+
+Free / paid live tiers: see [`../guides/live-testing.md`](../guides/live-testing.md).
 
 Run one module, with verbose failures:
 
@@ -25,7 +37,6 @@ Coverage report (already wired into `addopts` in `pyproject.toml`):
 ```bash
 pytest --cov-report=term-missing
 ```
-
 ## Coverage gates are per-layer, not global
 
 There is deliberately **no** single `--cov-fail-under` in `pyproject.toml`.
@@ -34,7 +45,7 @@ pure, fully-controllable layer regresses, or block every commit before
 `application`/`infrastructure`/`cli` exist at all. Instead, CI runs coverage
 separately per layer:
 
-- `domain/` and `application/` (once it exists): **100%** required. These
+- `domain/` and `application/`: **100%** required. These
   layers have no I/O and no third-party dependencies — there is no excuse
   for an untested branch, and an untested branch here is the most
   consequential kind of bug, since this is the code deciding whether an
@@ -45,7 +56,7 @@ separately per layer:
 
 ## Fakes over mocks
 
-Every port in `application/ports.py` (planned) gets a **fake**
+Every port in `application/ports.py` gets a **fake**
 implementation in test code — a real class satisfying the same `Protocol`,
 not a `unittest.mock.Mock` with stubbed return values. Two concrete reasons:
 
@@ -61,7 +72,7 @@ not a `unittest.mock.Mock` with stubbed return values. Two concrete reasons:
 
 `domain/waiting.py`'s policy is designed entirely around instants
 (`next_probe_instant() -> datetime`), never durations, specifically so
-application-layer tests never call `time.sleep()` for real. The planned
+application-layer tests never call `time.sleep()` for real. The
 pattern:
 
 ```python

@@ -3,8 +3,10 @@
 `claudeloop`: an onion-architected, autonomous Claude Code session runner
 and full Anthropic SDK CLI. It never blocks on a human, and it distinguishes
 an exhausted rate-limit window (waitable) from exhausted credits (never
-waitable — needs a human to top up). Pre-1.0; milestones M1–M2 are complete,
-M4–M5 are roadmap.
+waitable — needs a human to top up). Pre-1.0; milestones M1–M5 are complete
+(autonomous runner, resilient waiting, generated REST surface, polish).
+Operator mid-run control (stop/prompt/logs/savepoints, plus resources,
+permissions/cwd, chat ops, and response actions) ships on top of that core.
 
 **This file is deliberately short — it holds facts, not procedures.** Every
 "how do I..." lives in a skill below; every "why was it built this way"
@@ -47,10 +49,14 @@ mkdocs serve                        # preview docs locally
 
 | Need | Go to |
 |---|---|
-| How to work on any specific part of this codebase | `.claude/skills/` — eight skills, each self-triggering on relevant context |
+| How to work on any specific part of this codebase | `.claude/skills/` (Claude Code), `.cursor/rules/` (Cursor), `.agents/skills/` (Codex) — eight procedures, mirrored across all three |
 | System design and why each hard call was made | `docs/architecture/` and `docs/architecture/decisions/` |
 | User-facing docs | `docs/getting-started/`, `docs/guides/` |
 | Contributor workflow, gitflow, releases | `CONTRIBUTING.md`, `docs/contributing/` |
 | The original approved plans | `docs/plans/` |
 | The behavior being replaced, and why | `legacy/claude_autoresume.py` |
 | Security policy / threat model | `SECURITY.md` |
+
+**Agent-surface maintenance:** when a skill/procedure changes, update
+`.claude/skills/`, `.cursor/rules/`, and `.agents/skills/` in the same PR.
+Codex also reads root `AGENTS.md` (this file’s sibling router).

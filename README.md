@@ -46,9 +46,24 @@ claudeloop resume               # resume whatever you were last working on
 claudeloop resume --session-id <id>
 claudeloop doctor                # pre-flight checks before a long unattended run
 claudeloop api models list       # any Anthropic SDK endpoint (generated; see docs)
+
+# Mid-run control (second terminal, same cwd):
+claudeloop status
+claudeloop snapshot              # handoff JSON under .claudeloop/runs/<id>/snapshots/
+claudeloop logs -f --chatter
+claudeloop prompt --now "Also cover the error path"
+claudeloop preset high           # or: model / effort
+claudeloop permission-mode plan  # mid-run; default at start is always bypass
+claudeloop attach ./notes.md
+claudeloop response retry
+claudeloop watch --stream        # Textual live stream; --replay for history
+claudeloop stop                  # soft-stop → stop-summary.md (exit 130)
+claudeloop savepoints
+claudeloop unwind --to 1         # after stop; git save-point restore
 ```
 
-Full walkthrough: [quickstart](https://adammatthewsteinberger.github.io/claudeloop/getting-started/quickstart/).
+Ops surface (attachments, skills/MCP, memories, chat metadata, slash commands):
+[run resources and chat ops](https://adammatthewsteinberger.github.io/claudeloop/guides/run-resources-and-chat-ops/).
 
 ## Why it's different from just retrying on 429
 
@@ -73,11 +88,19 @@ is in the [`docs/`](https://github.com/adammatthewsteinberger/claudeloop/tree/ma
 | | |
 |---|---|
 | [Getting started](https://adammatthewsteinberger.github.io/claudeloop/getting-started/installation/) | Install, quickstart, configuration |
-| [Guides](https://adammatthewsteinberger.github.io/claudeloop/guides/autonomous-runs/) | How autonomous runs work, rate limits vs. credits, never blocking, completion detection |
+| [Guides](https://adammatthewsteinberger.github.io/claudeloop/guides/autonomous-runs/) | How autonomous runs work, rate limits vs. credits, never blocking, completion detection, [logging](https://adammatthewsteinberger.github.io/claudeloop/guides/logging-and-observability/), [run resources and chat ops](https://adammatthewsteinberger.github.io/claudeloop/guides/run-resources-and-chat-ops/) |
 | [Architecture](https://adammatthewsteinberger.github.io/claudeloop/architecture/overview/) | The onion layers, the domain model, the run-loop state machine |
 | [Decision records](https://adammatthewsteinberger.github.io/claudeloop/architecture/decisions/0001-onion-architecture-with-import-linter/) | Why each hard call was made |
 | [Contributing](https://adammatthewsteinberger.github.io/claudeloop/contributing/development/) | Development setup, testing philosophy, release process |
 | [Plans](https://adammatthewsteinberger.github.io/claudeloop/plans/architecture-and-roadmap/) | The original approved plans this project was built from |
+
+## Logging
+
+`claudeloop run` / `resume` always log to **stderr twice** for the same events:
+a human-readable stream and a JSON line stream (`"transport": "console_json"`),
+controlled by `--log-level`. Per-run `events.jsonl` / `audit.jsonl` and optional
+`--log-file` are separate transports. Details:
+[logging and observability](https://adammatthewsteinberger.github.io/claudeloop/guides/logging-and-observability/).
 
 ## Project status
 
@@ -93,9 +116,11 @@ See the [architecture roadmap](https://adammatthewsteinberger.github.io/claudelo
 
 Contributions are welcome — see [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CONTRIBUTING.md) for the
 gitflow branch model, Conventional Commits requirement, and how to run every
-quality gate locally. This repo also ships a set of
-[Claude Code skills](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.claude/skills/) that make Claude itself an effective
-contributor to this specific codebase — see [CLAUDE.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CLAUDE.md).
+quality gate locally. Agent guidance is mirrored across:
+
+- [CLAUDE.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CLAUDE.md) + [`.claude/skills/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.claude/skills/) (Claude Code)
+- [`.cursor/rules/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.cursor/rules/) (Cursor)
+- [AGENTS.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/AGENTS.md) + [`.agents/skills/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.agents/skills/) (Codex)
 
 ## Security
 

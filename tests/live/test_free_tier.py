@@ -73,8 +73,35 @@ def test_installed_console_script_help_renders_without_a_traceback(
     )
     assert result.returncode == 0
     assert "Traceback" not in result.stderr
-    for command in ("run", "resume", "sessions", "doctor", "api"):
+    for command in (
+        "run",
+        "resume",
+        "stop",
+        "prompt",
+        "logs",
+        "status",
+        "runs",
+        "savepoints",
+        "unwind",
+        "watch",
+        "sessions",
+        "doctor",
+        "api",
+    ):
         assert command in result.stdout
+
+
+def test_run_help_documents_max_buffer_size() -> None:
+    result = subprocess.run(  # nosec B603 B607
+        ["claudeloop", "run", "--help"],
+        capture_output=True,
+        text=True,
+        timeout=15,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert "max-buffer-size" in result.stdout
+    assert "Traceback" not in result.stderr
 
 
 def test_doctor_runs_against_the_real_environment_without_crashing() -> None:

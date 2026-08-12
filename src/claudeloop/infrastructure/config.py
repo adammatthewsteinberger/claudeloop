@@ -15,6 +15,15 @@ if sys.version_info >= (3, 11):
 else:  # pragma: no cover - exercised only on Python 3.10, outside the CI matrix's tested code path here  # noqa: E501
     import tomli as tomllib
 
+from claudeloop.domain.model_profile import (
+    DEFAULT_MODEL_HIGH,
+    DEFAULT_MODEL_LOW,
+    DEFAULT_MODEL_MEDIUM,
+    ModelAliases,
+    ModelEffortProfile,
+    resolve_profile,
+)
+
 _ENV_PREFIX = "CLAUDELOOP_"
 
 
@@ -31,8 +40,56 @@ class RunnerConfig:
     done_marker: str | None = None
     log_level: str = "INFO"
     log_file: str | None = None
+    log_chatter: str | None = None  # full|summary|off; None → derive from log_level
     retry_watchdog: bool = False
     model: str | None = None
+    effort: str | None = None
+    preset: str | None = None
+    model_low: str = DEFAULT_MODEL_LOW
+    model_medium: str = DEFAULT_MODEL_MEDIUM
+    model_high: str = DEFAULT_MODEL_HIGH
+    auto_model: bool = True
+    stream_ui: bool = False
+    include_partial_messages: bool | None = None
+    # Claude Agent SDK JSON line buffer (bytes). Default applied in options.py
+    # when None — raise this if tool results exceed 1MB (SDK default).
+    max_buffer_size: int | None = None
+    permission_mode: str = "bypass"
+    tool_approval_timeout_seconds: float = 30.0
+    web_search: bool = False
+    deep_research: bool = False
+
+    def aliases(self) -> ModelAliases:
+        return ModelAliases(
+            low=self.model_low,
+            medium=self.model_medium,
+            high=self.model_high,
+        )
+
+    def resolved_profile(self) -> ModelEffortProfile:
+        return resolve_profile(
+            preset=self.preset,
+            model=self.model,
+            effort=self.effort,
+            aliases=self.aliases(),
+        )
+
+    def effective_log_chatter(self) -> str:
+        if self.log_chatter is not None and self.log_chatter.strip():
+            mode = self.log_chatter.strip().lower()
+            if mode not in {"full", "summary", "off"}:
+                raise ValueError(
+                    f"invalid log_chatter {self.log_chatter!r}; expected full|summary|off"
+                )
+            return mode
+        if (self.log_level or "INFO").upper() == "DEBUG":
+            return "full"
+        return "summary"
+
+    def effective_partial_messages(self) -> bool:
+        if self.include_partial_messages is not None:
+            return self.include_partial_messages
+        return self.stream_ui or self.effective_log_chatter() == "full"
 
 
 def _from_env() -> dict[str, Any]:

@@ -10,8 +10,8 @@ allowed-tools: Read Grep Glob Bash(mkdocs *)
 
 | Content | Goes in |
 |---|---|
-| An always-true fact, cheap to state, every session needs | `CLAUDE.md` — kept deliberately SHORT, a router not a manual |
-| A procedure for working on a specific part of this codebase | `.claude/skills/<name>/SKILL.md` |
+| An always-true fact, cheap to state, every session needs | `CLAUDE.md` **and** `AGENTS.md` — kept deliberately SHORT, routers not manuals |
+| A procedure for working on a specific part of this codebase | `.claude/skills/<name>/SKILL.md` **and** mirrored to `.cursor/rules/<name>.mdc` **and** `.agents/skills/<name>/SKILL.md` |
 | User-facing "how do I..." | `docs/getting-started/` or `docs/guides/` |
 | System design — what exists, how pieces fit | `docs/architecture/` |
 | The reasoning behind ONE specific hard decision | `docs/architecture/decisions/` — an ADR |
@@ -19,12 +19,21 @@ allowed-tools: Read Grep Glob Bash(mkdocs *)
 | Contributor process | `docs/contributing/` |
 | Historical plans, preserved verbatim once superseded | `docs/plans/` |
 
-**The CLAUDE.md/skill dividing line, precisely: CLAUDE.md holds facts,
-skills hold procedures.** If you're about to add a multi-step "when doing
-X, do Y then Z" instruction to `CLAUDE.md`, it belongs in a skill instead —
-skills load into context only when relevant, so long procedural content
-there is free until needed, while everything in `CLAUDE.md` costs context
-on every single session regardless of relevance.
+**The CLAUDE.md / AGENTS.md / skill dividing line:** routers hold facts;
+skills/rules hold procedures. If you're about to add a multi-step "when
+doing X, do Y then Z" instruction to `CLAUDE.md` or `AGENTS.md`, it belongs
+in a skill instead — skills load into context only when relevant.
+
+### Three agent surfaces (must stay in sync)
+
+| Surface | Paths |
+|---|---|
+| Claude Code | `CLAUDE.md` + `.claude/skills/*/SKILL.md` |
+| Cursor | `.cursor/rules/claudeloop-router.mdc` (always) + `.cursor/rules/claudeloop-*.mdc` |
+| Codex | `AGENTS.md` + `.agents/skills/*/SKILL.md` |
+
+**PR checklist:** when procedural guidance changes, update all three trees
+in the same PR. No codegen in v1 — manual mirror.
 
 ## Building and checking the site
 

@@ -66,8 +66,30 @@ def test_help_flag_lists_all_commands() -> None:
     finally:
         sys.argv = old_argv
         sys.stdout = old_stdout
-    for command in ("run", "resume", "sessions", "doctor", "api"):
+    for command in (
+        "run",
+        "resume",
+        "sessions",
+        "doctor",
+        "api",
+        "stop",
+        "prompt",
+        "logs",
+        "status",
+        "snapshot",
+        "runs",
+        "savepoints",
+        "unwind",
+        "watch",
+        "permission-mode",
+        "attach",
+        "memory",
+        "chat",
+        "response",
+    ):
         assert command in stdout
+    assert "EXIT STATUS" in stdout
+    assert "50 MiB" in stdout
 
 
 def test_no_args_shows_help_rather_than_a_traceback() -> None:

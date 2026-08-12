@@ -14,6 +14,7 @@ from claudeloop.cli.render import render_session_warning
 from claudeloop.domain.errors import InvalidSessionSelectorError
 from claudeloop.infrastructure.config import load_config
 from claudeloop.infrastructure.logging import configure_logging
+from claudeloop.infrastructure.stream_ui import BufferingStreamUi, run_textual_app
 
 
 def resume(
@@ -22,11 +23,19 @@ def resume(
     ),
     max_turns: int | None = typer.Option(None, "--max-turns"),
     max_dollars: float | None = typer.Option(None, "--max-dollars"),
+    max_wait_seconds: float | None = typer.Option(None, "--max-wait"),
     model: str | None = typer.Option(
-        None, "--model", help="Claude model id to use for this run, e.g. claude-haiku-4-5"
+        None, "--model", help="Alias (low|medium|high) or raw Anthropic model id"
     ),
+    effort: str | None = typer.Option(None, "--effort", help="Effort: low|medium|high|xhigh|max"),
+    preset: str | None = typer.Option(None, "--preset", help="Preset low|medium|high"),
+    continue_prompt: str | None = typer.Option(None, "--continue-prompt"),
+    done_marker: str | None = typer.Option(None, "--done-marker"),
     log_level: str = typer.Option("INFO", "--log-level"),
     log_file: Path | None = typer.Option(None, "--log-file"),
+    log_chatter: str | None = typer.Option(None, "--log-chatter"),
+    auto_model: bool = typer.Option(True, "--auto-model/--no-auto-model"),
+    stream_ui: bool = typer.Option(False, "--stream-ui"),
 ) -> None:
     """Resume a Claude Code session and run it autonomously to completion.
     With --session-id, resumes that specific session. Without it, auto-selects
@@ -36,9 +45,17 @@ def resume(
         session_id=session_id,
         max_turns=max_turns,
         max_dollars=max_dollars,
+        max_wait_seconds=max_wait_seconds,
         model=model,
+        effort=effort,
+        preset=preset,
+        continue_prompt=continue_prompt,
+        done_marker=done_marker,
         log_level=log_level,
         log_file=log_file,
+        log_chatter=log_chatter,
+        auto_model=auto_model,
+        stream_ui=stream_ui,
     )
 
 
@@ -48,12 +65,42 @@ async def _resume(
     session_id: str | None,
     max_turns: int | None,
     max_dollars: float | None,
+    max_wait_seconds: float | None,
     model: str | None,
+    effort: str | None,
+    preset: str | None,
+    continue_prompt: str | None,
+    done_marker: str | None,
     log_level: str,
     log_file: Path | None,
+    log_chatter: str | None,
+    auto_model: bool,
+    stream_ui: bool,
 ) -> None:
     cwd = Path.cwd()
-    configure_logging(log_file=log_file, level=log_level)
+    config = load_config(
+        cwd=cwd,
+        cli_overrides={
+            "max_turns": max_turns,
+            "max_dollars": max_dollars,
+            "max_wait_seconds": max_wait_seconds,
+            "model": model,
+            "effort": effort,
+            "preset": preset,
+            "log_level": log_level,
+            "log_chatter": log_chatter,
+            "done_marker": done_marker,
+            "log_file": str(log_file) if log_file else None,
+            "auto_model": auto_model,
+            "stream_ui": stream_ui,
+        },
+    )
+    structlog_path = log_file or (Path(config.log_file) if config.log_file else None)
+    configure_logging(
+        log_file=structlog_path,
+        level=config.log_level or log_level,
+        human_console=not stream_ui,
+    )
 
     resolved_id = session_id
     if resolved_id is None:
@@ -66,21 +113,44 @@ async def _resume(
         typer.echo(render_session_warning(ref, str(cwd)), err=True)
         resolved_id = ref.session_id
 
-    config = load_config(
-        cwd=cwd,
-        cli_overrides={
-            "max_turns": max_turns,
-            "max_dollars": max_dollars,
-            "model": model,
-            "log_level": log_level,
-        },
-    )
+    live_ui = BufferingStreamUi() if stream_ui else None
     context = bootstrap.build_runner(
-        cwd=cwd, config=config, session_id=resolved_id, resume=resolved_id, log_file=log_file
+        cwd=cwd,
+        config=config,
+        session_id=resolved_id,
+        resume=resolved_id,
+        log_file=structlog_path,
+        stream_ui=live_ui,
     )
-    result = await resume_explicit(context.runner)
+    typer.echo(f"Run id: {context.run_id}", err=True)
+    typer.echo(f"Trace id: {context.trace_id}", err=True)
+
+    if stream_ui:
+        import asyncio
+        import threading
+
+        def _ui() -> None:
+            try:
+                run_textual_app(
+                    events_path=context.run_dir.events_path,
+                    follow=True,
+                    live_source=live_ui,
+                    initial=live_ui.state if live_ui else None,
+                )
+            except RuntimeError as exc:
+                typer.echo(str(exc), err=True)
+
+        threading.Thread(target=_ui, daemon=True).start()
+        await asyncio.sleep(0)
+
+    result = await resume_explicit(
+        context.runner,
+        continue_prompt=continue_prompt or "Continue exactly where you left off.",
+    )
 
     if not result.success:
         typer.echo(f"Run failed: {result.reason}", err=True)
+        if "stopped" in result.reason:
+            raise typer.Exit(code=130)
         raise typer.Exit(code=1)
     typer.echo(f"Done: {result.reason}")
