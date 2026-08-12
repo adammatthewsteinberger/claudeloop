@@ -34,6 +34,10 @@ CompletionVerdict = Done | Continue | Blocked
 class StructuredVerdict:
     """Mirrors the JSON schema handed to the model via output_format:
     {"complete": bool, "remaining_work": [str], "blocked_on": str|null, "summary": str}
+
+    ``blocked_on`` is terminal (evaluate → Blocked). It is only for true
+    external/human blockers; waitable self-started work belongs in
+    ``remaining_work`` with ``blocked_on`` left null.
     """
 
     complete: bool

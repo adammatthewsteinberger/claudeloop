@@ -57,11 +57,14 @@ CompletionVerdict = Done | Continue | Blocked
 
 Primary signal: `StructuredVerdict` from `ClaudeAgentOptions.output_format`
 (`{complete, remaining_work, blocked_on, summary}`). `blocked_on` outranks
-`complete` — never let a turn claim both. Fallback (only when `structured is
-None`): substring-match `CLAUDELOOP_TASK_FULLY_COMPLETE` (or the configured
-marker) in raw output text — this is a fallback, not the primary path, and
-must stay that way; the substring approach has two documented failure modes
-(collision with user prompt text, truncation inside a limit message).
+`complete` — never let a turn claim both — and **terminates the run**. It is
+only for true external/human blockers; waitable self-started work belongs in
+`remaining_work` with `blocked_on: null` (schema descriptions + autonomy
+prompt reinforce this). Fallback (only when `structured is None`):
+substring-match `CLAUDELOOP_TASK_FULLY_COMPLETE` (or the configured marker)
+in raw output text — this is a fallback, not the primary path, and must stay
+that way; the substring approach has two documented failure modes (collision
+with user prompt text, truncation inside a limit message).
 
 ## `waiting.py` — WaitPolicyConfig & next_probe_instant()
 

@@ -293,11 +293,48 @@ def _to_datetime(unix_timestamp: int | None) -> datetime | None:
 
 COMPLETION_OUTPUT_SCHEMA: dict[str, object] = {
     "type": "object",
+    "description": (
+        "Per-turn completion verdict for the autonomous runner. "
+        "A non-null blocked_on immediately stops the run as failed — "
+        "use it only for true external or human blockers, never for "
+        "waitable work you started yourself."
+    ),
     "properties": {
-        "complete": {"type": "boolean"},
-        "remaining_work": {"type": "array", "items": {"type": "string"}},
-        "blocked_on": {"type": ["string", "null"]},
-        "summary": {"type": "string"},
+        "complete": {
+            "type": "boolean",
+            "description": (
+                "True only when the ENTIRE task is finished with nothing left "
+                "to do. False if any work remains, including waiting on a "
+                "background job, test suite, or build you started."
+            ),
+        },
+        "remaining_work": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": (
+                "Concrete unfinished items. Include waitable work you can "
+                "resume later (background Agent/Bash tasks, pending suite "
+                "runs, in-flight builds). Leave empty only when complete is "
+                "true."
+            ),
+        },
+        "blocked_on": {
+            "type": ["string", "null"],
+            "description": (
+                "Set ONLY for a true external or human blocker that cannot be "
+                "resolved by waiting or continuing (missing credentials, unpaid "
+                "billing, required human decision, unavailable MCP auth). MUST "
+                "be null when waiting on work you started yourself — background "
+                "tasks, pending tests, builds, or other waitable progress. "
+                "Putting waitable work here stops the autonomous run "
+                "permanently; put those items in remaining_work instead and "
+                "keep working or poll until they finish."
+            ),
+        },
+        "summary": {
+            "type": "string",
+            "description": ("Short status of what this turn accomplished and what remains."),
+        },
     },
     "required": ["complete"],
 }

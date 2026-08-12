@@ -116,7 +116,14 @@ class ClaudeAgentGateway:
     async def _reconnect(self) -> None:
         if self._client is not None:
             await self.close()
-            self._continue_conversation = True
+            # Prefer resume=<known id> over continue_conversation: the latter
+            # is "most recent in cwd", and pairing continue with session_id
+            # is rejected by the CLI without fork_session.
+            if self._session_id:
+                self._resume = self._session_id
+                self._continue_conversation = False
+            else:
+                self._continue_conversation = True
 
     async def set_profile(self, profile: ModelEffortProfile) -> None:
         if self._model == profile.model and self._effort == profile.effort:
