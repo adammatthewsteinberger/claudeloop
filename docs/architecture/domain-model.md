@@ -196,7 +196,7 @@ pure functions.
 
 Ties every module above together into `RunLoopStateMachine`: a set of pure
 functions from `(RunState, event, now)` to `(RunState, Decision)`. This is
-the piece `application/runner.py` (not yet built) will execute against real
+the piece `application/runner.py` executes against real ports
 ports — `domain/loop.py` itself performs no I/O; it only decides what I/O
 should happen next.
 

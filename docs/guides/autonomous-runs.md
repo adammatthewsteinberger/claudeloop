@@ -56,12 +56,86 @@ loop, never a blind sleep.
   (the model reports it can't proceed — e.g. missing MCP credentials), the
   configured budget exhausted, or `--max-wait` exceeded while still waiting
   on capacity. Exit non-zero, with the reason recorded in the audit log.
+- **Stopped** — an operator ran `claudeloop stop` against the active run.
+  The runner finishes the current turn or aborts a wait, writes
+  `stop-summary.md`, and exits 130.
+
+## Mid-run operator control
+
+While `claudeloop run` is in the foreground, a second terminal can talk to
+it via `.claudeloop/runs/<run_id>/`:
+
+| Command | Effect |
+|---|---|
+| `claudeloop stop` | Soft-stop; writes `stop-summary.md` |
+| `claudeloop prompt --now "..."` | Next turn uses this prompt |
+| `claudeloop prompt --at-break "..."` | Applied after a Continue verdict |
+| `claudeloop model low\|medium\|high\|<id>` | Queue model change at next turn |
+| `claudeloop effort LEVEL` | Queue effort change (`low`…`max`) |
+| `claudeloop preset low\|medium\|high` | Queue preset (model+effort) |
+| `claudeloop logs --follow [--chatter]` | Tail redacted `events.jsonl` (optionally chatter only) |
+| `claudeloop status` / `runs` | Poll live status (`status.json`) |
+| `claudeloop snapshot [--out] [--bundle]` | Write handoff snapshot under `snapshots/` (+ bus path/digest) |
+| `claudeloop watch [--stream] [--replay]` | Bus follow, or Textual stream live/replay |
+| `claudeloop savepoints` | List git save points for the run |
+| `claudeloop unwind --to N` | Reset worktree to save point N (refuse if still active) |
+| `claudeloop permission-mode MODE` | Mid-run permission mode (`bypass`/`manual`/`accept-edits`/`plan`/`auto`) |
+| `claudeloop cwd DIR` | Mid-run working directory (reconnects the agent session) |
+| `claudeloop tool approve\|deny ID` | Manual-mode tool decisions (timeout auto-denies — never stdin) |
+| `claudeloop attach` / `folder` / `skill` / … | Run-scoped resource CRUD |
+| `claudeloop slash /CMD` | Validated slash-command inject |
+| `claudeloop memory` / `artifact` | Native memories and artifacts |
+| `claudeloop chat …` | Session metadata (pin/share/project — local share bundles only) |
+| `claudeloop response copy\|good\|bad\|retry` | Last-turn actions |
+
+Full surface: [run-resources-and-chat-ops.md](run-resources-and-chat-ops.md).
+
+### Model / effort presets
+
+Defaults: model alias `low` (`claude-sonnet-4-5`) + effort `medium`.
+
+| Preset | Model alias → id | Effort |
+|---|---|---|
+| `low` | `low` → `claude-sonnet-4-5` | `medium` |
+| `medium` | `medium` → `claude-opus-4-6` | `high` |
+| `high` | `high` → `claude-fable-5` | `max` |
+
+Override aliases with `CLAUDELOOP_MODEL_LOW` / `_MEDIUM` / `_HIGH`. Mid-run
+auto policy (default on; `--no-auto-model` to disable) escalates after stuck
+Continues / Blocked, and downgrades on plan progress or ≥80% of `--max-dollars`.
+Operator `model`/`effort`/`preset` commands lock auto for the rest of the run.
+
+### Pub/sub for external systems
+
+Every phase change is published to:
+
+- `.claudeloop/runs/<run_id>/status.json` — latest snapshot (atomic replace; poll this)
+- `.claudeloop/runs/<run_id>/bus.jsonl` — append-only stream of every publish (follow this)
+
+No network bus is required. Other apps can `tail -f` the bus file, poll
+`status.json`, or use `claudeloop status` / `claudeloop watch`. Snapshot
+writes also publish `snapshot_path` / `snapshot_digest` / `snapshot_reason`
+(see [run-resources-and-chat-ops.md](run-resources-and-chat-ops.md#run-handoff-snapshots)).
+
+### Large tool results (1MB SDK buffer)
+
+The Claude Agent SDK defaults to a 1MB JSON line buffer and aborts with
+`JSON message exceeded maximum buffer size of 1048576 bytes` on large tool
+outputs. claudeloop sets `ClaudeAgentOptions.max_buffer_size` to **50MiB** by
+default. Override with `--max-buffer-size BYTES` or `CLAUDELOOP_MAX_BUFFER_SIZE`.
+
+### Console + file logging
+
+`run` / `resume` configure dual stderr transports (human + JSON
+`transport=console_json`) plus optional `--log-file`, in addition to
+`events.jsonl` / `audit.jsonl`. See
+[`logging-and-observability.md`](logging-and-observability.md).
 
 ## Everything is logged
 
-Every raw event — not just the human-readable summary — is preserved to a
-per-run JSONL audit file, carrying `run_id`, `attempt_no`, `session_id`, and
-`event_type` on every record. Nothing is lost, matching the legacy script's
-"nothing is lost" property for its own raw log file. See
-[`../architecture/decisions/`](../architecture/decisions/) for the reasoning
-behind each of the decisions summarized on this page.
+Every SDK message is streamed into the per-run `events.jsonl` as it arrives,
+and phase transitions also go to `audit.jsonl`. Both carry `run_id`,
+`session_id`, `attempt`, `phase`, and `event_type`, with recursive redaction
+of secret-shaped keys and credential-looking substrings. Use
+`claudeloop logs --follow` to watch a live run. Structlog `--log-file` is a
+separate sink and never shares a path with the audit JSONL.

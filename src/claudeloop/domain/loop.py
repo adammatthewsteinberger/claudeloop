@@ -99,11 +99,12 @@ def decide_after_turn(
     verdict: CompletionVerdict,
     now: datetime,
     config: WaitPolicyConfig = DEFAULT_WAIT_POLICY_CONFIG,
+    dollars: float = 0.0,
 ) -> tuple[RunState, Decision]:
     """Called once a real turn has completed. A capacity rejection always outranks a
     completion claim — a limit message truncating mid-response could coincidentally
     contain marker-like text, but hitting a real limit is never "done"."""
-    new_ledger = state.ledger.spend_turn()
+    new_ledger = state.ledger.spend_turn(dollars=dollars)
 
     if isinstance(capacity, AuthenticationFailed):
         return _fail(state, "authentication failed"), Finish(

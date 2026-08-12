@@ -5,18 +5,30 @@
 `claudeloop` is designed to drive Claude Code **unattended, for potentially
 multi-day runs**, which means it:
 
-- Bypasses Claude Code's interactive permission prompts by design
-  (`permission_mode="bypassPermissions"`) — that's what makes autonomous
-  operation possible, but it means a misconfigured or compromised run has
-  more latitude than an interactive session would.
+- Starts sessions with `permission_mode="bypassPermissions"` by default so
+  autonomous operation is possible and mid-run switches can return to bypass.
+  Operators may switch to Manual / accept-edits / plan / auto; **Manual never
+  waits on stdin** — tool approvals go through the run-dir control inbox with
+  a timeout that auto-denies. A misconfigured or compromised run still has
+  more latitude than a fully interactive session.
 - Reads and handles Anthropic API credentials (via the Claude Code CLI's own
   auth, and directly for the generated REST surface over `anthropic`).
 - Writes detailed debug logs, including full raw event streams, which could
   contain sensitive content from your prompts, tool outputs, or credentials
-  if a redaction gap exists.
+  if a redaction gap exists. Per-run `events.jsonl` / `audit.jsonl` under
+  `.claudeloop/runs/<run_id>/` are recursively redacted
+  (`infrastructure/redact.py`); dual console structlog transports and
+  optional `--log-file` use the same redactor. Treat run directories and log
+  files as sensitive anyway. The control inbox and resource store under the
+  same run directory can also hold operator-supplied paths and prompts.
 - Runs against the current working directory with elevated trust — the
   entire point is that it edits files and runs commands without asking
-  first.
+  first (unless Manual mode is active and the operator is approving tools).
+
+The env vars `CLAUDELOOP_ALLOW_TEST_AGENT` / `CLAUDELOOP_TEST_AGENT_SCRIPT`
+activate a JSON-scripted agent for the system-live test harness only. They
+are not a supported production control plane and must never be set on
+operator machines running real work.
 
 Treat any report touching these areas as high priority.
 

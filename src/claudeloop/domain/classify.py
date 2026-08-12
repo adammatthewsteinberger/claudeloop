@@ -44,6 +44,7 @@ class TurnSignals:
     assistant_error: str | None = None
     error_code: str | None = None
     disabled_reason: str | None = None
+    can_purchase: bool | None = None
 
 
 def classify(signals: TurnSignals) -> CapacityState:
@@ -64,7 +65,8 @@ def classify(signals: TurnSignals) -> CapacityState:
         or signals.disabled_reason in _CREDITS_DISABLED_REASONS
         or signals.overage_disabled_reason is not None
     ):
-        return CreditsExhausted(can_purchase=True)
+        can_purchase = True if signals.can_purchase is None else signals.can_purchase
+        return CreditsExhausted(can_purchase=can_purchase)
 
     resets_at = signals.resets_at or signals.overage_resets_at
     return WindowExhausted(
