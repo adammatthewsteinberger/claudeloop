@@ -280,8 +280,11 @@ def _to_datetime(unix_timestamp: int | None) -> datetime | None:
     same digit-count heuristic the legacy script already needed for its
     resetsAt handling: ~10 digits is seconds, ~13 digits is milliseconds.
 
-    Always returns timezone-aware UTC so comparisons with SystemClock.now()
-    never raise TypeError (naive vs aware)."""
+    Always returns aware UTC. ``SystemClock.now()`` is aware UTC, and
+    ``next_probe_instant`` compares ``resets_at`` against ``now`` — mixing a
+    naive local ``fromtimestamp`` with aware UTC raises TypeError and aborts
+    the autonomous wait path on every real rate-limit rejection.
+    """
     if unix_timestamp is None:
         return None
     seconds = unix_timestamp / 1000 if unix_timestamp >= 10_000_000_000 else unix_timestamp
