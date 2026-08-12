@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.0...claudeloop-v0.5.1) (2026-08-12)
+
+
+### Bug Fixes
+
+* **agent:** UTC-safe rate-limit waits and billing_error as credits ([678d988](https://github.com/adammatthewsteinberger/claudeloop/commit/678d988dcc51d60c70b7bc68cb640d0cfc4d243a))
+* **api:** bind pagination scalars from stringified Omit unions ([b262826](https://github.com/adammatthewsteinberger/claudeloop/commit/b2628267be59429e71a6081f794ad5645da05dfa))
+
 ## [0.5.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.4.0...claudeloop-v0.5.0) (2026-08-12)
 
 
