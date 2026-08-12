@@ -875,6 +875,8 @@ async def test_null_stream_ui_methods() -> None:
     ui = _NullStreamUi()
     ui.on_delta("x", turn_id="t", seq=1)
     ui.on_turn_boundary(turn_id="t", attempt=1)
+    ui.on_prompt("prompt")
+    ui.on_assistant("assistant")
     ui.on_tool("Bash", "ls")
     ui.on_status({"model": "x"})
     ui.close()

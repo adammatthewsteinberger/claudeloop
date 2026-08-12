@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from claudeloop.domain.control import (
@@ -13,6 +14,26 @@ from claudeloop.infrastructure.control import FileRunControl
 from claudeloop.infrastructure.git_savepoints import GitSavePointStore
 from claudeloop.infrastructure.lock import FileSessionLock
 from claudeloop.infrastructure.rundir import RunDirectory, resolve_run_directory, runs_root_for
+
+
+def _git(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _init_repo(repo: Path) -> None:
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    (repo / "a.txt").write_text("one\n", encoding="utf-8")
+    _git(repo, "add", "a.txt")
+    _git(repo, "commit", "-m", "init")
 
 
 def test_stop_outranks_prompts() -> None:
@@ -56,25 +77,7 @@ def test_session_lock_acquire_release(tmp_path: Path) -> None:
 
 def test_git_savepoints_create_list_unwind(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
-    repo.mkdir()
-    import subprocess
-
-    subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "config", "user.email", "test@example.com"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
-    subprocess.run(
-        ["git", "config", "user.name", "Test"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-    )
-    (repo / "a.txt").write_text("one\n", encoding="utf-8")
-    subprocess.run(["git", "add", "a.txt"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-m", "init"], cwd=repo, check=True, capture_output=True)
+    _init_repo(repo)
 
     index = tmp_path / "savepoints.jsonl"
     store = GitSavePointStore(cwd=repo, index_path=index)
@@ -91,6 +94,33 @@ def test_git_savepoints_create_list_unwind(tmp_path: Path) -> None:
     assert result.to.n == 1
     assert result.backup_ref is not None
     assert (repo / "a.txt").read_text(encoding="utf-8") == "two\n"
+
+
+def test_git_savepoints_unchanged_tree_ref_tags_without_empty_commit(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    store = GitSavePointStore(cwd=repo, index_path=tmp_path / "savepoints.jsonl")
+    run_id = "run-wait"
+    head_before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    commits_before = int(_git(repo, "rev-list", "--count", "HEAD").stdout.strip())
+
+    p1 = store.create(run_id=run_id, label="turn-1", message="after turn 1")
+    p2 = store.create(run_id=run_id, label="turn-2", message="after turn 2")
+    assert p1 is not None and p2 is not None
+    assert p1.sha == head_before
+    assert p2.sha == head_before
+    assert p1.ref != p2.ref
+    assert p2.n == 2
+    assert _git(repo, "rev-parse", "HEAD").stdout.strip() == head_before
+    assert int(_git(repo, "rev-list", "--count", "HEAD").stdout.strip()) == commits_before
+    assert _git(repo, "rev-parse", p1.ref).stdout.strip() == head_before
+    assert _git(repo, "rev-parse", p2.ref).stdout.strip() == head_before
+
+    (repo / "a.txt").write_text("changed\n", encoding="utf-8")
+    p3 = store.create(run_id=run_id, label="turn-3", message="after turn 3")
+    assert p3 is not None
+    assert p3.sha != head_before
+    assert int(_git(repo, "rev-list", "--count", "HEAD").stdout.strip()) == commits_before + 1
 
 
 def test_render_stop_summary_includes_sections() -> None:

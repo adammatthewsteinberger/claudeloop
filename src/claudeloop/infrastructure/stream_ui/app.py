@@ -1,8 +1,14 @@
-"""Textual StreamApp — multi-pane live / follow / replay UI."""
+"""Textual StreamApp — multi-pane live / follow / replay UI.
+
+Left pane is a continuous realtime AI chat log (prompts + streamed tokens).
+Prompts are never cleared or cropped for display: event payloads carry full
+``text``, and each new turn appends rather than wiping the panel.
+"""
 
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -14,11 +20,79 @@ from textual.widgets import Footer, Header, RichLog, Static
 from claudeloop.infrastructure.stream_ui import BufferingStreamUi, StreamUiState
 
 
+@dataclass
+class ChatUpdate:
+    """Pure description of how one event should mutate the chat panes."""
+
+    clear: bool = False
+    assistant_lines: list[str] = field(default_factory=list)
+    tool_lines: list[str] = field(default_factory=list)
+    saw_delta: bool = False
+    header_dirty: bool = False
+
+
+def _payload_text(payload: dict[str, Any]) -> str:
+    """Prefer full ``text``; fall back to ``preview`` for older event files."""
+    text = payload.get("text")
+    if isinstance(text, str) and text:
+        return text
+    preview = payload.get("preview")
+    return str(preview) if preview is not None else ""
+
+
+def chat_update_for_record(
+    record: dict[str, Any],
+    *,
+    saw_delta: bool = False,
+    clear_on_prompt: bool = False,
+) -> ChatUpdate:
+    """Map an events.jsonl record to chat-pane updates.
+
+    ``clear_on_prompt`` is only for replay turn-jump navigation. Live/follow
+    keep a continuous transcript (clear_on_prompt=False).
+    """
+    et = record.get("event_type")
+    payload = record.get("payload") or {}
+    if not isinstance(payload, dict):
+        payload = {}
+    update = ChatUpdate(saw_delta=saw_delta, header_dirty=True)
+
+    if et == "chatter.delta":
+        text = str(payload.get("text") or "")
+        if text:
+            update.assistant_lines.append(text)
+        update.saw_delta = True
+    elif et == "chatter.prompt":
+        update.clear = clear_on_prompt
+        update.saw_delta = False
+        body = _payload_text(payload)
+        update.assistant_lines.append(f"\n[dim]── prompt ──[/dim]\n{body}\n\n")
+    elif et == "chatter.assistant":
+        if saw_delta:
+            return update
+        body = _payload_text(payload)
+        if body:
+            update.assistant_lines.append(body)
+            if not body.endswith("\n"):
+                update.assistant_lines.append("\n")
+    elif et == "chatter.tool":
+        name = payload.get("name") or "tool"
+        preview = _payload_text(payload) or payload.get("preview") or ""
+        update.tool_lines.append(f"{name}: {preview}")
+    return update
+
+
 class StreamApp(App[None]):
     CSS = """
     #header-bar { height: 3; dock: top; }
-    #assistant { height: 1fr; border: solid $accent; }
-    #tools { width: 40%; border: solid $primary; }
+    #assistant {
+        height: 1fr;
+        width: 1fr;
+        border: solid $accent;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+    #tools { width: 36%; border: solid $primary; }
     #main { height: 1fr; }
     """
 
@@ -54,13 +128,15 @@ class StreamApp(App[None]):
         self._replay_index = 0
         self._turn_starts: list[int] = []
         self._playing = True
+        self._saw_delta = False
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Static(self._header_text(), id="header-bar")
         with Horizontal(id="main"):
-            yield RichLog(id="assistant", highlight=True, markup=True)
-            yield RichLog(id="tools", highlight=True, markup=True)
+            # wrap=True so long prompts are never horizontally cropped.
+            yield RichLog(id="assistant", highlight=True, markup=True, wrap=True, auto_scroll=True)
+            yield RichLog(id="tools", highlight=True, markup=True, wrap=True, auto_scroll=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -90,6 +166,17 @@ class StreamApp(App[None]):
     def _append_tool(self, line: str) -> None:
         self.query_one("#tools", RichLog).write(line)
 
+    def _apply_chat_update(self, update: ChatUpdate) -> None:
+        if update.clear:
+            self.query_one("#assistant", RichLog).clear()
+        for line in update.assistant_lines:
+            self._append_assistant(line)
+        for line in update.tool_lines:
+            self._append_tool(line)
+        self._saw_delta = update.saw_delta
+        if update.header_dirty:
+            self._refresh_header()
+
     def _load_all(self) -> None:
         if not self.events_path.is_file():
             return
@@ -110,34 +197,26 @@ class StreamApp(App[None]):
         if not self._turn_starts and self._records:
             self._turn_starts = [0]
 
-    def _apply_record(self, record: dict[str, Any]) -> None:
-        et = record.get("event_type")
-        payload = record.get("payload") or {}
+    def _apply_record(self, record: dict[str, Any], *, clear_on_prompt: bool = False) -> None:
         if record.get("trace_id"):
             self.state.trace_id = str(record["trace_id"])
         if record.get("run_id"):
             self.state.run_id = str(record["run_id"])
-        if et == "chatter.delta":
-            self._append_assistant(str(payload.get("text") or ""))
-        elif et == "chatter.prompt":
-            self.query_one("#assistant", RichLog).clear()
-            preview = payload.get("text") or payload.get("preview") or ""
-            self._append_assistant(f"[dim]prompt:[/dim] {preview}\n\n")
-        elif et == "chatter.assistant":
-            text = payload.get("text") or payload.get("preview") or ""
-            self._append_assistant(str(text))
-        elif et == "chatter.tool":
-            name = payload.get("name") or "tool"
-            preview = payload.get("preview") or payload.get("text") or ""
-            self._append_tool(f"{name}: {preview}")
-        elif et == "model.profile_changed":
+        et = record.get("event_type")
+        payload = record.get("payload") or {}
+        if et == "model.profile_changed" and isinstance(payload, dict):
             self.state.model = str(payload.get("model") or self.state.model)
             self.state.effort = str(payload.get("effort") or self.state.effort)
         elif et == "turn.starting":
             attempt = record.get("attempt")
             if isinstance(attempt, int):
                 self.state.attempt = attempt
-        self._refresh_header()
+        update = chat_update_for_record(
+            record,
+            saw_delta=self._saw_delta,
+            clear_on_prompt=clear_on_prompt,
+        )
+        self._apply_chat_update(update)
 
     def _tick_follow(self) -> None:
         if self.paused or not self.follow:
@@ -153,14 +232,28 @@ class StreamApp(App[None]):
                 record = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            et = record.get("event_type")
+            # Live path already paints chat via BufferingStreamUi — avoid dupes.
+            if self.live_source is not None and isinstance(et, str) and et.startswith("chatter."):
+                if et == "chatter.tool":
+                    self._apply_record(record)
+                continue
             self._apply_record(record)
 
     def _tick_live(self) -> None:
         if self.live_source is None or self.paused:
             return
+        while self.live_source.prompts:
+            prompt = self.live_source.prompts.pop(0)
+            self._saw_delta = False
+            self._append_assistant(f"\n[dim]── prompt ──[/dim]\n{prompt}\n\n")
         while self.live_source.deltas:
             text, _turn_id, _seq = self.live_source.deltas.pop(0)
+            self._saw_delta = True
             self._append_assistant(text)
+        while self.live_source.assistants:
+            text = self.live_source.assistants.pop(0)
+            self._append_assistant(text if text.endswith("\n") else f"{text}\n")
         self.state = self.live_source.state
         self._refresh_header()
 
@@ -169,7 +262,6 @@ class StreamApp(App[None]):
             return
         if self._replay_index >= len(self._records):
             return
-        # Speed 0 = as fast as possible (apply several records per tick).
         n = 1 if self.speed > 0 else 20
         for _ in range(n):
             if self._replay_index >= len(self._records):
@@ -189,7 +281,6 @@ class StreamApp(App[None]):
     def action_prev_turn(self) -> None:
         if not self.replay or not self._turn_starts:
             return
-        # Find previous turn start before current index.
         current = self._replay_index
         prev = 0
         for start in self._turn_starts:
@@ -199,8 +290,9 @@ class StreamApp(App[None]):
                 break
         self.query_one("#assistant", RichLog).clear()
         self.query_one("#tools", RichLog).clear()
+        self._saw_delta = False
         self._replay_index = prev
-        self._apply_record(self._records[prev])
+        self._apply_record(self._records[prev], clear_on_prompt=True)
         self._replay_index = prev + 1
 
     def action_next_turn(self) -> None:
@@ -216,6 +308,7 @@ class StreamApp(App[None]):
             return
         self.query_one("#assistant", RichLog).clear()
         self.query_one("#tools", RichLog).clear()
+        self._saw_delta = False
         self._replay_index = nxt
-        self._apply_record(self._records[nxt])
+        self._apply_record(self._records[nxt], clear_on_prompt=True)
         self._replay_index = nxt + 1
