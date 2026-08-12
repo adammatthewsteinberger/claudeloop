@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.1...claudeloop-v0.5.2) (2026-08-12)
+
+
+### Bug Fixes
+
+* **agent:** resume without session_id conflict and clarify blocked_on ([#14](https://github.com/adammatthewsteinberger/claudeloop/issues/14)) ([6621be5](https://github.com/adammatthewsteinberger/claudeloop/commit/6621be5ffb7cc32b245ab096341ee93f086ee2e3))
+
 ## [0.5.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.0...claudeloop-v0.5.1) (2026-08-12)
 
 
