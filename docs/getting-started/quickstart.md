@@ -30,10 +30,32 @@ transcript files directly) and prints exactly which one it picked — session
 id, last-activity time, git branch, first-prompt preview — before doing
 anything, so you can interrupt it if it guessed wrong.
 
+## Mid-run control (second terminal)
+
+While `claudeloop run` is in the foreground:
+
+```bash
+claudeloop status
+claudeloop logs -f
+claudeloop prompt --now "Also add tests for the edge case"
+claudeloop permission-mode plan   # or bypass / manual / accept-edits / auto
+claudeloop attach ./notes.md
+claudeloop stop                 # writes stop-summary.md; process exits 130
+claudeloop savepoints
+# after stop:
+claudeloop unwind --to 1
+```
+
+See [autonomous runs](../guides/autonomous-runs.md) and
+[run resources and chat ops](../guides/run-resources-and-chat-ops.md) for the
+full control-plane layout under `.claudeloop/runs/<run_id>/`.
+
 ## See what's running or waiting
 
 ```bash
 claudeloop sessions
+claudeloop runs
+claudeloop status
 ```
 
 ## Check your setup before starting a long unattended run

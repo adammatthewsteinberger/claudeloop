@@ -9,13 +9,24 @@ allowed-tools: Read Grep Glob Bash(pytest *)
 ## Layout
 
 ```
-tests/domain/        # pure unit + Hypothesis property tests, mirrors src/claudeloop/domain/
-tests/application/    # fakes for every port (fakes.py), zero real I/O
+tests/domain/           # pure unit + Hypothesis property tests
+tests/application/      # fakes for every port (fakes.py), zero real I/O
+tests/infrastructure/   # adapters (incl. scripted test-agent unit tests)
+tests/cli/
+tests/live/             # opt-in free + paid live tiers
+tests/live/system/      # marker: system — real FS/git/CLI + scripted agent
 ```
 
-Run: `pytest`. One file: `pytest tests/domain/test_classify.py -v`.
+Run: `pytest` (skips `live` and `system` via addopts).
+System harness: `pytest -m system`.
+Live free: `pytest -m live`. Paid: `pytest -m "live and paid" --run-paid-live`.
+See `docs/guides/live-testing.md`.
+
 Coverage: `pytest --cov-report=term-missing` (already the default via
 `addopts` in `pyproject.toml`).
+
+Test-only agent gate (composition root only; not a user feature):
+`CLAUDELOOP_ALLOW_TEST_AGENT=1` + `CLAUDELOOP_TEST_AGENT_SCRIPT=<json>`.
 
 ## Coverage is per-layer, not global — and why
 
@@ -29,7 +40,7 @@ than 100% as a defect, not a number to negotiate down.
 
 ## Fakes, never `unittest.mock.Mock`, for ports
 
-Every port (once `application/ports.py` exists, M2+) gets a real class
+Every port in `application/ports.py` gets a real class
 implementing the same `Protocol` — checked by `mypy --strict` against the
 port shape. A `Mock` has no such check; a port method rename silently
 breaks nothing in test code, possibly not even at runtime. If you're

@@ -4,8 +4,8 @@
 
 | Content | Goes in |
 |---|---|
-| An always-true fact, cheap to state, that every session needs | `CLAUDE.md` (kept deliberately short — see below) |
-| A procedure Claude Code should follow when working on a specific part of this codebase | `.claude/skills/<name>/SKILL.md` |
+| An always-true fact, cheap to state, that every session needs | `CLAUDE.md` and `AGENTS.md` (kept deliberately short — see below) |
+| A procedure for working on a specific part of this codebase | `.claude/skills/<name>/SKILL.md` **mirrored to** `.cursor/rules/<name>.mdc` **and** `.agents/skills/<name>/SKILL.md` |
 | User-facing "how do I..." | `docs/getting-started/` or `docs/guides/` |
 | System design that explains *what* exists and *how the pieces fit* | `docs/architecture/` |
 | The *reasoning* behind one specific hard decision, preserved for posterity | `docs/architecture/decisions/` (an ADR) |
@@ -13,12 +13,11 @@
 | Contributor process | `docs/contributing/` |
 | Historical plans, kept verbatim once superseded by living docs | `docs/plans/` |
 
-The dividing line between `CLAUDE.md` and a skill is explicit:
-**CLAUDE.md holds facts, skills hold procedures.** If you're about to add a
-multi-step "when doing X, do Y then Z" instruction to `CLAUDE.md`, it almost
-certainly belongs in a skill instead — skills load into context only when
-relevant, so long procedural content there costs nothing until it's needed,
-while everything in `CLAUDE.md` costs context on every single session.
+The dividing line between routers and skills is explicit:
+**`CLAUDE.md` / `AGENTS.md` hold facts; skills/rules hold procedures.**
+
+When procedural guidance changes, update **all three** agent trees in the
+same PR: `.claude/skills/`, `.cursor/rules/`, `.agents/skills/`.
 
 ## Building the docs site locally
 

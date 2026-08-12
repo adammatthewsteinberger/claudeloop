@@ -138,7 +138,7 @@ CLAUDE_PROJECTS_DIR = Path.home() / ".claude" / "projects"
 def sanitize_cwd_for_project_dir(cwd: str) -> str:
     """Claude Code stores session transcripts under
     ~/.claude/projects/<cwd with every "/" replaced by "-">/*.jsonl -- e.g.
-    /Users/adam/git/selah -> -Users-adam-git-selah. Confirmed against actual
+    /home/you/git/myproject -> -home-you-git-myproject. Confirmed against actual
     directories on disk, not documented publicly, so this is best-effort:
     if Claude Code ever changes this scheme, find_most_recent_session()
     below just won't find a directory and will report "no sessions found"

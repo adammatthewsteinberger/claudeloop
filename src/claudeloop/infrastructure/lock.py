@@ -1,6 +1,6 @@
 """SessionLock — advisory file lock preventing two claudeloop runners from
-driving the same Claude Code session concurrently. Advisory only (an `flock`
-on a marker file): it protects against two claudeloop invocations racing,
+driving the same Claude Code session concurrently. Advisory only (an exclusive
+create on a marker file): it protects against two claudeloop invocations racing,
 not against a session also being driven interactively at the same time."""
 
 from __future__ import annotations
@@ -14,6 +14,8 @@ class FileSessionLock:
     def __init__(self, directory: Path) -> None:
         self._directory = directory
         self._directory.mkdir(parents=True, exist_ok=True)
+        # Keep the open fd until release so the OS holds the exclusive create
+        # marker; previously we closed then stored a dead fd.
         self._held: dict[str, int] = {}
 
     def _path(self, session_id: str) -> Path:
@@ -30,12 +32,13 @@ class FileSessionLock:
                 raise
             return False
         os.write(fd, str(os.getpid()).encode())
-        os.close(fd)
         self._held[session_id] = fd
         return True
 
     def release(self, session_id: str) -> None:
-        self._held.pop(session_id, None)
+        fd = self._held.pop(session_id, None)
+        if fd is not None:
+            os.close(fd)
         path = self._path(session_id)
         if path.is_file():
             path.unlink()

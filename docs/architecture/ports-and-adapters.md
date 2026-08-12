@@ -29,7 +29,7 @@ abstract base class. Two reasons:
 
 | Port | Responsibility | Real adapter | Fake (`tests/application/fakes.py`) |
 |---|---|---|---|
-| `AgentGateway` | Drive a live `ClaudeSDKClient` session — never `query()`, which raises after an error result and exits the process (see [ADR 0002](decisions/0002-agent-sdk-over-subprocess.md)) | `infrastructure/agent/gateway.py::ClaudeAgentGateway` | `FakeAgentGateway` — replays a scripted list of `TurnOutcome`s |
+| `AgentGateway` | Drive a live `ClaudeSDKClient` session — never `query()`, which raises after an error result and exits the process (see [ADR 0002](decisions/0002-agent-sdk-over-subprocess.md)) | `infrastructure/agent/gateway.py::ClaudeAgentGateway` (production); `infrastructure/agent/scripted.py::ScriptedAgentGateway` (test-only, via bootstrap env gate) | `FakeAgentGateway` — replays a scripted list of `TurnOutcome`s |
 | `CapacityProbe` | Run the cheap, throwaway turn used while waiting | `infrastructure/agent/gateway.py::ClaudeCapacityProbe` | `FakeCapacityProbe` — replays scripted `TurnSignals` |
 | `SessionCatalog` | List/resolve sessions via the SDK's `list_sessions()` | `infrastructure/agent/catalog.py::SdkSessionCatalog` | a plain stub class in `tests/application/test_usecases.py` |
 | `ApiGateway` | Invoke a generated REST command against `anthropic.Anthropic()` | `infrastructure/api/gateway.py::AnthropicApiGateway` | — |
@@ -37,14 +37,21 @@ abstract base class. Two reasons:
 | `Sleeper` | `await sleep_until(instant)` | `infrastructure/clock.py::AnyioSleeper` | `FakeSleeper` — advances the paired `FakeClock` instantly, records what it was asked to wait for |
 | `ProgressReporter` | Human-readable progress to the console | `infrastructure/progress.py::ConsoleProgressReporter` | `FakeProgressReporter` — records calls |
 | `AuditLog` | Append-only JSONL of every recorded event | `infrastructure/audit.py::JsonlAuditLog` | `FakeAuditLog` — in-memory list |
-| `Notifier` | Tell a human something needs attention | `infrastructure/notify.py::StderrNotifier` | not yet used by any test |
-| `RunStateStore` | Persist run state so a killed run is resumable | `infrastructure/state.py::FileRunStateStore` | not yet wired into `AutonomousRunner` |
-| `SessionLock` | Advisory file lock preventing two runners driving one session | `infrastructure/lock.py::FileSessionLock` | not yet wired into `AutonomousRunner` |
+| `Notifier` | Tell a human something needs attention | `infrastructure/notify.py::StderrNotifier` | `FakeNotifier` in `tests/application/fakes.py` |
+| `RunStateStore` | Persist run state so a killed run is resumable | `infrastructure/state.py::FileRunStateStore` | `FakeStateStore` |
+| `SessionLock` | Advisory file lock preventing two runners driving one session | `infrastructure/lock.py::FileSessionLock` | `FakeSessionLock` |
+| `RunControl` | Poll mid-run operator commands (stop / prompt / permission / resources / …) | `infrastructure/control.py::FileRunControl` | `FakeRunControl` |
+| `RunEventSink` | Realtime redacted event stream | `infrastructure/events.py::JsonlRunEventSink` | `FakeEventSink` |
+| `SavePointStore` | Git save points + unwind | `infrastructure/git_savepoints.py::GitSavePointStore` | `FakeSavePointStore` |
+| `RunResources` | Run-scoped attachments / skills / folders / memories applied mid-run | `infrastructure/resources/adapter.py::ResourcePortAdapter` over `RunResourceStore` | `_NullRunResources` / test fakes |
+| `StateBus` | Publish phase/status for external pollers | `infrastructure/state_bus.py::FileStateBus` | `_NullStateBus` |
+| `StreamUi` | Optional Textual token stream | `infrastructure/stream_ui/` | `_NullStreamUi` / `BufferingStreamUi` |
+| `Logger` | Structured application logging | `infrastructure/logging.py::StructlogAppLogger` | `FakeLogger` |
 
-`RunStateStore` and `SessionLock` have concrete adapters but
-`AutonomousRunner` doesn't call them yet — resuming a killed run and
-preventing concurrent drivers of one session are both still open work, not
-just documentation gaps.
+`RunStateStore`, `SessionLock`, and `Notifier` are wired into
+`AutonomousRunner` via `bootstrap.build_runner`. Mid-run operator commands
+resolve the active run under `.claudeloop/runs/<run_id>/` (see also
+`bootstrap_ops.py` for CLI-side enqueue helpers).
 
 There's also a narrower `DoctorEnvironment` protocol, local to
 `application/usecases/doctor.py` rather than `ports.py`, since `doctor` is

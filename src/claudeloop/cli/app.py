@@ -11,10 +11,40 @@ import typer
 
 from claudeloop import __version__
 from claudeloop.bootstrap import build_api_click_group
+from claudeloop.cli.commands.artifact_cmd import app as artifact_app
+from claudeloop.cli.commands.attach_cmd import attach, unattach
+from claudeloop.cli.commands.chat_cmd import app as chat_app
+from claudeloop.cli.commands.connector_cmd import app as connector_app
+from claudeloop.cli.commands.cwd_cmd import cwd_cmd
 from claudeloop.cli.commands.doctor import app as doctor_app
+from claudeloop.cli.commands.effort_cmd import effort_cmd
+from claudeloop.cli.commands.folder_cmd import app as folder_app
+from claudeloop.cli.commands.github_cmd import app as github_app
+from claudeloop.cli.commands.logs import logs
+from claudeloop.cli.commands.memory_cmd import app as memory_app
+from claudeloop.cli.commands.model_cmd import model_cmd
+from claudeloop.cli.commands.permission_mode import permission_mode
+from claudeloop.cli.commands.plugin_cmd import app as plugin_app
+from claudeloop.cli.commands.preset_cmd import preset_cmd
+from claudeloop.cli.commands.prompt import prompt
+from claudeloop.cli.commands.research_cmd import app as research_app
+from claudeloop.cli.commands.response_cmd import app as response_app
 from claudeloop.cli.commands.resume import resume
 from claudeloop.cli.commands.run import run
+from claudeloop.cli.commands.runs import app as runs_app
+from claudeloop.cli.commands.savepoints import app as savepoints_app
 from claudeloop.cli.commands.sessions import app as sessions_app
+from claudeloop.cli.commands.skill_cmd import app as skill_app
+from claudeloop.cli.commands.slash_cmd import slash_cmd
+from claudeloop.cli.commands.snapshot_cmd import snapshot
+from claudeloop.cli.commands.status import status
+from claudeloop.cli.commands.stop import stop
+from claudeloop.cli.commands.tool_cmd import app as tool_app
+from claudeloop.cli.commands.unwind import unwind
+from claudeloop.cli.commands.voice_cmd import app as voice_app
+from claudeloop.cli.commands.voice_cmd import speak
+from claudeloop.cli.commands.watch import watch
+from claudeloop.cli.commands.web_search_cmd import web_search_cmd
 from claudeloop.cli.man_page import write_man_page
 
 
@@ -36,6 +66,37 @@ app = typer.Typer(
 
 app.command(name="run")(run)
 app.command(name="resume")(resume)
+app.command(name="stop")(stop)
+app.command(name="prompt")(prompt)
+app.command(name="model")(model_cmd)
+app.command(name="effort")(effort_cmd)
+app.command(name="preset")(preset_cmd)
+app.command(name="permission-mode")(permission_mode)
+app.command(name="cwd")(cwd_cmd)
+app.command(name="slash")(slash_cmd)
+app.add_typer(tool_app, name="tool")
+app.command(name="attach")(attach)
+app.command(name="unattach")(unattach)
+app.add_typer(folder_app, name="folder")
+app.add_typer(skill_app, name="skill")
+app.add_typer(plugin_app, name="plugin")
+app.add_typer(connector_app, name="connector")
+app.add_typer(github_app, name="github")
+app.add_typer(research_app, name="research")
+app.command(name="web-search")(web_search_cmd)
+app.add_typer(memory_app, name="memory")
+app.add_typer(artifact_app, name="artifact")
+app.add_typer(chat_app, name="chat")
+app.add_typer(response_app, name="response")
+app.add_typer(voice_app, name="voice")
+app.command(name="speak")(speak)
+app.command(name="logs")(logs)
+app.command(name="status")(status)
+app.command(name="snapshot")(snapshot)
+app.command(name="unwind")(unwind)
+app.command(name="watch")(watch)
+app.add_typer(runs_app, name="runs")
+app.add_typer(savepoints_app, name="savepoints")
 app.add_typer(sessions_app, name="sessions")
 app.add_typer(doctor_app, name="doctor")
 

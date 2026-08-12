@@ -1,26 +1,27 @@
 from __future__ import annotations
 
+from datetime import timezone
+
 from claudeloop.infrastructure.agent.translate import TurnAccumulator, _to_datetime
+from claudeloop.infrastructure.redact import REDACTED_VALUE, redact
 
 
 def test_to_datetime_none_stays_none() -> None:
     assert _to_datetime(None) is None
 
 
-def test_to_datetime_seconds_form_10_digits() -> None:
-    # A plausible ~10-digit seconds-since-epoch value.
+def test_to_datetime_seconds_form_10_digits_is_utc_aware() -> None:
     result = _to_datetime(1786328953)
     assert result is not None
     assert 2020 <= result.year <= 2030
+    assert result.tzinfo is timezone.utc
 
 
 def test_to_datetime_milliseconds_form_13_digits() -> None:
-    # The digit-count heuristic ported from the legacy script's resetsAt
-    # handling — the same ambiguity that turned out to be real for
-    # SDKSessionInfo.last_modified (see test_catalog.py).
     result = _to_datetime(1786328953799)
     assert result is not None
     assert 2020 <= result.year <= 2030
+    assert result.tzinfo is not None
 
 
 def test_accumulator_empty_build_is_available_with_no_verdict() -> None:
@@ -30,10 +31,44 @@ def test_accumulator_empty_build_is_available_with_no_verdict() -> None:
     assert outcome.output_text == ""
     assert outcome.session_id is None
     assert outcome.cost_usd == 0.0
+    assert outcome.raw_events == ()
 
 
-def test_accumulator_feed_ignores_unrecognized_message_types() -> None:
+def test_accumulator_feed_records_raw_events_for_unrecognized_types() -> None:
     accumulator = TurnAccumulator()
-    accumulator.feed(object())  # not RateLimitEvent/AssistantMessage/ResultMessage
+    accumulator.feed(object())
     outcome = accumulator.build()
     assert outcome.output_text == ""
+    assert len(outcome.raw_events) == 1
+    assert outcome.raw_events[0]["type"] == "object"
+
+
+def test_accumulator_scans_error_details_for_credits() -> None:
+    class _FakeResult:
+        session_id = "s1"
+        api_error_status = 429
+        total_cost_usd = 0.0
+        result = None
+        structured_output = None
+        errors = []
+        errorDetails = {"error_code": "credits_required", "can_user_purchase_credits": False}
+
+    # ResultMessage isinstance check will fail — feed via _scan path by
+    # monkeypatching isn't needed if we call the private scanner.
+    acc = TurnAccumulator()
+    acc._scan_credit_blob({"error_code": "credits_required", "can_user_purchase_credits": False})
+    assert acc._error_code == "credits_required"
+    assert acc._can_purchase is False
+
+
+def test_redact_nested_secrets() -> None:
+    payload = {
+        "api_key": "sk-secret",
+        "nested": {"authorization": "Bearer abc", "ok": "fine"},
+        "text": "token sk-ant-abcdefghijklmnopqrstuvwxyz012345",
+    }
+    scrubbed = redact(payload)
+    assert scrubbed["api_key"] == REDACTED_VALUE
+    assert scrubbed["nested"]["authorization"] == REDACTED_VALUE
+    assert scrubbed["nested"]["ok"] == "fine"
+    assert REDACTED_VALUE in scrubbed["text"]

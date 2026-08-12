@@ -33,9 +33,15 @@ async def run_from_plan_file(
     plan_path: Path,
     *,
     continue_prompt: str = "Continue exactly where you left off.",
+    done_marker: str | None = None,
 ) -> RunResult:
     raw_text = plan_path.read_text(encoding="utf-8")
     plan = WorkPlan.parse(raw_text)
-    initial_prompt = with_done_marker_instruction(plan.raw_text)
-    continue_with_marker = with_done_marker_instruction(continue_prompt)
+    marker = done_marker or DEFAULT_DONE_MARKER
+    initial_prompt = with_done_marker_instruction(plan.raw_text, done_marker=marker)
+    continue_with_marker = with_done_marker_instruction(continue_prompt, done_marker=marker)
     return await runner.run(initial_prompt=initial_prompt, continue_prompt=continue_with_marker)
+
+
+def parse_plan_file(plan_path: Path) -> WorkPlan:
+    return WorkPlan.parse(plan_path.read_text(encoding="utf-8"))

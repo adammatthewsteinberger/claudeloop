@@ -43,6 +43,7 @@ dependencies = [
     "structlog>=24.1",
     "claude-agent-sdk>=0.2.134",
     "anthropic>=0.40",
+    "textual>=1.0",
     "tomli>=2.0; python_version < '3.11'",
 ]
 
@@ -73,6 +74,10 @@ docs = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.26",
+]
+voice = [
+    # Optional STT/TTS extras — CLI falls back to system `say`/`espeak` without these.
+    "openai-whisper>=20231117; platform_system != 'Windows'",
 ]
 
 [project.scripts]
@@ -116,11 +121,12 @@ testpaths = ["tests"]
 # back out to the whole package, defeating the per-layer gate without any
 # error. Coverage scope and its gate are passed explicitly at each call site
 # instead — see docs/contributing/testing.md and .github/workflows/ci.yml.
-addopts = "--cov-report=term-missing -m \"not live\""
+addopts = "--cov-report=term-missing -m \"not live and not system\""
 asyncio_mode = "auto"
 markers = [
     "live: exercises a real Claude account (free tier — no token spend). Opt in with -m live.",
     "paid: additionally spends real tokens/turns. Requires --run-paid-live. Always paired with 'live'.",
+    "system: deterministic system-live harness (real FS/git/CLI adapters + scripted agent). Opt in with -m system.",
 ]
 
 [tool.coverage.run]

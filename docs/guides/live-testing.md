@@ -1,70 +1,73 @@
-# Live testing against a real Claude account
+# Live testing against a real Claude account (and the system harness)
 
-`tests/live/` exercises the actual installed CLI and a real
-`claude`/Claude Code environment — not fakes. It's opt-in and tiered so it
-never runs by accident.
+`tests/live/` exercises real surfaces — not fakes in the default unit suite.
+It is **opt-in and tiered** so it never runs by accident.
 
-## Why this exists
+## Three tiers
 
-Offline tests (`tests/domain`, `tests/application`, `tests/infrastructure`,
-`tests/cli`) verify logic against fakes and typed SDK dataclasses. They
-cannot catch a real API's actual shapes and timing — and in this project,
-they didn't: live testing against a real account is what found that
-`SDKSessionInfo.last_modified` is milliseconds (not seconds, as its type
-alone suggests), that `claude mcp list` genuinely takes ~14 seconds against
-a real server list, and that some real sessions have no resolvable working
-directory at all. None of that is discoverable from a mock.
+| Tier | Markers | Tokens? | Invocation |
+|---|---|---|---|
+| **System** | `system` | No | `pytest -m system` |
+| **Free live** | `live` (not `paid`) | No | `pytest -m live` |
+| **Paid smoke** | `live` and `paid` | Yes | `pytest -m "live and paid" --run-paid-live` |
 
-## Running it
+Default `addopts` is `-m "not live and not system"`, so bare `pytest` and CI
+skip all three.
 
-**Free tier — no token spend, safe to run anytime:**
+## System tier (deterministic, no tokens)
+
+Real filesystem / git / CLI wiring with a **test-only scripted agent**:
+
+```bash
+pytest -m system
+```
+
+Layout:
+
+- `tests/live/system/test_matrix_inprocess.py` — exhaustive happy paths and
+  edges using real `RunDirectory`, `FileRunControl`, `GitSavePointStore`,
+  events/bus/audit/redaction, plus a scripted agent and `FakeClock`/`FakeSleeper`
+- `tests/live/system/test_subprocess_smoke.py` — thin real-CLI smoke via the
+  env-gated test agent
+- `tests/live/fixtures/agent_scripts/*.json` — turn/probe scripts
+
+### Test-only agent gate (not a user feature)
+
+Both environment variables are required:
+
+```bash
+export CLAUDELOOP_ALLOW_TEST_AGENT=1
+export CLAUDELOOP_TEST_AGENT_SCRIPT=/absolute/path/to/script.json
+```
+
+If the script path is set without the allow flag, bootstrap fails loudly.
+Never document this gate as something operators should use for production
+runs — it exists so system tests can prove the control plane without spending
+tokens.
+
+## Free tier — no token spend
 
 ```bash
 pytest -m live tests/live/test_free_tier.py
 ```
 
-Covers: building the wheel and installing it into a clean venv, then running
-`claudeloop --version`/`--help` from that install (the specific check that
-would have caught the broken `[project.scripts]` entry point this project
-shipped with before M2); `claudeloop doctor` against your real environment;
-`claudeloop sessions` listing your real session store, read-only.
+Covers: wheel install + console script version/help (including ops commands),
+`run --help` documenting `--max-buffer-size`, `doctor`, and read-only
+`sessions`.
 
-**Paid tier — spends real tokens/turns, requires an explicit flag:**
+## Paid tier — spends real tokens
 
 ```bash
 pytest -m "live and paid" --run-paid-live tests/live/
 ```
 
-A plain `pytest -m live` (no `--run-paid-live`) skips every paid test with a
-clear reason rather than running them — this is enforced in
-`tests/live/conftest.py`, not just documented.
+A plain `pytest -m live` skips every paid test. Paid tests pin a cheap model,
+tight `--max-turns` / `--max-dollars`, and a sandbox git repo. Includes
+run/resume/never-block smokes plus one mid-run `status`/`logs`/`stop` path
+against a real Claude session.
 
-## Neither tier runs by accident
+## Isolation
 
-- The default `addopts` in `pyproject.toml` is `-m "not live"`, so a bare
-  `pytest` and every CI job skip the whole `tests/live/` tree.
-- Paid tests carry both the `live` and `paid` markers and are skipped unless
-  `--run-paid-live` is explicitly passed, even when `-m live` is given.
-
-## Isolation and cost control
-
-- Every live test that touches a session runs in a fresh temporary git
-  repository (the `sandbox_repo` fixture in `tests/live/conftest.py`) —
-  never a real project directory. This is also what keeps any session
-  `claudeloop` creates during a test easy to spot and namespaced away from
-  real work.
-- Paid tests are expected to pin the cheapest available model, set small
-  `max_turns`/`max_budget_usd` caps, and use minimal prompts.
-- `claudeloop doctor`'s subprocess calls to `claude` use a generous timeout
-  (60–90s) rather than racing real, observed latency (`claude mcp list`
-  against 37 configured servers took ~14s in testing) — a live test timing
-  out is a false failure, not a safety property, so timeouts here are set
-  for correctness, not speed.
-
-## What isn't covered yet
-
-Paid-tier tests for `claudeloop run`/`claudeloop resume` completing a real
-plan end-to-end, and the never-block `AskUserQuestion` test described in
-the original build plan, are not yet implemented — only the free tier
-above is. See `docs/plans/foss-and-documentation-plan.md` Phase C for the
-originally scoped full tier.
+Every live/system test that touches a session or worktree uses a fresh
+temporary git repository (`sandbox_repo` / `git_sandbox`) — never a real
+project directory.
