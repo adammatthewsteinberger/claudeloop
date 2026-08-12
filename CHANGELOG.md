@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.2...claudeloop-v0.5.3) (2026-08-12)
+
+
+### Bug Fixes
+
+* **ops:** skip empty savepoint commits and keep stream-ui chat full ([#16](https://github.com/adammatthewsteinberger/claudeloop/issues/16)) ([86f9849](https://github.com/adammatthewsteinberger/claudeloop/commit/86f984970441036fd2e6ecfdf80d7c0fb1c20cfa))
+
 ## [0.5.2](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.1...claudeloop-v0.5.2) (2026-08-12)
 
 
