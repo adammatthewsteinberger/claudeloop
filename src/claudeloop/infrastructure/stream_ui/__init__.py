@@ -31,6 +31,12 @@ class NullStreamUi:
     def on_turn_boundary(self, *, turn_id: str, attempt: int) -> None:
         del turn_id, attempt
 
+    def on_prompt(self, text: str) -> None:
+        del text
+
+    def on_assistant(self, text: str) -> None:
+        del text
+
     def on_tool(self, name: str, summary: str) -> None:
         del name, summary
 
@@ -47,16 +53,32 @@ class BufferingStreamUi:
     def __init__(self) -> None:
         self.state = StreamUiState()
         self.deltas: list[tuple[str, str, int]] = []
+        self.prompts: list[str] = []
+        self.assistants: list[str] = []
         self.closed = False
+        self._saw_delta_this_turn = False
 
     def on_delta(self, text: str, *, turn_id: str, seq: int) -> None:
         self.deltas.append((text, turn_id, seq))
         self.state.assistant += text
+        self._saw_delta_this_turn = True
 
     def on_turn_boundary(self, *, turn_id: str, attempt: int) -> None:
         del turn_id
         self.state.attempt = attempt
-        self.state.assistant = ""
+        self._saw_delta_this_turn = False
+
+    def on_prompt(self, text: str) -> None:
+        self.prompts.append(text)
+        self._saw_delta_this_turn = False
+
+    def on_assistant(self, text: str) -> None:
+        # When tokens already streamed this turn, skip duplicating the final blob.
+        if self._saw_delta_this_turn:
+            return
+        if text:
+            self.assistants.append(text)
+            self.state.assistant += text
 
     def on_tool(self, name: str, summary: str) -> None:
         self.state.tools.append(f"{name}: {summary}")
@@ -159,9 +181,8 @@ def follow_events_plain(
                             sys.stdout.write(str(payload.get("text") or ""))
                             sys.stdout.flush()
                         elif et and str(et).startswith("chatter."):
-                            sys.stdout.write(
-                                f"\n[{et}] {payload.get('preview') or payload.get('text') or ''}\n"
-                            )
+                            body = payload.get("text") or payload.get("preview") or ""
+                            sys.stdout.write(f"\n[{et}] {body}\n")
                             sys.stdout.flush()
                     offset = f.tell()
         if not follow:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from claudeloop.domain.chatter import truncate_chatter
+from claudeloop.domain.chatter import chatter_event_payload, truncate_chatter
 from claudeloop.domain.model_policy import decide_auto_model
 from claudeloop.domain.model_profile import (
     DEFAULT_MODEL_HIGH,
@@ -157,6 +157,20 @@ def test_truncate_chatter() -> None:
     mid = truncate_chatter("€", cap_bytes=2)  # euro is e2 82 ac
     assert mid.truncated is True
     mid.text.encode("utf-8")
+
+
+def test_chatter_event_payload_summary_keeps_full_text() -> None:
+    assert chatter_event_payload("x", mode="off") is None
+    long = "prompt " * 200
+    payload = chatter_event_payload(long, mode="summary")
+    assert payload is not None
+    assert payload["text"] == long
+    assert payload["preview_truncated"] is True
+    assert len(payload["preview"]) < len(long)
+    full = chatter_event_payload("hi", mode="full")
+    assert full is not None
+    assert full["text"] == "hi"
+    assert "preview" not in full
 
 
 def test_invalid_effort() -> None:

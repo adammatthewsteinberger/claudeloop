@@ -34,7 +34,7 @@ from claudeloop.application.ports import (
 )
 from claudeloop.domain.budget import Budget, BudgetLedger
 from claudeloop.domain.capacity import Available, CapacityState, CreditsExhausted
-from claudeloop.domain.chatter import truncate_chatter
+from claudeloop.domain.chatter import chatter_event_payload
 from claudeloop.domain.classify import classify
 from claudeloop.domain.completion import Blocked, CompletionVerdict, Continue, Done, evaluate
 from claudeloop.domain.control import (
@@ -118,6 +118,12 @@ class _NullStreamUi:
 
     def on_turn_boundary(self, *, turn_id: str, attempt: int) -> None:
         del turn_id, attempt
+
+    def on_prompt(self, text: str) -> None:
+        del text
+
+    def on_assistant(self, text: str) -> None:
+        del text
 
     def on_tool(self, name: str, summary: str) -> None:
         del name, summary
@@ -407,6 +413,7 @@ class AutonomousRunner:
                     )
                     self._stream_ui.on_turn_boundary(turn_id=turn_id, attempt=attempt)
                     self._events.emit("turn.starting", {"prompt_preview": prompt[:200]})
+                    self._stream_ui.on_prompt(prompt)
                     self._emit_chatter("chatter.prompt", prompt)
                     self._update_meta(phase=state.phase.name, attempt=attempt)
                     self._log.info(
@@ -444,6 +451,7 @@ class AutonomousRunner:
                         remaining_before=remaining_before,
                         remaining_after=remaining_after,
                     )
+                    self._stream_ui.on_assistant(outcome.output_text)
                     self._emit_chatter("chatter.assistant", outcome.output_text)
                     self._maybe_notify_credits(capacity)
                     self._audit.record(
@@ -908,27 +916,20 @@ class AutonomousRunner:
         )
 
     def _emit_chatter(self, event_type: str, text: str, **extra: Any) -> None:
-        mode = self._log_chatter
-        if mode == "off":
+        payload = chatter_event_payload(text, mode=self._log_chatter, extra=extra or None)
+        if payload is None:
             return
-        if mode == "summary":
-            body = truncate_chatter(text, cap_bytes=512)
-            payload: dict[str, Any] = {
-                "preview": body.text,
-                "length": len(text),
-                "truncated": body.truncated or len(text) > len(body.text),
-            }
-        else:
-            body = truncate_chatter(text)
-            payload = {
-                "text": body.text,
-                "length": len(text),
-                "truncated": body.truncated,
-            }
-        payload.update(extra)
         self._events.emit(event_type, payload)
-        log_fn = self._log.debug if mode == "full" else self._log.info
-        log_fn(event_type, **payload)
+        log_fn = self._log.debug if self._log_chatter == "full" else self._log.info
+        # Console stays on the short preview when present; events keep full text.
+        log_payload = dict(payload)
+        if "preview" in log_payload and self._log_chatter == "summary":
+            log_payload = {
+                "preview": log_payload["preview"],
+                "length": log_payload.get("length"),
+                "truncated": log_payload.get("preview_truncated", log_payload.get("truncated")),
+            }
+        log_fn(event_type, **log_payload)
 
     def _remaining_count(self) -> int:
         if self._plan is not None:

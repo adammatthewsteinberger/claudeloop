@@ -84,8 +84,7 @@ cwd (or an explicit `--run-id`):
 | `snapshot` | Write handoff JSON (+ optional bundle); bus publishes digest |
 | `savepoints` / `unwind` | List / restore git save points |
 | `watch` | Follow `bus.jsonl` or stream UI |
-| `watch` | Subscribe to `bus.jsonl` |
-| `savepoints` / `unwind` | Git refs under `refs/claudeloop/…` |
+| `savepoints` / `unwind` | Git refs under `refs/claudeloop/…` (commit only when the tree changed; unchanged trees are ref-tagged only) |
 
 Control plane layout: `.claudeloop/runs/<run_id>/` (`meta.json`, `inbox/`,
 `events.jsonl`, `audit.jsonl`, `status.json`, `bus.jsonl`,

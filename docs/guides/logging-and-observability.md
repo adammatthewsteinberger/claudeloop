@@ -49,8 +49,8 @@ JSON lines with the per-run event log.
 
 | Mode | Behavior |
 |---|---|
-| `summary` (default at INFO) | Short previews + lengths |
-| `full` (default when `--log-level DEBUG`, unless chatter is `off`) | Full bodies (256 KiB cap per field) |
+| `summary` (default at INFO) | Console shows short previews; `events.jsonl` still stores full `text` (256 KiB safety cap) so `--stream-ui` never crops prompts |
+| `full` (default when `--log-level DEBUG`, unless chatter is `off`) | Full bodies everywhere (256 KiB cap per field) |
 | `off` | No `chatter.*` events |
 
 `claudeloop logs --chatter` filters the event stream to `chatter.*` only.
@@ -58,8 +58,10 @@ JSON lines with the per-run event log.
 ## Token stream UI
 
 - `claudeloop run|resume --stream-ui` — full-screen Textual panes (header /
-  assistant stream / tools / footer). Requires a TTY; human console renderer
-  is disabled; JSON console stays on stderr.
+  continuous AI chat log on the left / tools on the right / footer). The left
+  pane appends prompts and streamed tokens in realtime and does not wipe or
+  crop prompts between turns. Requires a TTY; human console renderer is
+  disabled; JSON console stays on stderr.
 - `claudeloop watch --stream [--run-id]` — follow live `events.jsonl` deltas.
 - `claudeloop watch --stream --replay [--speed N]` — replay historical
   `chatter.delta` / turn chatter from disk (`--speed 0` = as fast as possible).

@@ -22,19 +22,20 @@ class GitSavePointStore:
         if not self._is_git_repo():
             return None
         self._run(["git", "add", "-A"])
-        # Commit even if nothing changed would fail — allow empty for stable numbering
-        # when the tree is unchanged (still a valid snapshot of "current state").
-        self._run(
-            [
-                "git",
-                "commit",
-                "--allow-empty",
-                "--no-verify",
-                "-m",
-                f"claudeloop: savepoint — {message}",
-            ],
-            check=False,
-        )
+        # Only commit when the index differs from HEAD. Unchanged trees still
+        # get a numbered refs/claudeloop/<run_id>/<n> pointing at current HEAD
+        # — no empty commits on wait/poll turns.
+        has_staged = self._run(["git", "diff", "--cached", "--quiet"], check=False).returncode != 0
+        if has_staged:
+            self._run(
+                [
+                    "git",
+                    "commit",
+                    "--no-verify",
+                    "-m",
+                    f"claudeloop: savepoint — {message}",
+                ],
+            )
         sha = self._run(["git", "rev-parse", "HEAD"]).stdout.strip()
         existing = self.list_points(run_id)
         n = (existing[-1].n + 1) if existing else 1
