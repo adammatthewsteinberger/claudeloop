@@ -4,7 +4,11 @@ from datetime import timezone
 
 from claudeloop.domain.capacity import WindowExhausted
 from claudeloop.domain.waiting import next_probe_instant
-from claudeloop.infrastructure.agent.translate import TurnAccumulator, _to_datetime
+from claudeloop.infrastructure.agent.translate import (
+    COMPLETION_OUTPUT_SCHEMA,
+    TurnAccumulator,
+    _to_datetime,
+)
 from claudeloop.infrastructure.clock import SystemClock
 from claudeloop.infrastructure.redact import REDACTED_VALUE, redact
 
@@ -90,3 +94,22 @@ def test_redact_nested_secrets() -> None:
     assert scrubbed["nested"]["authorization"] == REDACTED_VALUE
     assert scrubbed["nested"]["ok"] == "fine"
     assert REDACTED_VALUE in scrubbed["text"]
+
+
+def test_completion_schema_describes_blocked_on_as_terminal_external_only() -> None:
+    """Models misuse blocked_on for waitable self-started work; schema text must
+    steer them toward remaining_work instead (stops the run as Blocked)."""
+    props = COMPLETION_OUTPUT_SCHEMA["properties"]
+    assert isinstance(props, dict)
+    blocked = props["blocked_on"]
+    assert isinstance(blocked, dict)
+    description = str(blocked["description"]).lower()
+    assert "null" in description
+    assert "remaining_work" in description
+    assert "background" in description or "waitable" in description
+    assert "credential" in description or "human" in description
+
+    remaining = props["remaining_work"]
+    assert isinstance(remaining, dict)
+    rem_desc = str(remaining["description"]).lower()
+    assert "background" in rem_desc or "waitable" in rem_desc

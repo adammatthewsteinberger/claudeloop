@@ -21,7 +21,11 @@ AUTONOMY_SYSTEM_PROMPT_FRAGMENT = (
     "a turn by asking 'Shall I proceed?' or waiting for confirmation on a "
     "reversible action that follows from the task — just do it. If you would "
     "normally ask a clarifying question, make the most reasonable assumption, "
-    "state it plainly, and continue."
+    "state it plainly, and continue. "
+    "Structured completion verdict: leave blocked_on null unless a human or "
+    "external dependency must intervene. Waiting on a background task, test "
+    "suite, or build you started belongs in remaining_work with blocked_on "
+    "null — a non-null blocked_on stops this autonomous run permanently."
 )
 
 
