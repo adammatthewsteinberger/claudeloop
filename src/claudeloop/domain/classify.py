@@ -8,6 +8,10 @@ through the `rejected` computation below to `Available`, so it can never be
 mistaken for a hard limit. Once rejected, credit signals are checked before
 falling back to WindowExhausted, so a credits rejection can never be mistaken for
 a waitable window even if a stray resets_at rides along with it.
+
+`assistant_error == "billing_error"` (SDK AssistantMessageError) is treated like
+credits exhaustion — checked before the Available / window path so a billing
+failure cannot be classified as Available or WindowExhausted.
 """
 
 from __future__ import annotations
@@ -50,6 +54,12 @@ class TurnSignals:
 def classify(signals: TurnSignals) -> CapacityState:
     if signals.assistant_error == "authentication_failed":
         return AuthenticationFailed(detail=signals.assistant_error)
+
+    # SDK AssistantMessageError sibling of authentication_failed / rate_limit.
+    # Billing failures have no reset clock — never treat as WindowExhausted
+    # even when a stray resets_at or 429 rides along.
+    if signals.assistant_error == "billing_error":
+        return CreditsExhausted(can_purchase=True)
 
     rejected = (
         signals.rate_limit_status == "rejected"
