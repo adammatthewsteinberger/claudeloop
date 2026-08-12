@@ -138,14 +138,17 @@ Primary source: a structured JSON verdict the model returns every turn via
 
 `evaluate()` maps that (as a `StructuredVerdict`) to the union above, with
 `blocked_on` outranking `complete` — a turn can't claim done and blocked at
-once. When `structured` is `None` (older model, or structured output
-unsupported), it falls back to substring-matching a legacy marker
-(`CLAUDELOOP_TASK_FULLY_COMPLETE` by default) in the raw output text, exactly
-as `claude_autoresume.py` does today — but only as a fallback, not the
-primary mechanism, because a marker can collide with the user's own prompt
-text or appear inside a truncated limit message. The run loop (below) never
-trusts a `Done` verdict over a real capacity rejection, regardless of which
-detection path produced it.
+once, and a non-null `blocked_on` **terminates the run as failed**. It is
+only for true external/human blockers (credentials, billing, required human
+decisions); waitable self-started work (background tasks, pending suites)
+belongs in `remaining_work` with `blocked_on: null`. When `structured` is
+`None` (older model, or structured output unsupported), it falls back to
+substring-matching a legacy marker (`CLAUDELOOP_TASK_FULLY_COMPLETE` by
+default) in the raw output text, exactly as `claude_autoresume.py` does
+today — but only as a fallback, not the primary mechanism, because a marker
+can collide with the user's own prompt text or appear inside a truncated
+limit message. The run loop (below) never trusts a `Done` verdict over a
+real capacity rejection, regardless of which detection path produced it.
 
 ## `waiting.py` — `WaitPolicyConfig` & `next_probe_instant()`
 

@@ -36,11 +36,17 @@ for the full reasoning.
   (`{complete: bool, remaining_work: [str], blocked_on: str|null, summary:
   str}`) so each turn returns a `ResultMessage.structured_output` the
   domain layer's `completion.py` can evaluate directly, rather than
-  substring-matching output text.
+  substring-matching output text. Property descriptions (and the autonomy
+  system-prompt fragment) insist `blocked_on` is only for true
+  external/human blockers — waitable self-started work goes in
+  `remaining_work` with `blocked_on: null`, because any non-null value
+  terminates the run as `Blocked`.
 - **`resume` / `continue_conversation` / `fork_session` / `session_id`** —
   `session_id` cannot combine with `resume`/`continue_conversation` unless
   `fork_session=True` is also set. Get this wrong and session resumption
-  breaks in a way that's easy to miss in a quick test.
+  breaks in a way that's easy to miss in a quick test. When building
+  options, drop `session_id` whenever `resume` or `continue_conversation`
+  is set (see `build_turn_options`).
 - **`setting_sources=None`** for the throwaway capacity probe specifically
   — no `CLAUDE.md` should load for a one-token "are we still limited"
   check.

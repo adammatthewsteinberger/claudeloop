@@ -86,10 +86,17 @@ def build_turn_options(
         else:
             sdk_plugins.append({"type": "local", "path": plugin})
 
+    # ClaudeAgentOptions.session_id pins a *new* conversation id. The CLI
+    # rejects combining it with --resume / --continue unless --fork-session
+    # is also set (see claude_agent_sdk.types.ClaudeAgentOptions.session_id).
+    # claudeloop resume passes the id both for bookkeeping and as resume=;
+    # only resume must reach the SDK options.
+    effective_session_id = None if (resume or continue_conversation) else session_id
+
     sdk_mode = to_sdk_permission_mode(permission_mode)
     kwargs: dict[str, Any] = {
         "cwd": cwd,
-        "session_id": session_id,
+        "session_id": effective_session_id,
         "resume": resume,
         "continue_conversation": continue_conversation,
         "permission_mode": sdk_mode,

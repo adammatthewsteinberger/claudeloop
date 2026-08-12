@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from claudeloop.infrastructure.agent.autonomy import AUTONOMY_SYSTEM_PROMPT_FRAGMENT
 from claudeloop.infrastructure.agent.options import (
     DEFAULT_MAX_BUFFER_SIZE,
     build_turn_options,
@@ -30,6 +31,43 @@ def test_effort_and_partial_messages_wired() -> None:
     assert options.model == "claude-sonnet-4-5"
     assert options.effort == "medium"
     assert options.include_partial_messages is True
+
+
+def test_autonomy_prompt_warns_blocked_on_is_terminal() -> None:
+    text = AUTONOMY_SYSTEM_PROMPT_FRAGMENT.lower()
+    assert "blocked_on" in text
+    assert "remaining_work" in text
+    assert "null" in text
+
+
+def test_resume_drops_session_id_without_fork() -> None:
+    """Claude Code rejects --session-id with --resume unless --fork-session.
+
+    claudeloop resume historically passed both (bookkeeping + SDK resume);
+    only resume must reach ClaudeAgentOptions.
+    """
+    sid = "963044a8-322c-4655-b993-9c344e6ea82e"
+    options = build_turn_options(cwd="/tmp", session_id=sid, resume=sid)
+    assert options.resume == sid
+    assert options.session_id is None
+    assert options.continue_conversation is False
+    assert options.fork_session is False
+
+
+def test_continue_conversation_drops_session_id_without_fork() -> None:
+    sid = "963044a8-322c-4655-b993-9c344e6ea82e"
+    options = build_turn_options(cwd="/tmp", session_id=sid, continue_conversation=True)
+    assert options.continue_conversation is True
+    assert options.session_id is None
+    assert options.resume is None
+
+
+def test_fresh_session_may_pin_session_id() -> None:
+    sid = "963044a8-322c-4655-b993-9c344e6ea82e"
+    options = build_turn_options(cwd="/tmp", session_id=sid)
+    assert options.session_id == sid
+    assert options.resume is None
+    assert options.continue_conversation is False
 
 
 def test_file_state_bus_publish_and_status(tmp_path: Path) -> None:
