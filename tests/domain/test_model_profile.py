@@ -171,6 +171,10 @@ def test_chatter_event_payload_summary_keeps_full_text() -> None:
     assert full is not None
     assert full["text"] == "hi"
     assert "preview" not in full
+    with_extra = chatter_event_payload("hi", mode="full", extra={"name": "Bash"})
+    assert with_extra is not None
+    assert with_extra["name"] == "Bash"
+    assert with_extra["text"] == "hi"
 
 
 def test_invalid_effort() -> None:
