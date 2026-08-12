@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import types
 from dataclasses import dataclass
 from typing import Any, Union, get_args, get_origin
 
@@ -16,6 +17,13 @@ SKIP_PARAMETERS = frozenset(
         "extra_body",
     }
 )
+
+_SCALAR_BY_NAME: dict[str, type] = {
+    "int": int,
+    "float": float,
+    "str": str,
+    "bool": bool,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,19 +39,63 @@ def _is_omit_default(default: Any) -> bool:
     return isinstance(default, (Omit, NotGiven))
 
 
-def _unwrap_optional(annotation: Any) -> Any:
+def _is_omit_or_not_given_type(annotation: Any) -> bool:
+    return annotation is Omit or annotation is NotGiven
+
+
+def _normalize_annotation(annotation: Any) -> Any:
+    """Reduce Optional / ``X | None`` / ``X | Omit`` forms to one type when unique.
+
+    Anthropic SDK methods are typically annotated under
+    ``from __future__ import annotations``, so runtime signatures carry *strings*
+    like ``'int | Omit'`` rather than evaluated unions. Without peeling those
+    suffixes, list endpoints lose every pagination CLI flag.
+    """
+    if isinstance(annotation, str):
+        text = annotation.strip()
+        changed = True
+        while changed:
+            changed = False
+            if text.startswith("Optional[") and text.endswith("]"):
+                text = text[len("Optional[") : -1].strip()
+                changed = True
+                continue
+            for prefix in ("None | ", "Omit | ", "NotGiven | "):
+                if text.startswith(prefix):
+                    text = text[len(prefix) :].strip()
+                    changed = True
+                    break
+            if changed:
+                continue
+            for suffix in (" | Omit", " | NotGiven", " | None"):
+                if text.endswith(suffix):
+                    text = text[: -len(suffix)].strip()
+                    changed = True
+                    break
+        if " | " in text or "[" in text:
+            return annotation
+        return _SCALAR_BY_NAME.get(text, text)
+
     origin = get_origin(annotation)
-    if origin is Union:
-        args = [a for a in get_args(annotation) if a is not type(None)]
-        if len(args) == 1:
-            return args[0]
+    if origin is Union or isinstance(annotation, types.UnionType):
+        filtered = [
+            arg
+            for arg in get_args(annotation)
+            if arg is not type(None) and not _is_omit_or_not_given_type(arg)
+        ]
+        if len(filtered) == 1:
+            return _normalize_annotation(filtered[0])
     return annotation
+
+
+def _unwrap_optional(annotation: Any) -> Any:
+    return _normalize_annotation(annotation)
 
 
 def is_scalar_annotation(annotation: Any) -> bool:
     if annotation is inspect.Parameter.empty:
         return False
-    ann = _unwrap_optional(annotation)
+    ann = _normalize_annotation(annotation)
     if ann is bool:
         return True
     if ann in (int, float, str):
@@ -53,8 +105,20 @@ def is_scalar_annotation(annotation: Any) -> bool:
         return False
     if isinstance(ann, str):
         # Forward refs to complex TypedDicts — not scalar.
-        return ann in {"int", "float", "str", "bool"}
+        return ann in _SCALAR_BY_NAME
     return False
+
+
+def click_type_for_annotation(annotation: Any) -> Any:
+    """Map a (possibly stringified) scalar annotation to a Click type."""
+    ann = _normalize_annotation(annotation)
+    if ann is bool or ann == "bool":
+        return bool
+    if ann is int or ann == "int":
+        return int
+    if ann is float or ann == "float":
+        return float
+    return str
 
 
 def scalar_parameters(signature: inspect.Signature) -> tuple[ScalarParam, ...]:
