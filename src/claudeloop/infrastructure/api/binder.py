@@ -10,19 +10,9 @@ import click
 
 from claudeloop.infrastructure.api.gateway import AnthropicApiGateway, default_gateway
 from claudeloop.infrastructure.api.introspect import DiscoveredMethod, discover_surface
-from claudeloop.infrastructure.api.params import scalar_parameters
+from claudeloop.infrastructure.api.params import click_type_for_annotation, scalar_parameters
 from claudeloop.infrastructure.api.providers import PROVIDER_FACTORIES
 from claudeloop.infrastructure.api.registry import clear_registry, register_command_path
-
-
-def _click_type_for_annotation(annotation: Any) -> Any:
-    if annotation is bool:
-        return bool
-    if annotation is int:
-        return int
-    if annotation is float:
-        return float
-    return str
 
 
 def _make_click_command(
@@ -62,7 +52,7 @@ def _make_click_command(
             click.Option(
                 [f"--{scalar.cli_name}"],
                 scalar.name,
-                type=_click_type_for_annotation(scalar.annotation),
+                type=click_type_for_annotation(scalar.annotation),
                 required=False,
                 default=None,
                 help=f"SDK parameter {scalar.name!r}.",
