@@ -6,7 +6,7 @@ replacement for find_most_recent_session() in the legacy script."""
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from claude_agent_sdk import SDKSessionInfo, list_sessions
 
@@ -42,7 +42,7 @@ def _to_session_ref(info: SDKSessionInfo, cwd: str) -> SessionRef:
     # value raises ValueError('year 58576 is out of range') otherwise).
     last_modified: datetime | None = None
     if isinstance(info.last_modified, int | float):
-        last_modified = datetime.fromtimestamp(info.last_modified / 1000)
+        last_modified = datetime.fromtimestamp(info.last_modified / 1000, tz=timezone.utc)
     preview = (info.first_prompt or "")[:200] or None
     return SessionRef(
         session_id=info.session_id,

@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from datetime import timezone
 
+from claudeloop.domain.capacity import WindowExhausted
+from claudeloop.domain.waiting import next_probe_instant
 from claudeloop.infrastructure.agent.translate import TurnAccumulator, _to_datetime
+from claudeloop.infrastructure.clock import SystemClock
 from claudeloop.infrastructure.redact import REDACTED_VALUE, redact
 
 
@@ -14,14 +17,29 @@ def test_to_datetime_seconds_form_10_digits_is_utc_aware() -> None:
     result = _to_datetime(1786328953)
     assert result is not None
     assert 2020 <= result.year <= 2030
-    assert result.tzinfo is timezone.utc
+    assert result.tzinfo == timezone.utc
 
 
 def test_to_datetime_milliseconds_form_13_digits() -> None:
     result = _to_datetime(1786328953799)
     assert result is not None
     assert 2020 <= result.year <= 2030
-    assert result.tzinfo is not None
+    assert result.tzinfo == timezone.utc
+
+
+def test_to_datetime_resets_at_comparable_to_system_clock() -> None:
+    """Regression: naive local fromtimestamp vs aware SystemClock.now() crashed
+    next_probe_instant with TypeError on every live rate-limit wait."""
+    resets_at = _to_datetime(1786328953)
+    assert resets_at is not None
+    now = SystemClock().now()
+    at = next_probe_instant(
+        WindowExhausted(rate_limit_type="five_hour", resets_at=resets_at),
+        now=now,
+        started_waiting_at=now,
+        probe_count=0,
+    )
+    assert at.tzinfo is not None
 
 
 def test_accumulator_empty_build_is_available_with_no_verdict() -> None:

@@ -88,6 +88,25 @@ def test_authentication_failed_outranks_everything():
     assert result == AuthenticationFailed(detail="authentication_failed")
 
 
+def test_billing_error_alone_is_credits_exhausted():
+    """SDK AssistantMessageError includes billing_error as a sibling of
+    rate_limit / authentication_failed. Alone it must not fall through to
+    Available."""
+    signals = TurnSignals(assistant_error="billing_error")
+    assert classify(signals) == CreditsExhausted(can_purchase=True)
+
+
+def test_billing_error_outranks_window_even_with_resets_at():
+    """billing_error + 429 / resets_at must never become waitable WindowExhausted."""
+    signals = TurnSignals(
+        assistant_error="billing_error",
+        api_error_status=429,
+        rate_limit_status="rejected",
+        resets_at=NOW,
+    )
+    assert isinstance(classify(signals), CreditsExhausted)
+
+
 def test_overage_resets_at_used_when_primary_resets_at_absent():
     signals = TurnSignals(
         rate_limit_status="rejected", rate_limit_type="overage", overage_resets_at=NOW
