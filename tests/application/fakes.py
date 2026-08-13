@@ -104,6 +104,11 @@ class FakeCapacityProbe:
 
     def __init__(self, script: list[TurnSignals]) -> None:
         self._script = list(script)
+        self.models: list[str] = []
+
+    def set_model(self, model: str) -> None:
+        """Mirror AgentCapacityProbe.set_model so profile changes stay sticky."""
+        self.models.append(model)
 
     async def probe(self) -> TurnOutcome:
         signals = self._script.pop(0)
@@ -222,19 +227,38 @@ class FakeSessionLock:
 
 
 class FakeSavePointStore:
-    def __init__(self) -> None:
+    def __init__(self, *, reuse_sha: bool = False) -> None:
         self.points: list[SavePointRef] = []
         self.unwinds: list[tuple[str, str, bool]] = []
+        self._reuse_sha = reuse_sha
 
-    def create(self, *, run_id: str, label: str, message: str) -> SavePointRef:
-        del message
+    def create(
+        self,
+        *,
+        run_id: str,
+        label: str,
+        message: str = "",
+        attempt: int | None = None,
+        verdict_name: str = "Continue",
+        summary: str = "",
+        remaining_work: tuple[str, ...] = (),
+    ) -> SavePointRef:
+        del message, attempt, verdict_name, summary, remaining_work
         n = len(self.points) + 1
+        if self._reuse_sha:
+            # Simulate an unchanged tree (ref-only) from the first savepoint onward.
+            sha = self.points[-1].sha if self.points else ("b" * 40)
+            committed = False
+        else:
+            sha = f"{'a' * 39}{n}"
+            committed = True
         point = SavePointRef(
             n=n,
             ref=f"refs/claudeloop/{run_id}/{n}",
-            sha=f"{'a' * 39}{n}",
+            sha=sha,
             label=label,
             at=datetime(2026, 8, 12, tzinfo=timezone.utc),
+            committed=committed,
         )
         self.points.append(point)
         return point

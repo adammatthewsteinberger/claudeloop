@@ -21,9 +21,13 @@ from claudeloop.domain.capacity import (
 )
 from claudeloop.domain.completion import Blocked, CompletionVerdict, Continue, Done
 from claudeloop.domain.waiting import (
+    DEFAULT_PROGRESS_WAIT_CONFIG,
     DEFAULT_WAIT_POLICY_CONFIG,
+    ProgressWaitConfig,
     WaitPolicyConfig,
+    is_wait_only_remaining_work,
     next_probe_instant,
+    next_progress_wait_instant,
     wait_exceeded,
 )
 
@@ -67,7 +71,28 @@ class Finish:
     reason: str = ""
 
 
-Decision = SendTurn | RunProbe | ScheduleProbe | Finish
+@dataclass(frozen=True, slots=True)
+class DelayThenSend:
+    """Wait until ``at`` (interruptible) then spend another real turn."""
+
+    at: datetime
+
+
+Decision = SendTurn | RunProbe | ScheduleProbe | DelayThenSend | Finish
+
+
+def decide_progress_delay(
+    *,
+    verdict: Continue,
+    tree_changed: bool,
+    now: datetime,
+    streak: int,
+    config: ProgressWaitConfig = DEFAULT_PROGRESS_WAIT_CONFIG,
+) -> DelayThenSend | None:
+    """When remaining_work is wait-only and the tree did not change, back off."""
+    if tree_changed or not is_wait_only_remaining_work(verdict.remaining_work):
+        return None
+    return DelayThenSend(at=next_progress_wait_instant(now=now, streak=streak, config=config))
 
 
 def start(ledger: BudgetLedger) -> RunState:

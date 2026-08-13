@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
@@ -19,6 +20,7 @@ from claudeloop.infrastructure.git_savepoints import GitSavePointStore
 from claudeloop.infrastructure.logging import get_logger
 from claudeloop.infrastructure.resources.store import RunResourceStore
 from claudeloop.infrastructure.rundir import (
+    _pid_alive,
     list_run_directories,
     resolve_run_directory,
 )
@@ -328,10 +330,15 @@ def list_runs(cwd: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for directory in list_run_directories(cwd):
         meta = directory.read_meta()
+        status = meta.status
+        if status in {"active", "waiting"} and not _pid_alive(meta.pid):
+            status = "orphaned"
+            with contextlib.suppress(OSError):
+                directory.update_meta(status="orphaned")
         rows.append(
             {
                 "run_id": meta.run_id,
-                "status": meta.status,
+                "status": status,
                 "pid": meta.pid,
                 "phase": meta.phase,
                 "attempt": meta.attempt,
@@ -346,15 +353,23 @@ def list_runs(cwd: Path) -> list[dict[str, Any]]:
 def run_status(cwd: Path, run_id: str | None = None) -> dict[str, Any]:
     directory = resolve_run_directory(cwd, run_id)
     meta = directory.read_meta()
+    status = meta.status
+    pid_alive = _pid_alive(meta.pid)
+    if status in {"active", "waiting"} and not pid_alive:
+        status = "orphaned"
+        with contextlib.suppress(OSError):
+            directory.update_meta(status="orphaned")
     status_path = directory.root / "status.json"
     live: dict[str, Any] = {}
     if status_path.is_file():
         live = json.loads(status_path.read_text(encoding="utf-8"))
     latest_snap = directory.snapshots_root / "latest.json"
+    reported = status if status == "orphaned" else live.get("status", status)
     return {
         "run_id": meta.run_id,
-        "status": live.get("status", meta.status),
+        "status": reported,
         "pid": meta.pid,
+        "pid_alive": pid_alive,
         "phase": live.get("phase", meta.phase),
         "attempt": live.get("attempt", meta.attempt),
         "waiting_until": meta.waiting_until,
@@ -495,6 +510,29 @@ def unwind_savepoint(
         restored_sha=out["restored_sha"],
     )
     return out
+
+
+def reset_project_state(cwd: Path, *, yes: bool) -> dict[str, Any]:
+    """Delete the entire project `.claudeloop/` tree.
+
+    Refuses without ``yes=True``. Refuses if any run still has a live pid.
+    Never touches the git worktree or ``~/.claude/``.
+    """
+    root = cwd / ".claudeloop"
+    if not yes:
+        raise ValueError("refusing to reset without --yes")
+    if not root.exists():
+        raise FileNotFoundError(f"no control plane at {root}")
+    for directory in list_run_directories(cwd):
+        meta = directory.read_meta()
+        if meta.status in {"active", "waiting"} and _pid_alive(meta.pid):
+            raise RuntimeError(
+                f"run {meta.run_id} is still active (pid {meta.pid}); "
+                "stop it with `claudeloop stop` before reset"
+            )
+    shutil.rmtree(root)
+    _logger().info("ops.reset", path=str(root))
+    return {"path": str(root)}
 
 
 def tail_events(

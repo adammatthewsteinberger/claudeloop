@@ -58,6 +58,9 @@ class RunnerConfig:
     tool_approval_timeout_seconds: float = 30.0
     web_search: bool = False
     deep_research: bool = False
+    progress_wait_initial_seconds: float = 30.0
+    progress_wait_factor: float = 2.0
+    progress_wait_ceiling_seconds: float = 300.0
 
     def aliases(self) -> ModelAliases:
         return ModelAliases(

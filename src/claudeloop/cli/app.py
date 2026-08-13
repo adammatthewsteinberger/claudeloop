@@ -28,6 +28,7 @@ from claudeloop.cli.commands.plugin_cmd import app as plugin_app
 from claudeloop.cli.commands.preset_cmd import preset_cmd
 from claudeloop.cli.commands.prompt import prompt
 from claudeloop.cli.commands.research_cmd import app as research_app
+from claudeloop.cli.commands.reset import reset
 from claudeloop.cli.commands.response_cmd import app as response_app
 from claudeloop.cli.commands.resume import resume
 from claudeloop.cli.commands.run import run
@@ -94,6 +95,7 @@ app.command(name="logs")(logs)
 app.command(name="status")(status)
 app.command(name="snapshot")(snapshot)
 app.command(name="unwind")(unwind)
+app.command(name="reset")(reset)
 app.command(name="watch")(watch)
 app.add_typer(runs_app, name="runs")
 app.add_typer(savepoints_app, name="savepoints")

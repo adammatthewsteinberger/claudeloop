@@ -137,18 +137,28 @@ def build_probe_options(
     cwd: str,
     resume: str | None = None,
     max_buffer_size: int | None = None,
+    model: str | None = None,
 ) -> ClaudeAgentOptions:
     """Deliberately minimal: one throwaway turn purely to re-check capacity.
     No CLAUDE.md, no tools, no persisted transcript. See
-    docs/architecture/decisions/0004-adaptive-waiting-with-probes-not-sleep.md."""
-    return ClaudeAgentOptions(
-        cwd=cwd,
-        resume=resume,
-        permission_mode="bypassPermissions",
-        hooks=build_hooks(),
-        setting_sources=None,
-        tools=[],
-        max_turns=1,
-        extra_args={"no-session-persistence": None},
-        max_buffer_size=(DEFAULT_MAX_BUFFER_SIZE if max_buffer_size is None else max_buffer_size),
-    )
+    docs/architecture/decisions/0004-adaptive-waiting-with-probes-not-sleep.md.
+
+    ``model`` should match the run's active model so a spend-limit on Fable
+    (or similar) is not masked by a default-model probe succeeding.
+    """
+    kwargs: dict[str, Any] = {
+        "cwd": cwd,
+        "resume": resume,
+        "permission_mode": "bypassPermissions",
+        "hooks": build_hooks(),
+        "setting_sources": None,
+        "tools": [],
+        "max_turns": 1,
+        "extra_args": {"no-session-persistence": None},
+        "max_buffer_size": (
+            DEFAULT_MAX_BUFFER_SIZE if max_buffer_size is None else max_buffer_size
+        ),
+    }
+    if model:
+        kwargs["model"] = model
+    return ClaudeAgentOptions(**kwargs)

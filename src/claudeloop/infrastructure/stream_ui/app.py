@@ -75,6 +75,7 @@ def chat_update_for_record(
             update.assistant_lines.append(body)
             if not body.endswith("\n"):
                 update.assistant_lines.append("\n")
+        update.saw_delta = True
     elif et == "chatter.tool":
         name = payload.get("name") or "tool"
         preview = _payload_text(payload) or payload.get("preview") or ""
@@ -85,6 +86,7 @@ def chat_update_for_record(
 class StreamApp(App[None]):
     CSS = """
     #header-bar { height: 3; dock: top; }
+    #thinking-bar { height: 1; dock: top; display: none; color: $text-muted; }
     #assistant {
         height: 1fr;
         width: 1fr;
@@ -129,10 +131,13 @@ class StreamApp(App[None]):
         self._turn_starts: list[int] = []
         self._playing = True
         self._saw_delta = False
+        self._thinking = False
+        self._thinking_frame = 0
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield Static(self._header_text(), id="header-bar")
+        yield Static("", id="thinking-bar")
         with Horizontal(id="main"):
             # wrap=True so long prompts are never horizontally cropped.
             yield RichLog(id="assistant", highlight=True, markup=True, wrap=True, auto_scroll=True)
@@ -147,6 +152,25 @@ class StreamApp(App[None]):
             self.set_interval(0.2, self._tick_follow)
             if self.live_source is not None:
                 self.set_interval(0.1, self._tick_live)
+        self.set_interval(0.5, self._tick_thinking)
+
+    def _set_thinking(self, active: bool) -> None:
+        self._thinking = active
+        bar = self.query_one("#thinking-bar", Static)
+        if active:
+            bar.styles.display = "block"
+            self._thinking_frame = 0
+            bar.update("thinking.")
+        else:
+            bar.styles.display = "none"
+            bar.update("")
+
+    def _tick_thinking(self) -> None:
+        if not self._thinking:
+            return
+        self._thinking_frame = (self._thinking_frame + 1) % 3
+        dots = "." * (self._thinking_frame + 1)
+        self.query_one("#thinking-bar", Static).update(f"thinking{dots}")
 
     def _header_text(self) -> str:
         s = self.state
@@ -173,6 +197,12 @@ class StreamApp(App[None]):
             self._append_assistant(line)
         for line in update.tool_lines:
             self._append_tool(line)
+        # Prompt sets saw_delta=False → show thinking; delta/assistant True → hide.
+        if update.saw_delta:
+            self._set_thinking(False)
+        elif update.assistant_lines and not self._saw_delta:
+            # Fresh prompt lines without prior tokens this turn.
+            self._set_thinking(True)
         self._saw_delta = update.saw_delta
         if update.header_dirty:
             self._refresh_header()
@@ -247,12 +277,16 @@ class StreamApp(App[None]):
             prompt = self.live_source.prompts.pop(0)
             self._saw_delta = False
             self._append_assistant(f"\n[dim]── prompt ──[/dim]\n{prompt}\n\n")
+            self._set_thinking(True)
         while self.live_source.deltas:
             text, _turn_id, _seq = self.live_source.deltas.pop(0)
+            if not self._saw_delta:
+                self._set_thinking(False)
             self._saw_delta = True
             self._append_assistant(text)
         while self.live_source.assistants:
             text = self.live_source.assistants.pop(0)
+            self._set_thinking(False)
             self._append_assistant(text if text.endswith("\n") else f"{text}\n")
         self.state = self.live_source.state
         self._refresh_header()

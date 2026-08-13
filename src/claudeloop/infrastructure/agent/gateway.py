@@ -277,14 +277,24 @@ class ClaudeCapacityProbe:
         cwd: str,
         on_event: EventListener | None = None,
         max_buffer_size: int | None = None,
+        model: str | None = None,
     ) -> None:
         self._cwd = cwd
         self._on_event = on_event
         self._max_buffer_size = max_buffer_size
+        self._model = model
+
+    def set_model(self, model: str | None) -> None:
+        """Keep the probe on the same model as the live run."""
+        self._model = model
 
     async def probe(self) -> TurnOutcome:
-        options = build_probe_options(cwd=self._cwd, max_buffer_size=self._max_buffer_size)
-        _logger().info("gateway.probe.start")
+        options = build_probe_options(
+            cwd=self._cwd,
+            max_buffer_size=self._max_buffer_size,
+            model=self._model,
+        )
+        _logger().info("gateway.probe.start", model=self._model)
         client = ClaudeSDKClient(options=options)
         await client.connect()
         try:

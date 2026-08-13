@@ -55,6 +55,7 @@ class TurnAccumulator:
         self._cost_usd: float = 0.0
         self._structured: dict[str, object] | None = None
         self._raw_events: list[dict[str, object]] = []
+        self._result_text: str | None = None
 
     @property
     def thinking_text(self) -> str:
@@ -116,6 +117,7 @@ class TurnAccumulator:
             if message.total_cost_usd is not None:
                 self._cost_usd = message.total_cost_usd
             if message.result:
+                self._result_text = message.result
                 self._text_parts.append(message.result)
             if isinstance(message.structured_output, dict):
                 self._structured = message.structured_output
@@ -169,6 +171,11 @@ class TurnAccumulator:
             self._scan_credit_blob(parsed)
 
     def build(self) -> TurnOutcome:
+        # Prefer ResultMessage.result; fall back to joined assistant text so
+        # spend-limit copy is visible even when RateLimitEvent was dropped.
+        result_text = self._result_text
+        if not result_text and self._text_parts:
+            result_text = "\n".join(self._text_parts)
         signals = TurnSignals(
             rate_limit_status=self._rate_limit_status,
             rate_limit_type=self._rate_limit_type,
@@ -182,6 +189,7 @@ class TurnAccumulator:
             error_code=self._error_code,
             disabled_reason=self._disabled_reason,
             can_purchase=self._can_purchase,
+            result_text=result_text,
         )
         verdict = None
         if self._structured is not None:
@@ -246,6 +254,9 @@ def _message_to_event(message: object) -> dict[str, object]:
         payload["rate_limit_type"] = info.rate_limit_type
         payload["resets_at"] = info.resets_at
         payload["utilization"] = info.utilization
+        payload["overage_status"] = info.overage_status
+        payload["overage_resets_at"] = info.overage_resets_at
+        payload["overage_disabled_reason"] = info.overage_disabled_reason
         return payload
     if isinstance(message, AssistantMessage):
         payload["session_id"] = message.session_id

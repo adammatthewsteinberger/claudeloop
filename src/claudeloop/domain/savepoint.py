@@ -14,6 +14,8 @@ class SavePointRef:
     label: str
     at: datetime
     plan_item: str | None = None
+    # True when create() wrote a new commit; False for ref-only unchanged trees.
+    committed: bool = False
 
     def __post_init__(self) -> None:
         if self.n < 1:

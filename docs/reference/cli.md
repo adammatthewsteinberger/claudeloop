@@ -54,6 +54,7 @@ claudeloop runs                      List .claudeloop/runs/*
 claudeloop savepoints [--run-id]     List git save points for a run
 claudeloop unwind --to N [--backup|--no-backup] [--run-id]
                                      Reset worktree to save point (refuse if run still active)
+claudeloop reset --yes               Delete project `.claudeloop/` (refuse if a run is live)
 claudeloop watch [--run-id] [--follow] [--stream] [--replay] [--speed N]
                                      Follow bus.jsonl, or Textual token stream live/replay
 
@@ -83,8 +84,9 @@ cwd (or an explicit `--run-id`):
 | `status` / `runs` | Poll live status |
 | `snapshot` | Write handoff JSON (+ optional bundle); bus publishes digest |
 | `savepoints` / `unwind` | List / restore git save points |
+| `reset --yes` | Wipe `.claudeloop/` when no live run |
 | `watch` | Follow `bus.jsonl` or stream UI |
-| `savepoints` / `unwind` | Git refs under `refs/claudeloop/…` (commit only when the tree changed; unchanged trees are ref-tagged only) |
+| `savepoints` / `unwind` | Git refs under `refs/claudeloop/…` (commit only when the tree changed after excluding `.claudeloop/`; unchanged trees are ref-tagged only; subjects use `chore(claudeloop): turn N — …`) |
 
 Control plane layout: `.claudeloop/runs/<run_id>/` (`meta.json`, `inbox/`,
 `events.jsonl`, `audit.jsonl`, `status.json`, `bus.jsonl`,
