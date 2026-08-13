@@ -142,6 +142,18 @@ def test_ordinary_assistant_text_is_not_spend_limit():
     assert classify(signals) == Available(utilization=None)
 
 
+def test_documenting_spend_limit_is_not_credits_exhausted():
+    """Topic mentions must not trip CreditsExhausted — capacity outranks Done,
+    so a false positive here aborts otherwise-successful autonomous runs."""
+    for text in (
+        "Documented the monthly spend limit behavior.",
+        "We raised the spend limit in config.",
+        "Updated the usage-credits page in the docs.",
+        "See /usage-credits in the docs.",
+    ):
+        assert classify(TurnSignals(result_text=text)) == Available(utilization=None)
+
+
 def test_session_limit_copy_is_not_spend_limit():
     """Broad 'you've hit your' window copy must stay waitable WindowExhausted."""
     signals = TurnSignals(
