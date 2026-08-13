@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.3...claudeloop-v0.5.4) (2026-08-13)
+
+
+### Bug Fixes
+
+* **ops:** spend-limit capacity, progress wait, savepoint messages, reset ([dc53513](https://github.com/adammatthewsteinberger/claudeloop/commit/dc53513662077a5074315fb84cb1f8ff62765117))
+
 ## [0.5.3](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.2...claudeloop-v0.5.3) (2026-08-12)
 
 
