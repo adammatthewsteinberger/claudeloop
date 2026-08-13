@@ -32,25 +32,25 @@ _CREDITS_DISABLED_REASONS = frozenset({"out_of_credits"})
 
 # Monthly spend / usage-credit limit copy often arrives as a bare rate_limit + 429
 # (or only as ResultMessage.result text) with RateLimitEvent dropped — never treat
-# that as a waitable window. Keep markers specific: "you've hit your" alone also
-# matches session/weekly window copy and must not force CreditsExhausted.
-_SPEND_LIMIT_MARKERS = (
-    "monthly spend limit",
-    "usage-credits",
-    "/usage-credits",
+# that as a waitable window.
+#
+# Markers must be error-phrasing, not topic mentions: a turn that *documents*
+# "monthly spend limit" / "spend limit" / "/usage-credits" must stay Available.
+# Bare "you've hit your" also matches session/weekly window copy and must not
+# force CreditsExhausted on its own.
+_SPEND_LIMIT_ERROR_MARKERS = (
     "hit your monthly",
     "out of extra usage",
     "purchase more credits",
-    "spend limit",
 )
 
 
 def looks_like_spend_limit(text: str | None) -> bool:
-    """True when assistant/result copy describes a billing spend or usage-credit limit."""
+    """True when assistant/result copy is a billing spend / usage-credit *error*."""
     if not text:
         return False
     lowered = text.casefold()
-    return any(marker in lowered for marker in _SPEND_LIMIT_MARKERS)
+    return any(marker in lowered for marker in _SPEND_LIMIT_ERROR_MARKERS)
 
 
 @dataclass(frozen=True, slots=True)
