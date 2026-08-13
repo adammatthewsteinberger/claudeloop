@@ -149,6 +149,7 @@ def test_documenting_spend_limit_is_not_credits_exhausted():
         "Documented the monthly spend limit behavior.",
         "We raised the spend limit in config.",
         "Updated the usage-credits page in the docs.",
+        "See /usage-credits in the docs.",
     ):
         assert classify(TurnSignals(result_text=text)) == Available(utilization=None)
 

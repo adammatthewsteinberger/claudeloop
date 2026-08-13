@@ -35,14 +35,13 @@ _CREDITS_DISABLED_REASONS = frozenset({"out_of_credits"})
 # that as a waitable window.
 #
 # Markers must be error-phrasing, not topic mentions: a turn that *documents*
-# "monthly spend limit" / "spend limit" / "usage-credits" must stay Available.
+# "monthly spend limit" / "spend limit" / "/usage-credits" must stay Available.
 # Bare "you've hit your" also matches session/weekly window copy and must not
 # force CreditsExhausted on its own.
 _SPEND_LIMIT_ERROR_MARKERS = (
     "hit your monthly",
     "out of extra usage",
     "purchase more credits",
-    "/usage-credits",
 )
 
 
