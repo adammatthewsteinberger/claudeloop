@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.5](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.4...claudeloop-v0.5.5) (2026-08-13)
+
+
+### Bug Fixes
+
+* **agent:** require error phrasing for spend-limit classification ([df00023](https://github.com/adammatthewsteinberger/claudeloop/commit/df000235c5e27055fd2de12049fd50928f03613e))
+
 ## [0.5.4](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.3...claudeloop-v0.5.4) (2026-08-13)
 
 
