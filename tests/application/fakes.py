@@ -104,6 +104,11 @@ class FakeCapacityProbe:
 
     def __init__(self, script: list[TurnSignals]) -> None:
         self._script = list(script)
+        self.models: list[str] = []
+
+    def set_model(self, model: str) -> None:
+        """Mirror AgentCapacityProbe.set_model so profile changes stay sticky."""
+        self.models.append(model)
 
     async def probe(self) -> TurnOutcome:
         signals = self._script.pop(0)
@@ -222,9 +227,10 @@ class FakeSessionLock:
 
 
 class FakeSavePointStore:
-    def __init__(self) -> None:
+    def __init__(self, *, reuse_sha: bool = False) -> None:
         self.points: list[SavePointRef] = []
         self.unwinds: list[tuple[str, str, bool]] = []
+        self._reuse_sha = reuse_sha
 
     def create(
         self,
@@ -239,10 +245,11 @@ class FakeSavePointStore:
     ) -> SavePointRef:
         del message, attempt, verdict_name, summary, remaining_work
         n = len(self.points) + 1
+        sha = self.points[-1].sha if self._reuse_sha and self.points else f"{'a' * 39}{n}"
         point = SavePointRef(
             n=n,
             ref=f"refs/claudeloop/{run_id}/{n}",
-            sha=f"{'a' * 39}{n}",
+            sha=sha,
             label=label,
             at=datetime(2026, 8, 12, tzinfo=timezone.utc),
         )

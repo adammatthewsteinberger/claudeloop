@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from claudeloop.application.runner import AutonomousRunner
 from claudeloop.domain.budget import Budget
 from claudeloop.domain.classify import TurnSignals
@@ -299,3 +301,142 @@ async def test_stop_during_wait_interrupts_sleep() -> None:
     assert "stopped" in result.reason
     assert gateway.closed is True
     assert len(sleeper.wait_log) >= 1
+
+
+WAIT_ONLY_CONTINUE = StructuredVerdict(complete=False, remaining_work=("Waiting for E2E suite",))
+
+
+async def test_wait_only_continue_triggers_progress_wait() -> None:
+    runner, gateway, _a, _p, sleeper, _n, events = make_runner(
+        turns=[
+            ScriptedTurn(signals=available_signals(), verdict=WAIT_ONLY_CONTINUE),
+            ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT),
+        ],
+        probes=[available_signals()],
+        save_points=FakeSavePointStore(reuse_sha=True),
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+    assert result.success is True
+    assert any(e[0] == "progress.wait" for e in events.events)
+    assert len(sleeper.wait_log) >= 1
+    assert gateway.sent_prompts == ["start", "keep going"]
+
+
+async def test_stop_during_progress_wait() -> None:
+    control = FakeRunControl(
+        script=[
+            [],  # before first turn
+            [],  # after turn, entering DelayThenSend
+            [],  # first sleep poll
+            [StopCommand()],
+        ]
+    )
+    runner, gateway, _a, _p, sleeper, _n, _e = make_runner(
+        turns=[ScriptedTurn(signals=available_signals(), verdict=WAIT_ONLY_CONTINUE)],
+        probes=[available_signals()],
+        run_control=control,
+        save_points=FakeSavePointStore(reuse_sha=True),
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+    assert result.success is False
+    assert "progress wait" in result.reason
+    assert gateway.closed is True
+    assert len(sleeper.wait_log) >= 1
+
+
+async def test_empty_zero_cost_turns_increment_streak_then_block() -> None:
+    runner, gateway, _a, _p, _s, _n, _e = make_runner(
+        turns=[
+            ScriptedTurn(signals=available_signals(), verdict=None, output_text="", cost_usd=0.0),
+            ScriptedTurn(signals=available_signals(), verdict=None, output_text="", cost_usd=0.0),
+            ScriptedTurn(signals=available_signals(), verdict=None, output_text="", cost_usd=0.0),
+        ],
+        probes=[available_signals()],
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+    assert result.success is False
+    assert result.reason == "repeated empty model responses"
+    assert len(gateway.sent_prompts) == 3
+
+
+async def test_sticky_credits_survives_available_probe() -> None:
+    runner, gateway, _a, _p, sleeper, _n, events = make_runner(
+        turns=[
+            ScriptedTurn(signals=credits_exhausted_signals(), verdict=CONTINUE_VERDICT),
+            ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT),
+        ],
+        probes=[
+            available_signals(),  # preflight
+            available_signals(),  # probe after credits wait — sticky still true
+        ],
+        wait_policy=WaitPolicyConfig(credits_probe_interval=timedelta(seconds=1)),
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+    assert result.success is True
+    assert any(e[0] == "capacity.probe_available" for e in events.events)
+    assert len(sleeper.wait_log) >= 1
+    assert gateway.sent_prompts == ["start", "keep going"]
+
+
+async def test_run_exception_marks_meta_failed() -> None:
+    class BoomGateway(FakeAgentGateway):
+        async def send_turn(self, prompt_text: str):  # type: ignore[override]
+            del prompt_text
+            raise RuntimeError("boom")
+
+    metas: list[dict[str, object]] = []
+    clock = FakeClock(start=NOW)
+    gateway = BoomGateway([])
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=FakeCapacityProbe([available_signals()]),
+        clock=clock,
+        sleeper=FakeSleeper(clock),
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        run_id="boom-run",
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=FakeSessionLock(),
+        save_points=FakeSavePointStore(),
+        meta_updater=lambda **kw: metas.append(kw),
+    )
+    with pytest.raises(RuntimeError, match="boom"):
+        await runner.run(initial_prompt="start", continue_prompt="keep going")
+    assert any(m.get("status") == "failed" for m in metas)
+
+
+async def test_set_model_updates_probe_model() -> None:
+    from claudeloop.domain.control import SetModelCommand
+
+    control = FakeRunControl(
+        script=[
+            [SetModelCommand(model="high")],
+            [],
+        ]
+    )
+    clock = FakeClock(start=NOW)
+    gateway = FakeAgentGateway(
+        [
+            ScriptedTurn(signals=available_signals(), verdict=CONTINUE_VERDICT),
+            ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT),
+        ]
+    )
+    probe = FakeCapacityProbe([available_signals()])
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=probe,
+        clock=clock,
+        sleeper=FakeSleeper(clock),
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        run_control=control,
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=FakeSessionLock(),
+        save_points=FakeSavePointStore(),
+        run_id="r",
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="keep")
+    assert result.success is True
+    assert probe.models  # profile change synced to probe

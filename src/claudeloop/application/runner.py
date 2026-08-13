@@ -1259,7 +1259,10 @@ class AutonomousRunner:
         elif isinstance(verdict, Continue):
             remaining = verdict.remaining_work
             summary = summary or self._last_summary
-        elif isinstance(verdict, Blocked):
+        else:
+            # CompletionVerdict is the closed union {Done, Continue, Blocked};
+            # both other members are handled above, so this is exhaustive.
+            assert isinstance(verdict, Blocked)  # nosec B101
             summary = summary or verdict.reason
         self._prev_savepoint_sha = self._last_savepoint_sha
         point = self._save_points.create(

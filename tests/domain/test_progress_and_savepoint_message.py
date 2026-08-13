@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+import pytest
+
 from claudeloop.domain.completion import evaluate
 from claudeloop.domain.loop import Continue, decide_progress_delay
 from claudeloop.domain.savepoint_message import format_savepoint_commit_message
@@ -28,6 +30,24 @@ def test_progress_wait_backoff_clamps() -> None:
     at10 = next_progress_wait_instant(now=NOW, streak=10, config=cfg)
     assert (at0 - NOW).total_seconds() == 30
     assert (at10 - NOW).total_seconds() == 300
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"initial_seconds": 0}, "initial_seconds"),
+        ({"factor": 0.5}, "factor"),
+        ({"initial_seconds": 60, "ceiling_seconds": 30}, "ceiling_seconds"),
+    ],
+)
+def test_progress_wait_config_rejects_invalid(kwargs: dict[str, float], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        ProgressWaitConfig(**kwargs)
+
+
+def test_next_progress_wait_rejects_negative_streak() -> None:
+    with pytest.raises(ValueError, match="streak"):
+        next_progress_wait_instant(now=NOW, streak=-1)
 
 
 def test_decide_progress_delay_none_when_tree_changed() -> None:
@@ -67,6 +87,62 @@ def test_format_savepoint_message() -> None:
     assert "Run: run1" in body
     assert "Attempt: 3" in body
     assert "mobile/app.json" in body
+
+
+def test_format_savepoint_truncates_long_subject() -> None:
+    long_summary = "x" * 120
+    subject, _body = format_savepoint_commit_message(
+        run_id="run1",
+        attempt=1,
+        verdict_name="Continue",
+        summary=long_summary,
+        remaining_work=(),
+        changed_paths=(),
+        label="turn-1",
+    )
+    assert len(subject) == 72
+    assert subject.endswith("…")
+
+
+def test_format_savepoint_headline_from_path_when_summary_blank() -> None:
+    subject, body = format_savepoint_commit_message(
+        run_id="run1",
+        attempt=2,
+        verdict_name="Continue",
+        summary="   \n  ",
+        remaining_work=(),
+        changed_paths=("mobile/src/App.tsx",),
+        label="turn-2",
+    )
+    assert subject == "chore(claudeloop): turn 2 — App.tsx"
+    assert "Summary:\n(none)" in body
+    assert "Remaining work:\n- (none)" in body
+
+
+def test_format_savepoint_fallback_headline_when_no_paths() -> None:
+    subject, _body = format_savepoint_commit_message(
+        run_id="run1",
+        attempt=4,
+        verdict_name="Continue",
+        summary="",
+        remaining_work=(),
+        changed_paths=(),
+        label="turn-4",
+    )
+    assert subject == "chore(claudeloop): turn 4 — workspace checkpoint"
+
+
+def test_format_savepoint_skips_empty_path_basename() -> None:
+    subject, _body = format_savepoint_commit_message(
+        run_id="run1",
+        attempt=5,
+        verdict_name="Continue",
+        summary="",
+        remaining_work=(),
+        changed_paths=("/", ""),
+        label="turn-5",
+    )
+    assert subject == "chore(claudeloop): turn 5 — workspace checkpoint"
 
 
 def test_empty_turn_soft_continue_then_blocked() -> None:
