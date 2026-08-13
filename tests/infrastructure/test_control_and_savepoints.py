@@ -117,10 +117,44 @@ def test_git_savepoints_unchanged_tree_ref_tags_without_empty_commit(tmp_path: P
     assert _git(repo, "rev-parse", p2.ref).stdout.strip() == head_before
 
     (repo / "a.txt").write_text("changed\n", encoding="utf-8")
-    p3 = store.create(run_id=run_id, label="turn-3", message="after turn 3")
+    p3 = store.create(
+        run_id=run_id,
+        label="turn-3",
+        attempt=3,
+        summary="Updated a.txt",
+        remaining_work=("more",),
+        verdict_name="Continue",
+    )
     assert p3 is not None
     assert p3.sha != head_before
     assert int(_git(repo, "rev-list", "--count", "HEAD").stdout.strip()) == commits_before + 1
+    msg = _git(repo, "log", "-1", "--format=%B", p3.sha).stdout
+    assert msg.startswith("chore(claudeloop): turn 3 —")
+    assert "Run: run-wait" in msg
+    assert "Attempt: 3" in msg
+
+
+def test_git_savepoints_excludes_claudeloop_control_plane(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    store = GitSavePointStore(cwd=repo, index_path=tmp_path / "savepoints.jsonl")
+    control = repo / ".claudeloop" / "runs" / "x"
+    control.mkdir(parents=True)
+    (control / "meta.json").write_text("{}\n", encoding="utf-8")
+    head_before = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    p1 = store.create(run_id="r", label="t1", attempt=1, summary="noise only")
+    assert p1 is not None
+    assert p1.sha == head_before
+    assert int(_git(repo, "rev-list", "--count", "HEAD").stdout.strip()) == 1
+
+    (repo / "real.txt").write_text("hi\n", encoding="utf-8")
+    (control / "meta.json").write_text('{"x":1}\n', encoding="utf-8")
+    p2 = store.create(run_id="r", label="t2", attempt=2, summary="real change")
+    assert p2 is not None
+    assert p2.sha != head_before
+    names = _git(repo, "show", "--name-only", "--format=", p2.sha).stdout.strip().splitlines()
+    assert "real.txt" in names
+    assert not any(n.startswith(".claudeloop/") for n in names)
 
 
 def test_render_stop_summary_includes_sections() -> None:

@@ -30,6 +30,28 @@ from claudeloop.domain.capacity import (
 _CREDITS_ERROR_CODES = frozenset({"credits_required"})
 _CREDITS_DISABLED_REASONS = frozenset({"out_of_credits"})
 
+# Monthly spend / usage-credit limit copy often arrives as a bare rate_limit + 429
+# (or only as ResultMessage.result text) with RateLimitEvent dropped — never treat
+# that as a waitable window.
+_SPEND_LIMIT_MARKERS = (
+    "monthly spend limit",
+    "usage-credits",
+    "/usage-credits",
+    "hit your monthly",
+    "out of extra usage",
+    "purchase more credits",
+    "you've hit your",
+    "spend limit",
+)
+
+
+def looks_like_spend_limit(text: str | None) -> bool:
+    """True when assistant/result copy describes a billing spend or usage-credit limit."""
+    if not text:
+        return False
+    lowered = text.casefold()
+    return any(marker in lowered for marker in _SPEND_LIMIT_MARKERS)
+
 
 @dataclass(frozen=True, slots=True)
 class TurnSignals:
@@ -49,6 +71,7 @@ class TurnSignals:
     error_code: str | None = None
     disabled_reason: str | None = None
     can_purchase: bool | None = None
+    result_text: str | None = None
 
 
 def classify(signals: TurnSignals) -> CapacityState:
@@ -61,10 +84,13 @@ def classify(signals: TurnSignals) -> CapacityState:
     if signals.assistant_error == "billing_error":
         return CreditsExhausted(can_purchase=True)
 
+    spend_limit = looks_like_spend_limit(signals.result_text)
+
     rejected = (
         signals.rate_limit_status == "rejected"
         or signals.api_error_status == 429
         or signals.assistant_error == "rate_limit"
+        or spend_limit
     )
 
     if not rejected:
@@ -74,6 +100,7 @@ def classify(signals: TurnSignals) -> CapacityState:
         signals.error_code in _CREDITS_ERROR_CODES
         or signals.disabled_reason in _CREDITS_DISABLED_REASONS
         or signals.overage_disabled_reason is not None
+        or spend_limit
     ):
         can_purchase = True if signals.can_purchase is None else signals.can_purchase
         return CreditsExhausted(can_purchase=can_purchase)

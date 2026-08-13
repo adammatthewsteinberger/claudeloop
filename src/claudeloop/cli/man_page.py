@@ -42,6 +42,7 @@ SYNOPSIS
        claudeloop runs
        claudeloop savepoints [--run-id ID]
        claudeloop unwind --to N [--backup | --no-backup] [--run-id ID]
+       claudeloop reset --yes
        claudeloop watch [--run-id ID] [--follow]
        claudeloop sessions [--cwd PATH]
        claudeloop doctor
@@ -160,6 +161,11 @@ COMMANDS
               Refuses while the run meta status is still active with a live
               pid — stop first.  Default creates a backup ref under
               refs/claudeloop/backup/.
+
+       reset --yes
+              Delete the project .claudeloop/ control plane.  Requires --yes.
+              Refuses while any run pid is still live.  Does not touch the
+              git worktree or ~/.claude/.
 
        watch [--run-id ID] [--follow]
               Print or follow bus.jsonl state publications (phase changes) for

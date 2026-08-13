@@ -8,6 +8,7 @@ docs/architecture/decisions/0004-adaptive-waiting-with-probes-not-sleep.md.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
@@ -84,3 +85,48 @@ def wait_exceeded(*, started_waiting_at: datetime, now: datetime, config: WaitPo
     if config.max_wait is None:
         return False
     return now - started_waiting_at >= config.max_wait
+
+
+_WAIT_ONLY_RE = re.compile(
+    r"(?i)\b(wait|waiting|pending|poll|sleep|in[- ]progress|still running)\b"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ProgressWaitConfig:
+    initial_seconds: float = 30.0
+    factor: float = 2.0
+    ceiling_seconds: float = 300.0
+
+    def __post_init__(self) -> None:
+        if self.initial_seconds <= 0:
+            raise ValueError("initial_seconds must be positive")
+        if self.factor < 1.0:
+            raise ValueError("factor must be >= 1.0")
+        if self.ceiling_seconds < self.initial_seconds:
+            raise ValueError("ceiling_seconds must be >= initial_seconds")
+
+
+DEFAULT_PROGRESS_WAIT_CONFIG = ProgressWaitConfig()
+
+
+def is_wait_only_remaining_work(remaining_work: tuple[str, ...]) -> bool:
+    """True when every remaining_work item looks like wait/poll language (or empty)."""
+    if not remaining_work:
+        return True
+    return all(_WAIT_ONLY_RE.search(item) is not None for item in remaining_work)
+
+
+def next_progress_wait_instant(
+    *,
+    now: datetime,
+    streak: int,
+    config: ProgressWaitConfig = DEFAULT_PROGRESS_WAIT_CONFIG,
+) -> datetime:
+    """Exponential backoff between wait-only Continues with an unchanged tree."""
+    if streak < 0:
+        raise ValueError("streak must be >= 0")
+    ceiling = config.ceiling_seconds
+    initial = config.initial_seconds
+    seconds = min(initial * (config.factor**streak), ceiling)
+    return now + timedelta(seconds=seconds)

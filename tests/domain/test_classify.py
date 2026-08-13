@@ -113,3 +113,30 @@ def test_overage_resets_at_used_when_primary_resets_at_absent():
     )
     result = classify(signals)
     assert result == WindowExhausted(rate_limit_type="overage", resets_at=NOW)
+
+
+def test_spend_limit_result_text_with_thin_rate_limit_is_credits_exhausted():
+    """f132e38a attempts 7–10: monthly spend-limit copy + rate_limit/429 and no
+    overage_* fields must never become WindowExhausted."""
+    signals = TurnSignals(
+        assistant_error="rate_limit",
+        api_error_status=429,
+        result_text=(
+            "You've hit your monthly spend limit. Run /usage-credits to manage "
+            "your limit and keep using Fable 5 or switch models to continue this chat."
+        ),
+    )
+    assert classify(signals) == CreditsExhausted(can_purchase=True)
+
+
+def test_spend_limit_text_alone_is_credits_exhausted():
+    """Spend-limit copy without a structured rejection still outranks Available."""
+    signals = TurnSignals(
+        result_text="You've hit your monthly spend limit. Run /usage-credits.",
+    )
+    assert classify(signals) == CreditsExhausted(can_purchase=True)
+
+
+def test_ordinary_assistant_text_is_not_spend_limit():
+    signals = TurnSignals(result_text="Waiting for the E2E suite to finish.")
+    assert classify(signals) == Available(utilization=None)

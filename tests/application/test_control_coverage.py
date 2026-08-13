@@ -159,8 +159,18 @@ async def test_plan_reconcile_marks_items_done() -> None:
 
 async def test_savepoint_skipped_when_store_returns_none() -> None:
     class _NoGit(FakeSavePointStore):
-        def create(self, *, run_id: str, label: str, message: str) -> None:
-            del run_id, label, message
+        def create(
+            self,
+            *,
+            run_id: str,
+            label: str,
+            message: str = "",
+            attempt: int | None = None,
+            verdict_name: str = "Continue",
+            summary: str = "",
+            remaining_work: tuple[str, ...] = (),
+        ) -> None:
+            del run_id, label, message, attempt, verdict_name, summary, remaining_work
             return None
 
     clock = FakeClock(start=NOW)

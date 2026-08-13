@@ -8,6 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from claudeloop.domain.savepoint import SavePointRef, UnwindResult
+from claudeloop.domain.savepoint_message import format_savepoint_commit_message
+
+_CONTROL_PLANE_DIR = ".claudeloop"
 
 
 class GitSavePointStore:
@@ -18,27 +21,58 @@ class GitSavePointStore:
         if not self._index_path.exists():
             self._index_path.touch()
 
-    def create(self, *, run_id: str, label: str, message: str) -> SavePointRef | None:
+    def create(
+        self,
+        *,
+        run_id: str,
+        label: str,
+        message: str | None = None,
+        attempt: int | None = None,
+        verdict_name: str = "Continue",
+        summary: str = "",
+        remaining_work: tuple[str, ...] = (),
+    ) -> SavePointRef | None:
         if not self._is_git_repo():
             return None
         self._run(["git", "add", "-A"])
+        # Never commit control-plane state into the project history, even when
+        # a host repo forgot to gitignore `.claudeloop/`.
+        self._run(["git", "reset", "-q", "--", _CONTROL_PLANE_DIR], check=False)
         # Only commit when the index differs from HEAD. Unchanged trees still
         # get a numbered refs/claudeloop/<run_id>/<n> pointing at current HEAD
         # — no empty commits on wait/poll turns.
         has_staged = self._run(["git", "diff", "--cached", "--quiet"], check=False).returncode != 0
+        changed_paths = self._staged_paths() if has_staged else ()
+        turn_n = attempt if attempt is not None else self._next_n(run_id)
+        subject: str | None = None
         if has_staged:
+            if message is not None and attempt is None and not summary and not remaining_work:
+                # Legacy single-line callers (tests): keep a simple subject.
+                subject = f"chore(claudeloop): {message}"
+                body = f"Run: {run_id}\nLabel: {label}\n"
+            else:
+                subject, body = format_savepoint_commit_message(
+                    run_id=run_id,
+                    attempt=turn_n,
+                    verdict_name=verdict_name,
+                    summary=summary or message or "",
+                    remaining_work=remaining_work,
+                    changed_paths=changed_paths,
+                    label=label,
+                )
             self._run(
                 [
                     "git",
                     "commit",
                     "--no-verify",
                     "-m",
-                    f"claudeloop: savepoint — {message}",
+                    subject,
+                    "-m",
+                    body,
                 ],
             )
         sha = self._run(["git", "rev-parse", "HEAD"]).stdout.strip()
-        existing = self.list_points(run_id)
-        n = (existing[-1].n + 1) if existing else 1
+        n = self._next_n(run_id)
         ref = f"refs/claudeloop/{run_id}/{n}"
         self._run(["git", "update-ref", ref, sha])
         point = SavePointRef(
@@ -49,7 +83,12 @@ class GitSavePointStore:
             at=datetime.now(timezone.utc),
             plan_item=None,
         )
-        self._append_index(point)
+        self._append_index(
+            point,
+            committed=has_staged,
+            subject=subject,
+            path_count=len(changed_paths),
+        )
         return point
 
     def list_points(self, run_id: str) -> list[SavePointRef]:
@@ -96,7 +135,28 @@ class GitSavePointStore:
         result = self._run(["git", "status", "--short"], check=False)
         return result.stdout.strip() if result.returncode == 0 else ""
 
-    def _append_index(self, point: SavePointRef) -> None:
+    def _next_n(self, run_id: str) -> int:
+        existing = self.list_points(run_id)
+        return (existing[-1].n + 1) if existing else 1
+
+    def _staged_paths(self) -> tuple[str, ...]:
+        result = self._run(
+            ["git", "diff", "--cached", "--name-only", "-z"],
+            check=False,
+        )
+        if result.returncode != 0 or not result.stdout:
+            return ()
+        parts = [p for p in result.stdout.split("\0") if p]
+        return tuple(parts)
+
+    def _append_index(
+        self,
+        point: SavePointRef,
+        *,
+        committed: bool = False,
+        subject: str | None = None,
+        path_count: int = 0,
+    ) -> None:
         # Infer run_id from ref: refs/claudeloop/<run_id>/<n>
         parts = point.ref.split("/")
         run_id = parts[2] if len(parts) >= 4 else ""
@@ -108,6 +168,9 @@ class GitSavePointStore:
             "label": point.label,
             "at": point.at.isoformat(),
             "plan_item": point.plan_item,
+            "committed": committed,
+            "subject": subject,
+            "path_count": path_count,
         }
         with self._index_path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")

@@ -226,8 +226,18 @@ class FakeSavePointStore:
         self.points: list[SavePointRef] = []
         self.unwinds: list[tuple[str, str, bool]] = []
 
-    def create(self, *, run_id: str, label: str, message: str) -> SavePointRef:
-        del message
+    def create(
+        self,
+        *,
+        run_id: str,
+        label: str,
+        message: str = "",
+        attempt: int | None = None,
+        verdict_name: str = "Continue",
+        summary: str = "",
+        remaining_work: tuple[str, ...] = (),
+    ) -> SavePointRef:
+        del message, attempt, verdict_name, summary, remaining_work
         n = len(self.points) + 1
         point = SavePointRef(
             n=n,
