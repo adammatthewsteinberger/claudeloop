@@ -55,6 +55,7 @@ from claudeloop.domain.control import (
     StopCommand,
 )
 from claudeloop.domain.loop import (
+    DelayThenSend,
     Finish,
     Phase,
     RunState,
@@ -63,6 +64,7 @@ from claudeloop.domain.loop import (
     decide_after_probe,
     decide_after_turn,
     decide_preflight,
+    decide_progress_delay,
     start,
 )
 from claudeloop.domain.model_policy import decide_auto_model
@@ -80,7 +82,12 @@ from claudeloop.domain.plan import WorkPlan
 from claudeloop.domain.slash import parse_slash, slash_to_prompt
 from claudeloop.domain.snapshot import SnapshotReason
 from claudeloop.domain.stop_summary import StopSummaryInput, render_stop_summary
-from claudeloop.domain.waiting import DEFAULT_WAIT_POLICY_CONFIG, WaitPolicyConfig
+from claudeloop.domain.waiting import (
+    DEFAULT_PROGRESS_WAIT_CONFIG,
+    DEFAULT_WAIT_POLICY_CONFIG,
+    ProgressWaitConfig,
+    WaitPolicyConfig,
+)
 
 _DEFAULT_BUDGET = Budget()
 _SLEEP_CHUNK = timedelta(seconds=5)
@@ -154,8 +161,18 @@ class _NullSessionLock:
 
 
 class _NullSavePointStore:
-    def create(self, *, run_id: str, label: str, message: str) -> None:
-        del run_id, label, message
+    def create(
+        self,
+        *,
+        run_id: str,
+        label: str,
+        message: str = "",
+        attempt: int | None = None,
+        verdict_name: str = "Continue",
+        summary: str = "",
+        remaining_work: tuple[str, ...] = (),
+    ) -> None:
+        del run_id, label, message, attempt, verdict_name, summary, remaining_work
         return None
 
     def list_points(self, run_id: str) -> list[Any]:
@@ -234,6 +251,7 @@ class AutonomousRunner:
         progress: ProgressReporter,
         budget: Budget = _DEFAULT_BUDGET,
         wait_policy: WaitPolicyConfig = DEFAULT_WAIT_POLICY_CONFIG,
+        progress_wait: ProgressWaitConfig = DEFAULT_PROGRESS_WAIT_CONFIG,
         done_marker: str | None = None,
         run_id: str = "anonymous",
         notifier: Notifier | None = None,
@@ -267,6 +285,7 @@ class AutonomousRunner:
         self._progress = progress
         self._budget = budget
         self._wait_policy = wait_policy
+        self._progress_wait = progress_wait
         self._done_marker = done_marker
         self._run_id = run_id
         self._notifier = notifier or _NullNotifier()
@@ -303,6 +322,12 @@ class AutonomousRunner:
         self._last_sent_prompt: str | None = None
         self._last_output_text: str = ""
         self._credits_notified = False
+        self._sticky_credits = False
+        self._empty_turn_streak = 0
+        self._progress_wait_streak = 0
+        self._last_savepoint_sha: str | None = None
+        self._prev_savepoint_sha: str | None = None
+        self._last_tree_changed = True
         self._lock_token: str | None = None
         self._first_savepoint_sha: str | None = None
         self._pending_profile: ModelEffortProfile | None = None
@@ -441,7 +466,20 @@ class AutonomousRunner:
                     self._events.bind(session_id=session_id)
                     capacity = classify(outcome.signals)
                     self._last_capacity_name = type(capacity).__name__
+                    if isinstance(capacity, CreditsExhausted):
+                        self._sticky_credits = True
+                    elif isinstance(capacity, Available):
+                        self._sticky_credits = False
                     verdict = self._completion_verdict(outcome)
+                    if (
+                        isinstance(verdict, Continue)
+                        and not (outcome.output_text or "").strip()
+                        and outcome.cost_usd <= 0.0
+                        and outcome.verdict is None
+                    ):
+                        self._empty_turn_streak += 1
+                    else:
+                        self._empty_turn_streak = 0
                     remaining_before = self._remaining_count()
                     self._remember_verdict(verdict)
                     self._reconcile_plan(verdict)
@@ -488,7 +526,16 @@ class AutonomousRunner:
                         session_id=session_id,
                     )
 
-                    self._create_savepoint(label=f"turn-{attempt}", message=f"after turn {attempt}")
+                    self._create_savepoint(
+                        label=f"turn-{attempt}",
+                        attempt=attempt,
+                        verdict=verdict,
+                        summary=(
+                            outcome.verdict.summary
+                            if outcome.verdict is not None
+                            else self._last_summary
+                        ),
+                    )
 
                     state, decision = decide_after_turn(
                         state,
@@ -498,6 +545,23 @@ class AutonomousRunner:
                         config=self._wait_policy,
                         dollars=outcome.cost_usd,
                     )
+                    if (
+                        isinstance(decision, SendTurn)
+                        and isinstance(verdict, Continue)
+                        and isinstance(capacity, Available)
+                    ):
+                        delay = decide_progress_delay(
+                            verdict=verdict,
+                            tree_changed=self._last_tree_changed,
+                            now=self._clock.now(),
+                            streak=self._progress_wait_streak,
+                            config=self._progress_wait,
+                        )
+                        if delay is not None:
+                            decision = delay
+                            self._progress_wait_streak += 1
+                        else:
+                            self._progress_wait_streak = 0
                     self._consider_auto_model(state)
                     self._persist(state, session_id=session_id, attempt=attempt)
                     self._log.debug(
@@ -521,6 +585,38 @@ class AutonomousRunner:
                                 reason="stopped by operator",
                             )
 
+                elif isinstance(decision, DelayThenSend):
+                    self._events.emit(
+                        "progress.wait",
+                        {
+                            "until": decision.at.isoformat(),
+                            "streak": self._progress_wait_streak,
+                        },
+                    )
+                    self._log.info(
+                        "progress.wait",
+                        until=decision.at.isoformat(),
+                        streak=self._progress_wait_streak,
+                    )
+                    self._update_meta(
+                        phase=state.phase.name,
+                        attempt=attempt,
+                        waiting_until=decision.at.isoformat(),
+                    )
+                    stopped = await self._sleep_interruptible(decision.at)
+                    if stopped:
+                        self._log.info(
+                            "run.stopping",
+                            reason="stopped by operator during progress wait",
+                        )
+                        return await self._finish_stopped(
+                            state,
+                            session_id=session_id,
+                            reason="stopped by operator during progress wait",
+                        )
+                    self._update_meta(waiting_until=None)
+                    decision = SendTurn()
+
                 elif isinstance(decision, ScheduleProbe):
                     self._progress.waiting(reason=state.phase.name, until=decision.at)
                     self._audit.record(
@@ -541,6 +637,7 @@ class AutonomousRunner:
                         probe_count=state.probe_count,
                     )
                     self._update_meta(
+                        status="waiting",
                         phase=state.phase.name,
                         attempt=attempt,
                         waiting_until=decision.at.isoformat(),
@@ -570,18 +667,37 @@ class AutonomousRunner:
                     self._maybe_notify_credits(capacity)
                     self._events.emit(
                         "probe",
-                        {"capacity": type(capacity).__name__},
+                        {
+                            "capacity": type(capacity).__name__,
+                            "sticky_credits": self._sticky_credits,
+                        },
                     )
-                    self._log.info("probe.completed", capacity=type(capacity).__name__)
+                    self._log.info(
+                        "probe.completed",
+                        capacity=type(capacity).__name__,
+                        sticky_credits=self._sticky_credits,
+                    )
                     if isinstance(capacity, Available):
-                        self._events.emit(
-                            "capacity.restored",
-                            {"probe_count": state.probe_count},
-                        )
-                        self._log.info(
-                            "capacity.restored",
-                            probe_count=state.probe_count,
-                        )
+                        # Probe Available alone does not clear sticky credits —
+                        # only a successful real turn does. Still attempt SendTurn
+                        # so a real top-up can be verified on the run's model.
+                        if self._sticky_credits:
+                            self._events.emit(
+                                "capacity.probe_available",
+                                {
+                                    "probe_count": state.probe_count,
+                                    "sticky_credits": True,
+                                },
+                            )
+                        else:
+                            self._events.emit(
+                                "capacity.restored",
+                                {"probe_count": state.probe_count},
+                            )
+                            self._log.info(
+                                "capacity.restored",
+                                probe_count=state.probe_count,
+                            )
                     state, decision = decide_after_probe(
                         state,
                         capacity,
@@ -589,7 +705,17 @@ class AutonomousRunner:
                         config=self._wait_policy,
                     )
                     self._persist(state, session_id=session_id, attempt=attempt)
-                    self._update_meta(waiting_until=None)
+                    # Persist already derived waiting/failed/finished; only clear the
+                    # wait clock and mark active when we are about to send a real turn.
+                    if isinstance(decision, SendTurn):
+                        self._update_meta(waiting_until=None, status="active")
+                    elif isinstance(decision, ScheduleProbe):
+                        self._update_meta(
+                            waiting_until=decision.at.isoformat(),
+                            status="waiting",
+                        )
+                    else:
+                        self._update_meta(waiting_until=None)
                     self._log.debug(
                         "decision.after_probe",
                         decision=type(decision).__name__,
@@ -655,6 +781,12 @@ class AutonomousRunner:
                     )
         except BaseException as exc:
             self._log.error("run.exception", error=type(exc).__name__, detail=str(exc)[:500])
+            with contextlib.suppress(Exception):
+                self._update_meta(
+                    status="failed",
+                    phase=Phase.FAILED.name,
+                    capacity=self._last_capacity_name,
+                )
             self._release_lock()
             with contextlib.suppress(Exception):  # pragma: no cover - best-effort cleanup
                 await self._gateway.close()
@@ -893,6 +1025,9 @@ class AutonomousRunner:
         self._pending_profile = None
         await self._gateway.set_profile(profile)
         self._profile = profile
+        set_model = getattr(self._probe, "set_model", None)
+        if callable(set_model):
+            set_model(profile.model)
         self._events.emit(
             "model.profile_changed",
             {
@@ -1116,17 +1251,56 @@ class AutonomousRunner:
                 {"marked_done": sorted(done_texts)},
             )
 
-    def _create_savepoint(self, *, label: str, message: str) -> None:
-        point = self._save_points.create(run_id=self._run_id, label=label, message=message)
+    def _create_savepoint(
+        self,
+        *,
+        label: str,
+        attempt: int,
+        verdict: CompletionVerdict,
+        summary: str = "",
+    ) -> None:
+        remaining: tuple[str, ...] = ()
+        if isinstance(verdict, Done):
+            summary = summary or verdict.summary
+        elif isinstance(verdict, Continue):
+            remaining = verdict.remaining_work
+            summary = summary or self._last_summary
+        else:
+            # CompletionVerdict is the closed union {Done, Continue, Blocked};
+            # both other members are handled above, so this is exhaustive.
+            assert isinstance(verdict, Blocked)  # nosec B101
+            summary = summary or verdict.reason
+        self._prev_savepoint_sha = self._last_savepoint_sha
+        point = self._save_points.create(
+            run_id=self._run_id,
+            label=label,
+            attempt=attempt,
+            verdict_name=type(verdict).__name__,
+            summary=summary,
+            remaining_work=remaining,
+        )
         if point is None:
+            self._last_tree_changed = True
             self._events.emit("savepoint.skipped", {"reason": "not a git repository"})
             self._log.debug("savepoint.skipped", reason="not a git repository")
             return
         if self._first_savepoint_sha is None:
             self._first_savepoint_sha = point.sha
+        self._last_savepoint_sha = point.sha
+        # Prefer the store's commit bit (git: has_staged). Falling back to SHA
+        # compare only when a baseline exists avoids marking the first ref-only
+        # savepoint as committed=True just because prev was None.
+        committed = point.committed
+        self._last_tree_changed = committed
         self._events.emit(
             "savepoint",
-            {"n": point.n, "sha": point.sha, "ref": point.ref, "label": point.label},
+            {
+                "n": point.n,
+                "sha": point.sha,
+                "ref": point.ref,
+                "label": point.label,
+                "committed": committed,
+            },
         )
         self._log.info(
             "savepoint.created",
@@ -1134,6 +1308,7 @@ class AutonomousRunner:
             sha=point.sha,
             ref=point.ref,
             label=point.label,
+            committed=committed,
         )
 
     def _maybe_notify_credits(self, capacity: CapacityState) -> None:
@@ -1265,7 +1440,12 @@ class AutonomousRunner:
         return classify(outcome.signals)
 
     def _completion_verdict(self, outcome: TurnOutcome) -> CompletionVerdict:
-        kwargs = {"done_marker": self._done_marker} if self._done_marker else {}
+        kwargs: dict[str, Any] = {
+            "cost_usd": outcome.cost_usd,
+            "empty_turn_streak": self._empty_turn_streak,
+        }
+        if self._done_marker:
+            kwargs["done_marker"] = self._done_marker
         return evaluate(structured=outcome.verdict, output_text=outcome.output_text, **kwargs)
 
 

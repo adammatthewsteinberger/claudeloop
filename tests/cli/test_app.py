@@ -80,6 +80,7 @@ def test_help_flag_lists_all_commands() -> None:
         "runs",
         "savepoints",
         "unwind",
+        "reset",
         "watch",
         "permission-mode",
         "attach",

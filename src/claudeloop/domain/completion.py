@@ -51,11 +51,17 @@ def evaluate(
     structured: StructuredVerdict | None,
     output_text: str,
     done_marker: str = DEFAULT_DONE_MARKER,
+    cost_usd: float = 0.0,
+    empty_turn_streak: int = 0,
+    empty_turn_limit: int = 3,
 ) -> CompletionVerdict:
     """Decide what a single turn's outcome means for the overall task.
 
     Precedence: a structured verdict is authoritative when present. Only when it is
     absent do we fall back to substring-matching the legacy marker in raw text.
+
+    Empty zero-cost turns with no structured verdict are soft-failed: treated as
+    wait-only Continue, or Blocked after ``empty_turn_limit`` consecutive empties.
     """
     if structured is not None:
         if structured.blocked_on:
@@ -66,4 +72,12 @@ def evaluate(
 
     if done_marker in output_text:
         return Done(summary="")
+
+    if not output_text.strip() and cost_usd <= 0.0:
+        if empty_turn_streak + 1 >= empty_turn_limit:
+            return Blocked(reason="repeated empty model responses")
+        return Continue(
+            remaining_work=("Waiting for a non-empty model response",),
+        )
+
     return Continue(remaining_work=())

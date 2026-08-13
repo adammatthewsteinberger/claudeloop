@@ -129,7 +129,17 @@ class StreamUi(Protocol):
 
 
 class SavePointStore(Protocol):
-    def create(self, *, run_id: str, label: str, message: str) -> SavePointRef | None: ...
+    def create(
+        self,
+        *,
+        run_id: str,
+        label: str,
+        message: str = "",
+        attempt: int | None = None,
+        verdict_name: str = "Continue",
+        summary: str = "",
+        remaining_work: tuple[str, ...] = (),
+    ) -> SavePointRef | None: ...
     def list_points(self, run_id: str) -> list[SavePointRef]: ...
     def unwind(self, *, run_id: str, to: str, backup: bool) -> UnwindResult: ...
     def changes_since(self, since_sha: str | None) -> str: ...

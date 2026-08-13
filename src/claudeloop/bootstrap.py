@@ -21,7 +21,7 @@ from claudeloop.domain.budget import Budget
 from claudeloop.domain.control import SlashCommand
 from claudeloop.domain.permission import parse_user_permission_mode
 from claudeloop.domain.plan import WorkPlan
-from claudeloop.domain.waiting import WaitPolicyConfig
+from claudeloop.domain.waiting import ProgressWaitConfig, WaitPolicyConfig
 from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 from claudeloop.infrastructure.agent.gateway import ClaudeAgentGateway, ClaudeCapacityProbe
 from claudeloop.infrastructure.agent.scripted import resolve_test_agent_from_env
@@ -182,6 +182,7 @@ def build_runner(
             cwd=str(cwd),
             on_event=_on_event,
             max_buffer_size=config.max_buffer_size,
+            model=profile.model,
         )
     app_log.info(
         "runner.config",
@@ -233,6 +234,11 @@ def build_runner(
             else None
         ),
     )
+    progress_wait = ProgressWaitConfig(
+        initial_seconds=config.progress_wait_initial_seconds,
+        factor=config.progress_wait_factor,
+        ceiling_seconds=config.progress_wait_ceiling_seconds,
+    )
 
     def _meta_updater(**kwargs: Any) -> None:
         run_dir.update_meta(**kwargs)
@@ -246,6 +252,7 @@ def build_runner(
         progress=progress,
         budget=budget,
         wait_policy=wait_policy,
+        progress_wait=progress_wait,
         done_marker=config.done_marker,
         run_id=run_id,
         notifier=notifier,

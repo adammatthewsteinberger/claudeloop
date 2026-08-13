@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from claudeloop.application.dto import TurnOutcome
 from claudeloop.application.runner import AutonomousRunner
 from claudeloop.application.usecases import run_control as run_control_uc
 from claudeloop.application.usecases.run_plan import parse_plan_file
@@ -17,6 +18,8 @@ from claudeloop.domain.control import (
     PromptDeferredCommand,
     PromptNowCommand,
     ResponseRetryCommand,
+    SetEffortCommand,
+    SetModelCommand,
     SetPermissionModeCommand,
     StopCommand,
 )
@@ -159,8 +162,18 @@ async def test_plan_reconcile_marks_items_done() -> None:
 
 async def test_savepoint_skipped_when_store_returns_none() -> None:
     class _NoGit(FakeSavePointStore):
-        def create(self, *, run_id: str, label: str, message: str) -> None:
-            del run_id, label, message
+        def create(
+            self,
+            *,
+            run_id: str,
+            label: str,
+            message: str = "",
+            attempt: int | None = None,
+            verdict_name: str = "Continue",
+            summary: str = "",
+            remaining_work: tuple[str, ...] = (),
+        ) -> None:
+            del run_id, label, message, attempt, verdict_name, summary, remaining_work
             return None
 
     clock = FakeClock(start=NOW)
@@ -705,7 +718,15 @@ async def test_auto_escalate_after_two_no_progress_continues() -> None:
 
 
 async def test_set_model_and_effort_commands() -> None:
-    from claudeloop.domain.control import SetEffortCommand, SetModelCommand
+    class ProbeWithoutSetModel:
+        """Capacity probe without set_model — covers the getattr fallback."""
+
+        def __init__(self, script: list) -> None:
+            self._script = list(script)
+
+        async def probe(self) -> TurnOutcome:
+            signals = self._script.pop(0)
+            return TurnOutcome(signals=signals, verdict=None, output_text="", session_id=None)
 
     control = FakeRunControl(
         script=[
@@ -722,7 +743,7 @@ async def test_set_model_and_effort_commands() -> None:
     )
     runner = AutonomousRunner(
         agent_gateway=gateway,
-        capacity_probe=FakeCapacityProbe([available_signals()]),
+        capacity_probe=ProbeWithoutSetModel([available_signals()]),
         clock=clock,
         sleeper=FakeSleeper(clock),
         audit_log=FakeAuditLog(),
