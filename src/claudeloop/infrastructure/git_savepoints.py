@@ -82,6 +82,7 @@ class GitSavePointStore:
             label=label,
             at=datetime.now(timezone.utc),
             plan_item=None,
+            committed=has_staged,
         )
         self._append_index(
             point,
@@ -109,6 +110,7 @@ class GitSavePointStore:
                     label=str(data["label"]),
                     at=datetime.fromisoformat(data["at"]),
                     plan_item=data.get("plan_item"),
+                    committed=bool(data.get("committed", False)),
                 )
             )
         return points

@@ -245,13 +245,20 @@ class FakeSavePointStore:
     ) -> SavePointRef:
         del message, attempt, verdict_name, summary, remaining_work
         n = len(self.points) + 1
-        sha = self.points[-1].sha if self._reuse_sha and self.points else f"{'a' * 39}{n}"
+        if self._reuse_sha:
+            # Simulate an unchanged tree (ref-only) from the first savepoint onward.
+            sha = self.points[-1].sha if self.points else ("b" * 40)
+            committed = False
+        else:
+            sha = f"{'a' * 39}{n}"
+            committed = True
         point = SavePointRef(
             n=n,
             ref=f"refs/claudeloop/{run_id}/{n}",
             sha=sha,
             label=label,
             at=datetime(2026, 8, 12, tzinfo=timezone.utc),
+            committed=committed,
         )
         self.points.append(point)
         return point

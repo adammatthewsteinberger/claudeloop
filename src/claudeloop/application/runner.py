@@ -326,6 +326,8 @@ class AutonomousRunner:
         self._empty_turn_streak = 0
         self._progress_wait_streak = 0
         self._last_savepoint_sha: str | None = None
+        self._prev_savepoint_sha: str | None = None
+        self._last_tree_changed = True
         self._lock_token: str | None = None
         self._first_savepoint_sha: str | None = None
         self._pending_profile: ModelEffortProfile | None = None
@@ -548,15 +550,9 @@ class AutonomousRunner:
                         and isinstance(verdict, Continue)
                         and isinstance(capacity, Available)
                     ):
-                        prev = getattr(self, "_prev_savepoint_sha", None)
-                        tree_changed = (
-                            prev is not None
-                            and self._last_savepoint_sha is not None
-                            and self._last_savepoint_sha != prev
-                        )
                         delay = decide_progress_delay(
                             verdict=verdict,
-                            tree_changed=tree_changed,
+                            tree_changed=self._last_tree_changed,
                             now=self._clock.now(),
                             streak=self._progress_wait_streak,
                             config=self._progress_wait,
@@ -709,7 +705,17 @@ class AutonomousRunner:
                         config=self._wait_policy,
                     )
                     self._persist(state, session_id=session_id, attempt=attempt)
-                    self._update_meta(waiting_until=None, status="active")
+                    # Persist already derived waiting/failed/finished; only clear the
+                    # wait clock and mark active when we are about to send a real turn.
+                    if isinstance(decision, SendTurn):
+                        self._update_meta(waiting_until=None, status="active")
+                    elif isinstance(decision, ScheduleProbe):
+                        self._update_meta(
+                            waiting_until=decision.at.isoformat(),
+                            status="waiting",
+                        )
+                    else:
+                        self._update_meta(waiting_until=None)
                     self._log.debug(
                         "decision.after_probe",
                         decision=type(decision).__name__,
@@ -1274,13 +1280,18 @@ class AutonomousRunner:
             remaining_work=remaining,
         )
         if point is None:
+            self._last_tree_changed = True
             self._events.emit("savepoint.skipped", {"reason": "not a git repository"})
             self._log.debug("savepoint.skipped", reason="not a git repository")
             return
         if self._first_savepoint_sha is None:
             self._first_savepoint_sha = point.sha
         self._last_savepoint_sha = point.sha
-        committed = self._prev_savepoint_sha != point.sha
+        # Prefer the store's commit bit (git: has_staged). Falling back to SHA
+        # compare only when a baseline exists avoids marking the first ref-only
+        # savepoint as committed=True just because prev was None.
+        committed = point.committed
+        self._last_tree_changed = committed
         self._events.emit(
             "savepoint",
             {

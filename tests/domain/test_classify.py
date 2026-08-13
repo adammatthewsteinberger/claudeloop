@@ -140,3 +140,27 @@ def test_spend_limit_text_alone_is_credits_exhausted():
 def test_ordinary_assistant_text_is_not_spend_limit():
     signals = TurnSignals(result_text="Waiting for the E2E suite to finish.")
     assert classify(signals) == Available(utilization=None)
+
+
+def test_session_limit_copy_is_not_spend_limit():
+    """Broad 'you've hit your' window copy must stay waitable WindowExhausted."""
+    signals = TurnSignals(
+        assistant_error="rate_limit",
+        api_error_status=429,
+        rate_limit_type="five_hour",
+        resets_at=NOW,
+        result_text="You've hit your session limit. It resets at 4pm.",
+    )
+    result = classify(signals)
+    assert result == WindowExhausted(rate_limit_type="five_hour", resets_at=NOW)
+
+
+def test_weekly_limit_copy_is_not_spend_limit():
+    signals = TurnSignals(
+        rate_limit_status="rejected",
+        rate_limit_type="seven_day",
+        resets_at=NOW,
+        result_text="You've hit your weekly limit. Come back later.",
+    )
+    result = classify(signals)
+    assert isinstance(result, WindowExhausted)

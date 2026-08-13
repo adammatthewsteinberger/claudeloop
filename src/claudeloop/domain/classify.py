@@ -32,7 +32,8 @@ _CREDITS_DISABLED_REASONS = frozenset({"out_of_credits"})
 
 # Monthly spend / usage-credit limit copy often arrives as a bare rate_limit + 429
 # (or only as ResultMessage.result text) with RateLimitEvent dropped — never treat
-# that as a waitable window.
+# that as a waitable window. Keep markers specific: "you've hit your" alone also
+# matches session/weekly window copy and must not force CreditsExhausted.
 _SPEND_LIMIT_MARKERS = (
     "monthly spend limit",
     "usage-credits",
@@ -40,7 +41,6 @@ _SPEND_LIMIT_MARKERS = (
     "hit your monthly",
     "out of extra usage",
     "purchase more credits",
-    "you've hit your",
     "spend limit",
 )
 
