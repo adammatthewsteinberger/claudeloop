@@ -18,6 +18,23 @@ class StopCommand:
 
 
 @dataclass(frozen=True, slots=True)
+class WindDownCommand:
+    """Request a handoff at the next natural break.
+
+    Deliberately weaker than StopCommand, which is honoured immediately. A
+    wind-down lets the turn in flight finish so the handoff artifacts describe
+    a consistent point -- that difference is the whole distinction between a
+    stop and a soft stop.
+
+    It also breaks an in-progress capacity wait: a supervisor that decides to
+    rotate away from a runner sitting on a two-hour rate-limit window should
+    not have to wait out the window to do it.
+    """
+
+    reason: str = "operator"
+
+
+@dataclass(frozen=True, slots=True)
 class PromptNowCommand:
     """Replace the next turn's prompt immediately (at the next operator boundary)."""
 
@@ -161,6 +178,7 @@ class ResponseRetryCommand:
 
 ControlCommand = (
     StopCommand
+    | WindDownCommand
     | PromptNowCommand
     | PromptDeferredCommand
     | SetModelCommand
@@ -180,10 +198,15 @@ ControlCommand = (
 def stop_outranks(commands: list[ControlCommand]) -> list[ControlCommand]:
     """Normalize a poll batch: if any Stop is present, only Stop remains.
 
-    Latest of each other kind wins within the batch.
+    Latest of each other kind wins within the batch. A Stop also outranks a
+    WindDown -- someone who asked to stop now should not be made to wait for a
+    natural break because a wind-down happened to arrive in the same batch.
     """
     if any(isinstance(c, StopCommand) for c in commands):
         return [StopCommand()]
+    wind_downs = [c for c in commands if isinstance(c, WindDownCommand)]
+    if wind_downs:
+        return [wind_downs[-1]]
 
     def _last(cls: type) -> list[ControlCommand]:
         items = [c for c in commands if isinstance(c, cls)]
