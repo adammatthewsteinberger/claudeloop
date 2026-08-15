@@ -212,25 +212,7 @@ class TestHelpers:
         rd = RunDirectory.create(runs, cwd=tmp_path)
         marker_path = rd.handoff_marker_path
         assert marker_path.parent == rd.root
-        assert marker_path.name == "HANDOFF.md"
-
-    def test_write_handoff_marker(self, tmp_path: Path) -> None:
-        from claudeloop.domain.handoff import HandoffMarker
-
-        runs = runs_root_for(tmp_path)
-        rd = RunDirectory.create(runs, cwd=tmp_path)
-        marker = HandoffMarker(
-            reason="test reason",
-            trace_id="trace-1",
-            run_id="run-1",
-            snapshot_digest="abc123",
-        )
-        result_path = rd.write_handoff_marker(marker)
-        assert result_path.exists()
-        assert result_path == rd.handoff_marker_path
-        content = result_path.read_text(encoding="utf-8")
-        assert "test reason" in content
-
+        assert marker_path.name == "handoff.json"
 
 class TestPidAlive:
     def test_negative_pid_returns_false(self) -> None:

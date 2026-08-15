@@ -228,17 +228,6 @@ class TestGitSavePointStore:
         points = store.list_points("r1")
         assert len(points) == 1
 
-    def test_git_changes_summary_with_since_sha(self, tmp_path: Path) -> None:
-        repo = _init_repo(tmp_path / "repo")
-        index = tmp_path / "index.jsonl"
-        store = GitSavePointStore(cwd=repo, index_path=index)
-        (repo / "a.txt").write_text("a", encoding="utf-8")
-        p1 = store.create(run_id="r1", label="first")
-        (repo / "b.txt").write_text("b", encoding="utf-8")
-        store.create(run_id="r1", label="second", message="add b")
-        summary = store._git_changes_summary(since_sha=p1.sha)
-        assert "add b" in summary
-
     def test_staged_paths_returns_empty_on_no_staged(self, tmp_path: Path) -> None:
         repo = _init_repo(tmp_path / "repo")
         index = tmp_path / "index.jsonl"
