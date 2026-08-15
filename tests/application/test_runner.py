@@ -7,6 +7,8 @@ from claudeloop.domain.budget import Budget
 from claudeloop.domain.classify import TurnSignals
 from claudeloop.domain.completion import StructuredVerdict
 from claudeloop.domain.control import PromptDeferredCommand, PromptNowCommand, StopCommand
+from claudeloop.domain.forecast import WindDownPolicy
+from claudeloop.domain.handoff_marker import HandoffMarker
 from claudeloop.domain.waiting import WaitPolicyConfig
 from tests.application.fakes import (
     CONTINUE_VERDICT,
@@ -535,3 +537,69 @@ async def test_set_model_updates_probe_model() -> None:
     result = await runner.run(initial_prompt="start", continue_prompt="keep")
     assert result.success is True
     assert probe.models  # profile change synced to probe
+
+
+async def test_a_wind_down_produces_every_artifact_the_marker_names() -> None:
+    """The invariant a supervisor depends on: if handoff.json exists, so does
+    everything it names. Order matters -- the marker is written last."""
+    summaries: list[str] = []
+    markers: list[HandoffMarker] = []
+    runner, gateway, _a, _p, _s, _n, events = make_runner(
+        turns=[ScriptedTurn(signals=available_signals(), verdict=CONTINUE_VERDICT)],
+        probes=[available_signals()],
+        # Two turns of headroom with a reserve of two means the very first
+        # completed turn is already inside the reserve.
+        budget=Budget(max_turns=2, max_dollars=10.0),
+    )
+    runner._stop_summary_writer = lambda md: summaries.append(md) or "stop-summary.md"
+    runner._handoff_marker_writer = markers.append
+    runner._wind_down_policy = WindDownPolicy(enabled=True)
+
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+
+    assert result.success is False
+    assert result.reason.startswith("wind-down:")
+    assert gateway.closed is True
+    assert summaries, "a wind-down must leave a stop summary"
+    assert markers, "a wind-down must leave a handoff marker"
+
+    marker = markers[0]
+    assert marker.run_id == runner._run_id
+    assert marker.stop_summary_path == "stop-summary.md"
+    assert marker.turns_spent >= 1
+    assert any(e[0] == "wind_down.finished" for e in events.events)
+
+
+async def test_a_wind_down_is_not_reported_as_a_completed_run() -> None:
+    """A supervisor has to tell "resume me elsewhere" from "this is done"."""
+    markers: list[HandoffMarker] = []
+    runner, _g, _a, _p, _s, _n, _e = make_runner(
+        turns=[ScriptedTurn(signals=available_signals(), verdict=CONTINUE_VERDICT)],
+        probes=[available_signals()],
+        budget=Budget(max_turns=2, max_dollars=10.0),
+    )
+    runner._handoff_marker_writer = markers.append
+    runner._wind_down_policy = WindDownPolicy(enabled=True)
+
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+
+    assert result.success is False
+    assert "wind-down" in result.reason
+
+
+async def test_a_wind_down_without_a_marker_writer_still_finishes_cleanly() -> None:
+    """No writer wired means no marker on disk -- which is the honest signal.
+    A supervisor that finds no handoff.json falls back to the reactive path
+    rather than resuming from artifacts that were never written."""
+    runner, gateway, _a, _p, _s, _n, _e = make_runner(
+        turns=[ScriptedTurn(signals=available_signals(), verdict=CONTINUE_VERDICT)],
+        probes=[available_signals()],
+        budget=Budget(max_turns=2, max_dollars=10.0),
+    )
+    runner._wind_down_policy = WindDownPolicy(enabled=True)
+
+    result = await runner.run(initial_prompt="start", continue_prompt="keep going")
+
+    assert result.success is False
+    assert "wind-down" in result.reason
+    assert gateway.closed is True
