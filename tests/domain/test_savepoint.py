@@ -8,7 +8,7 @@ domain-level tests too.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -21,7 +21,7 @@ def _ref(**overrides: object) -> SavePointRef:
         "ref": "refs/claudeloop/run-1/1",
         "sha": "abc123",
         "label": "turn-1",
-        "at": datetime(2026, 1, 1, tzinfo=UTC),
+        "at": datetime(2026, 1, 1, tzinfo=timezone.utc),
     }
     defaults.update(overrides)
     return SavePointRef(**defaults)  # type: ignore[arg-type]

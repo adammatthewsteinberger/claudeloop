@@ -288,9 +288,13 @@ class TestStreamAppTickReplay:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
+        # _playing defaults True, and mounting schedules a real 0.05s
+        # interval calling _tick_replay -- set it False before run_test()
+        # mounts the app, or that timer can race the assertion below under
+        # load and advance _replay_index before this test's own manual call.
+        app._playing = False
         async with app.run_test(size=(120, 40)):
             app._load_all()
-            app._playing = False
             app._tick_replay()
             assert app._replay_index == 0
 
