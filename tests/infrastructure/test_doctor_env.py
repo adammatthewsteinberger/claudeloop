@@ -282,14 +282,7 @@ def test_api_surface_method_count_import_error() -> None:
     from unittest.mock import patch
 
     env = RealDoctorEnvironment()
-    # Mock the import to raise ImportError
-    original_import = __builtins__.__import__
-
-    def mock_import(name, *args, **kwargs):
-        if "introspect" in name:
-            raise ImportError("introspect not available")
-        return original_import(name, *args, **kwargs)
-
-    with patch("builtins.__import__", side_effect=mock_import):
+    # Mock sys.modules to make introspect unavailable
+    with patch.dict(sys.modules, {"claudeloop.infrastructure.api.introspect": None}):
         result = env.api_surface_method_count()
         assert result is None

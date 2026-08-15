@@ -7,6 +7,7 @@ from claudeloop.domain.control import (
     PromptNowCommand,
     SetPresetCommand,
     StopCommand,
+    WindDownCommand,
     stop_outranks,
 )
 from claudeloop.domain.stop_summary import StopSummaryInput, render_stop_summary
