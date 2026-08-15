@@ -131,6 +131,46 @@ def test_auto_downgrade_budget_and_progress() -> None:
     assert progress.profile == profile_for_preset("medium", ModelAliases())
 
 
+def test_no_action_when_nothing_warrants_a_change() -> None:
+    """No escalate condition, no budget threshold, and fewer than two
+    consecutive good turns -- the steady state where auto-model does
+    nothing, which no other test reaches (they all hit an earlier branch)."""
+    medium = profile_for_preset("medium", ModelAliases())
+    decision = decide_auto_model(
+        medium,
+        consecutive_no_progress=0,
+        consecutive_progress=1,
+        blocked=False,
+        dollars_spent=1.0,
+        max_dollars=10.0,
+        budget_downgrade_done=False,
+        operator_locked=False,
+        auto_enabled=True,
+    )
+    assert decision.profile is None
+    assert decision.reason is None
+
+
+def test_progress_downgrade_is_a_no_op_already_at_the_floor() -> None:
+    """At the low preset with no further step down, downgrade_profile returns
+    the same profile -- decide_auto_model must not report a downgrade that
+    doesn't actually change anything."""
+    low = profile_for_preset("low", ModelAliases())
+    decision = decide_auto_model(
+        low,
+        consecutive_no_progress=0,
+        consecutive_progress=2,
+        blocked=False,
+        dollars_spent=1.0,
+        max_dollars=10.0,
+        budget_downgrade_done=True,
+        operator_locked=False,
+        auto_enabled=True,
+    )
+    assert decision.profile is None
+    assert decision.reason is None
+
+
 def test_escalate_outranks_downgrade() -> None:
     high = profile_for_preset("medium", ModelAliases())
     decision = decide_auto_model(
