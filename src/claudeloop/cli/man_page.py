@@ -282,6 +282,10 @@ EXIT STATUS
 
        2      Usage error (e.g. prompt without exactly one of --now/--at-break).
 
+       75     Wound down on purpose (claudeloop wind-down); the current turn
+              finished, runs/<id>/handoff.json names every artifact produced,
+              and a supervisor can resume elsewhere.
+
        130    Soft-stopped by claudeloop stop (or equivalent interrupt path).
 
 FILES
