@@ -109,3 +109,46 @@ def test_file_state_bus_atomic_write_cleanup_on_error(tmp_path: Path) -> None:
     # Verify no .status-* temp files are left behind
     temp_files = list(tmp_path.glob(".status-*"))
     assert len(temp_files) == 0
+
+
+def test_build_options_with_retry_watchdog() -> None:
+    from claudeloop.infrastructure.agent.options import build_options
+
+    opts = build_options(
+        cwd="/tmp",
+        model="claude-sonnet",
+        effort="medium",
+        retry_watchdog=True,
+    )
+    assert "CLAUDE_CODE_RETRY_WATCHDOG" in opts.env
+
+
+def test_build_options_with_system_prompt_append() -> None:
+    from claudeloop.infrastructure.agent.options import build_options
+
+    opts = build_options(
+        cwd="/tmp",
+        model="claude-sonnet",
+        effort="medium",
+        system_prompt_append="Custom instructions here",
+    )
+    assert "Custom instructions" in opts.system_prompt_append
+
+
+def test_build_options_with_allowed_tools() -> None:
+    from claudeloop.infrastructure.agent.options import build_options
+
+    opts = build_options(
+        cwd="/tmp",
+        model="claude-sonnet",
+        effort="medium",
+        allowed_tools=["Bash", "Read"],
+    )
+    assert opts.allowed_tools == ["Bash", "Read"]
+
+
+def test_build_probe_options_with_model() -> None:
+    from claudeloop.infrastructure.agent.options import build_probe_options
+
+    opts = build_probe_options(cwd="/tmp", model="claude-haiku")
+    assert opts.model == "claude-haiku"
