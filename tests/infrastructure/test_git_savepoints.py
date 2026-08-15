@@ -222,7 +222,7 @@ class TestGitSavePointStore:
         index = tmp_path / "index.jsonl"
         store = GitSavePointStore(cwd=repo, index_path=index)
         (repo / "a.txt").write_text("a", encoding="utf-8")
-        p1 = store.create(run_id="r1", label="test")
+        store.create(run_id="r1", label="test")
         # Manually add a blank line to the index
         index.write_text(index.read_text(encoding="utf-8") + "\n\n", encoding="utf-8")
         points = store.list_points("r1")

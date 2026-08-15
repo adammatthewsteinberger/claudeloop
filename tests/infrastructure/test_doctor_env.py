@@ -270,10 +270,12 @@ def test_anthropic_sdk_version_import_error() -> None:
 
     env = RealDoctorEnvironment()
     # Mock the import to raise ImportError
-    with patch.dict(sys.modules, {"anthropic": None}):
-        with patch("builtins.__import__", side_effect=ImportError("no module")):
-            result = env.anthropic_sdk_version()
-            assert result is None
+    with (
+        patch.dict(sys.modules, {"anthropic": None}),
+        patch("builtins.__import__", side_effect=ImportError("no module")),
+    ):
+        result = env.anthropic_sdk_version()
+        assert result is None
 
 
 def test_api_surface_method_count_import_error() -> None:

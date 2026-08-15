@@ -93,6 +93,7 @@ def test_file_state_bus_when_bus_already_exists(tmp_path: Path) -> None:
 
 
 def test_file_state_bus_atomic_write_cleanup_on_error(tmp_path: Path) -> None:
+    import contextlib
     from unittest.mock import patch
 
     status = tmp_path / "status.json"
@@ -100,11 +101,11 @@ def test_file_state_bus_atomic_write_cleanup_on_error(tmp_path: Path) -> None:
     publisher = FileStateBus(status_path=status, bus_path=bus, run_id="r3")
 
     # Force os.replace to fail to trigger the exception handler
-    with patch("os.replace", side_effect=OSError("simulated replace failure")):
-        try:
-            publisher.publish("test", {"data": "x"})
-        except OSError:
-            pass  # Expected
+    with (
+        patch("os.replace", side_effect=OSError("simulated replace failure")),
+        contextlib.suppress(OSError),
+    ):
+        publisher.publish("test", {"data": "x"})
 
     # Verify no .status-* temp files are left behind
     temp_files = list(tmp_path.glob(".status-*"))

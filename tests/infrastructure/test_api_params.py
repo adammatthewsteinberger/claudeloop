@@ -123,7 +123,9 @@ def test_normalize_annotation_with_single_filtered_type() -> None:
 
     from claudeloop.infrastructure.api.params import _normalize_annotation
 
-    result = _normalize_annotation(Optional[str])
+    # Deliberately the legacy typing.Optional spelling, not `str | None` --
+    # this is the exact input shape being normalized, not a real annotation.
+    result = _normalize_annotation(Optional[str])  # noqa: UP045
     assert result is str
 
 

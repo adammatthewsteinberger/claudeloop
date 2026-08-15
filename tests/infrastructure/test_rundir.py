@@ -214,6 +214,7 @@ class TestHelpers:
         assert marker_path.parent == rd.root
         assert marker_path.name == "handoff.json"
 
+
 class TestPidAlive:
     def test_negative_pid_returns_false(self) -> None:
         from claudeloop.infrastructure.rundir import _pid_alive
@@ -227,6 +228,7 @@ class TestPidAlive:
 
     def test_current_pid_returns_true(self) -> None:
         import os
+
         from claudeloop.infrastructure.rundir import _pid_alive
 
         assert _pid_alive(os.getpid()) is True

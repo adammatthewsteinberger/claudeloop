@@ -79,6 +79,7 @@ def test_git_branch_passthrough() -> None:
 
 def test_most_recent_returns_none_when_no_sessions() -> None:
     from unittest.mock import patch
+
     from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 
     with patch("claudeloop.infrastructure.agent.catalog.list_sessions", return_value=[]):
@@ -89,6 +90,7 @@ def test_most_recent_returns_none_when_no_sessions() -> None:
 
 def test_most_recent_returns_first_session() -> None:
     from unittest.mock import patch
+
     from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 
     fake_session = _FakeSDKSessionInfo(
@@ -105,6 +107,7 @@ def test_most_recent_returns_first_session() -> None:
 
 def test_list_all_returns_all_sessions() -> None:
     from unittest.mock import patch
+
     from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 
     sessions = [
@@ -121,6 +124,7 @@ def test_list_all_returns_all_sessions() -> None:
 
 def test_list_all_without_cwd_uses_session_cwd() -> None:
     from unittest.mock import patch
+
     from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 
     sessions = [

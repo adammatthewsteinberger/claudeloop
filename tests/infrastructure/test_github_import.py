@@ -133,10 +133,13 @@ class TestMaterializeIssueAttachment:
 class TestImportGithubIssue:
     def test_import_via_gh_cli(self) -> None:
         from unittest.mock import MagicMock, patch
+
         from claudeloop.infrastructure.github_import import import_github_issue
 
         mock_result = MagicMock()
-        mock_result.stdout = '{"title":"Test","body":"Body","html_url":"https://github.com/o/r/issues/1"}'
+        mock_result.stdout = (
+            '{"title":"Test","body":"Body","html_url":"https://github.com/o/r/issues/1"}'
+        )
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
             issue = import_github_issue("o/r#1")
@@ -152,13 +155,12 @@ class TestImportGithubIssue:
 
     def test_import_fallback_to_api_on_gh_not_found(self) -> None:
         from unittest.mock import patch
+
         from claudeloop.infrastructure.github_import import import_github_issue
 
         with (
             patch("subprocess.run", side_effect=FileNotFoundError("gh not found")),
-            patch(
-                "claudeloop.infrastructure.github_import._fetch_issue_api"
-            ) as mock_fetch,
+            patch("claudeloop.infrastructure.github_import._fetch_issue_api") as mock_fetch,
         ):
             mock_fetch.return_value = {
                 "title": "API Title",
@@ -173,6 +175,7 @@ class TestImportGithubIssue:
     def test_import_fallback_to_api_on_gh_error(self) -> None:
         from subprocess import CalledProcessError
         from unittest.mock import patch
+
         from claudeloop.infrastructure.github_import import import_github_issue
 
         with (
@@ -180,13 +183,9 @@ class TestImportGithubIssue:
                 "subprocess.run",
                 side_effect=CalledProcessError(1, ["gh"], stderr="error"),
             ),
-            patch(
-                "claudeloop.infrastructure.github_import._fetch_issue_api"
-            ) as mock_fetch,
+            patch("claudeloop.infrastructure.github_import._fetch_issue_api") as mock_fetch,
         ):
             mock_fetch.return_value = {"title": "T", "body": "B", "html_url": "u"}
             issue = import_github_issue("o/r#1")
             assert issue.title == "T"
             mock_fetch.assert_called_once()
-
-
