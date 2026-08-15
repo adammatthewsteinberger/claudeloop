@@ -196,3 +196,39 @@ class TestResourcePortAdapter:
         adapter.apply_mutate(action="add", kind="web-search", value="")
         payload = adapter.gateway_payload()
         assert "WebSearch" in payload["allowed_tools"]
+
+    def test_mutate_github_issue_add(self, tmp_path: Path) -> None:
+        from unittest.mock import patch
+
+        from claudeloop.infrastructure.github_import import ImportedIssue
+
+        store = _make_store(tmp_path)
+        adapter = ResourcePortAdapter(store)
+
+        # Mock the import_github_issue function
+        mock_issue = ImportedIssue(
+            owner="test-owner",
+            repo="test-repo",
+            number=42,
+            title="Test Issue",
+            body="Issue body",
+            url="https://github.com/test-owner/test-repo/issues/42",
+        )
+
+        with (
+            patch(
+                "claudeloop.infrastructure.resources.adapter.import_github_issue",
+                return_value=mock_issue,
+            ),
+            patch(
+                "claudeloop.infrastructure.resources.adapter.materialize_issue_attachment",
+                return_value=tmp_path / "issue-42.md",
+            ),
+        ):
+            result = adapter.apply_mutate(
+                action="add", kind="github-issue", value="test-owner/test-repo#42"
+            )
+
+        assert "attachment" in result
+        assert "prompt_fragment" in result
+        assert adapter._dirty is True

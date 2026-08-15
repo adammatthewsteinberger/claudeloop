@@ -294,3 +294,47 @@ class TestRunResourceStore:
         store.add_skill("s1")
         skills = json.loads(store.skills_path.read_text(encoding="utf-8"))
         assert skills.count("s1") == 1
+
+    def test_attach_directory_overwrites_existing(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+
+        # Create a directory to attach
+        source_dir = tmp_path / "source_dir"
+        source_dir.mkdir()
+        (source_dir / "file1.txt").write_text("content1", encoding="utf-8")
+        store.attach(source_dir)
+
+        # Attach a new directory with the same name (should overwrite)
+        source_dir2 = tmp_path / "source_dir"
+        if source_dir2.exists():
+            import shutil
+
+            shutil.rmtree(source_dir2)
+        source_dir2.mkdir()
+        (source_dir2 / "file2.txt").write_text("content2", encoding="utf-8")
+        result = store.attach(source_dir2)
+
+        # Should contain file2.txt, not file1.txt
+        assert (result / "file2.txt").exists()
+        assert not (result / "file1.txt").exists()
+
+    def test_unattach_directory(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+
+        # Attach a directory
+        source_dir = tmp_path / "my_dir"
+        source_dir.mkdir()
+        (source_dir / "nested.txt").write_text("data", encoding="utf-8")
+        store.attach(source_dir)
+
+        # Unattach the directory
+        store.unattach("my_dir")
+        assert not (store.attachments_dir / "my_dir").exists()
