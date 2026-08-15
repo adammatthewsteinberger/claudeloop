@@ -200,19 +200,44 @@ def test_configured_mcp_servers_oserror() -> None:
 
 
 def test_configured_mcp_servers_success() -> None:
-    """configured_mcp_servers parses server names from mcp list output."""
+    """configured_mcp_servers parses server names from colon-delimited output."""
     env = RealDoctorEnvironment()
     mock_result = Mock()
     mock_result.returncode = 0
-    mock_result.stdout = """server1 (connected)
-server2 (connected)
-server3 (error: timeout)
-"""
+    mock_result.stdout = "server1: connected\nserver2: connected\nserver3: error\n"
 
     with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
         with patch("subprocess.run", return_value=mock_result):
             servers = env.configured_mcp_servers()
             assert "server1" in servers
             assert "server2" in servers
-            # Note: The actual parsing logic isn't shown in the snippet,
-            # so this test would need to match the actual implementation
+            assert "server3" in servers
+
+
+def test_configured_mcp_servers_skips_blank_and_no_colon_lines() -> None:
+    """configured_mcp_servers skips blank lines and lines without colons."""
+    env = RealDoctorEnvironment()
+    mock_result = Mock()
+    mock_result.returncode = 0
+    mock_result.stdout = "server1: ok\n\nno-colon-line\nserver2: ok\n"
+
+    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
+        with patch("subprocess.run", return_value=mock_result):
+            servers = env.configured_mcp_servers()
+            assert servers == ["server1", "server2"]
+
+
+def test_anthropic_sdk_version_returns_version() -> None:
+    """anthropic_sdk_version returns the anthropic module version."""
+    env = RealDoctorEnvironment()
+    result = env.anthropic_sdk_version()
+    assert result is not None
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_api_surface_method_count_returns_int() -> None:
+    """api_surface_method_count returns an integer count."""
+    env = RealDoctorEnvironment()
+    count = env.api_surface_method_count()
+    assert count is None or isinstance(count, int)
