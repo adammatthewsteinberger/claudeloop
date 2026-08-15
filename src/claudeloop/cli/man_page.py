@@ -24,7 +24,8 @@ NAME
        claudeloop - autonomous Claude Code session runner and Anthropic SDK CLI
 
 SYNOPSIS
-       claudeloop [--help | -h] [--version | --man]
+       claudeloop [--help | -h] [--version | --man] [-v...|-q]
+                  [--log-level LEVEL] [--log-file PATH]
        claudeloop run [OPTIONS] PLAN_FILE
        claudeloop resume [OPTIONS]
        claudeloop stop [--run-id ID]
@@ -259,6 +260,11 @@ OPTIONS (common run / resume)
        Global flags
               --help / -h / --man   this manual page
               --version            print version and exit
+              -v / --verbose       repeatable: -v debug, -vv also third-party
+                                   libraries, -vvv full payloads
+              -q / --quiet         warnings and errors only
+              --log-level LEVEL    DEBUG|INFO|WARNING|ERROR|CRITICAL; overrides -v
+              --log-file PATH      also write redacted JSON lines to PATH
 
 LOGGING
        After configure_logging (run/resume), stderr receives JSON console

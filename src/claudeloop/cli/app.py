@@ -7,9 +7,11 @@ Registered in pyproject.toml as:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
-from claudeloop import __version__
+from claudeloop import __version__, bootstrap
 from claudeloop.bootstrap import build_api_click_group
 from claudeloop.cli.commands.artifact_cmd import app as artifact_app
 from claudeloop.cli.commands.attach_cmd import attach, unattach
@@ -47,6 +49,7 @@ from claudeloop.cli.commands.voice_cmd import speak
 from claudeloop.cli.commands.watch import watch
 from claudeloop.cli.commands.web_search_cmd import web_search_cmd
 from claudeloop.cli.man_page import write_man_page
+from claudeloop.domain.verbosity import resolve_log_plan
 
 
 def _root_wants_man_help(argv: list[str]) -> bool:
@@ -128,8 +131,28 @@ def main_callback(
         is_eager=True,
         help="Show the installed claudeloop version and exit.",
     ),
+    verbose: int = typer.Option(
+        0,
+        "--verbose",
+        "-v",
+        count=True,
+        help="More detail: -v debug, -vv also third-party libraries, -vvv full payloads.",
+    ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Warnings and errors only."),
+    log_level: str | None = typer.Option(
+        None, "--log-level", help="DEBUG, INFO, WARNING, ERROR or CRITICAL. Overrides -v."
+    ),
+    log_file: Path | None = typer.Option(
+        None, "--log-file", help="Also write redacted JSON lines to this file."
+    ),
 ) -> None:
     del version  # handled entirely by the eager callback above
+    try:
+        plan = resolve_log_plan(verbose=verbose, quiet=quiet, log_level=log_level)
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    bootstrap.configure_cli_logging(plan=plan, log_file=log_file)
 
 
 def main() -> int:

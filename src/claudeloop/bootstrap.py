@@ -21,6 +21,7 @@ from claudeloop.domain.budget import Budget
 from claudeloop.domain.control import SlashCommand
 from claudeloop.domain.permission import parse_user_permission_mode
 from claudeloop.domain.plan import WorkPlan
+from claudeloop.domain.verbosity import LogPlan
 from claudeloop.domain.waiting import ProgressWaitConfig, WaitPolicyConfig
 from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
 from claudeloop.infrastructure.agent.gateway import ClaudeAgentGateway, ClaudeCapacityProbe
@@ -34,7 +35,12 @@ from claudeloop.infrastructure.doctor_env import RealDoctorEnvironment
 from claudeloop.infrastructure.events import JsonlRunEventSink
 from claudeloop.infrastructure.git_savepoints import GitSavePointStore
 from claudeloop.infrastructure.lock import FileSessionLock
-from claudeloop.infrastructure.logging import StructlogAppLogger, get_logger
+from claudeloop.infrastructure.logging import (
+    StructlogAppLogger,
+    apply_third_party_level,
+    configure_logging,
+    get_logger,
+)
 from claudeloop.infrastructure.notify import StderrNotifier
 from claudeloop.infrastructure.progress import ConsoleProgressReporter
 from claudeloop.infrastructure.resources.adapter import ResourcePortAdapter
@@ -311,3 +317,9 @@ def build_api_click_group() -> click.Group:
     if _CACHED_API_GROUP is None:
         _CACHED_API_GROUP = _build()
     return _CACHED_API_GROUP
+
+
+def configure_cli_logging(*, plan: LogPlan, log_file: Path | None = None) -> None:
+    """Apply the resolved -v / -q / --log-level plan to this process."""
+    configure_logging(log_file=log_file, level=plan.level)
+    apply_third_party_level(plan)
