@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/claudeloop)](https://pypi.org/project/claudeloop/)
 [![Python versions](https://img.shields.io/pypi/pyversions/claudeloop)](https://pypi.org/project/claudeloop/)
 [![CI](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-mkdocs-blue)](https://adammatthewsteinberger.github.io/claudeloop/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/claudeloop/blob/main/LICENSE)
 
 **Onion-architected, autonomous Claude Code session runner and full Anthropic
@@ -30,6 +31,10 @@ See the [architecture decision records](https://adammatthewsteinberger.github.io
 each specific change was made.
 
 ## Install
+
+Requires **Python 3.10+**, **macOS or Linux**, and the
+[Claude Code CLI](https://code.claude.com) installed and authenticated.
+Windows is not a supported target.
 
 ```bash
 pipx install claudeloop
@@ -116,11 +121,30 @@ See the [architecture roadmap](https://adammatthewsteinberger.github.io/claudelo
 
 Contributions are welcome — see [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CONTRIBUTING.md) for the
 gitflow branch model, Conventional Commits requirement, and how to run every
-quality gate locally. Agent guidance is mirrored across:
+quality gate locally.
+
+The GitHub default branch is **`develop`**. Open feature PRs into `develop`,
+not `main`. By contributing you agree that your work is licensed under the
+same MIT License as the rest of this repository, and that you will follow
+the [Code of Conduct](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CODE_OF_CONDUCT.md).
+
+Agent guidance is mirrored across:
 
 - [CLAUDE.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CLAUDE.md) + [`.claude/skills/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.claude/skills/) (Claude Code)
 - [`.cursor/rules/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.cursor/rules/) (Cursor)
 - [AGENTS.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/AGENTS.md) + [`.agents/skills/`](https://github.com/adammatthewsteinberger/claudeloop/tree/main/.agents/skills/) (Codex)
+
+## Getting help
+
+| I want to... | Go here |
+|---|---|
+| Read the docs | https://adammatthewsteinberger.github.io/claudeloop/ |
+| Ask a question | [Discussions](https://github.com/adammatthewsteinberger/claudeloop/discussions) |
+| Report a bug or request a feature | [Issues](https://github.com/adammatthewsteinberger/claudeloop/issues) (use the templates) |
+| Report a vulnerability | [SECURITY.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/SECURITY.md) (private) |
+
+See [SUPPORT.md](https://github.com/adammatthewsteinberger/claudeloop/blob/main/SUPPORT.md)
+for the same map.
 
 ## Security
 
@@ -132,3 +156,7 @@ to report a vulnerability.
 ## License
 
 MIT — see [LICENSE](https://github.com/adammatthewsteinberger/claudeloop/blob/main/LICENSE).
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](https://github.com/adammatthewsteinberger/claudeloop/blob/main/CODE_OF_CONDUCT.md).

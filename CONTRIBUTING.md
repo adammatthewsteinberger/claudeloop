@@ -15,6 +15,9 @@ issue or a PR fixing it.
 6. [Testing philosophy](#testing-philosophy)
 7. [The onion architecture import rule](#the-onion-architecture-import-rule)
 8. [PR checklist](#pr-checklist)
+9. [Getting help](#getting-help)
+10. [Code of Conduct](#code-of-conduct)
+11. [License of contributions](#license-of-contributions)
 
 ## Environment setup
 
@@ -27,8 +30,13 @@ pip install -e ".[dev,docs]"
 pre-commit install
 ```
 
-Requires Python 3.10+. See
-[`docs/contributing/development.md`](docs/contributing/development.md) for
+Requires Python 3.10+ on **macOS or Linux**. Windows is not a supported
+target — CI and classifiers are Unix-only; see
+[`docs/getting-started/installation.md`](docs/getting-started/installation.md).
+The GitHub default branch is **`develop`** (the integration branch you PR
+into). `main` is the releasable line that release-please watches.
+
+See [`docs/contributing/development.md`](docs/contributing/development.md) for
 the full version of this page, including where new code belongs in the
 onion architecture.
 
@@ -210,3 +218,30 @@ for why this was chosen over convention-only layering.
 - [ ] No new cross-layer imports that `lint-imports` would reject
 - [ ] Docs updated if behavior changed — including removing a `!!! note "Roadmap"` admonition if this PR implements something previously marked as roadmap
 - [ ] A new ADR added under `docs/architecture/decisions/` if this PR makes a hard, non-obvious design call worth preserving the reasoning for
+- [ ] You agree to the [Code of Conduct](CODE_OF_CONDUCT.md) and to license this contribution under the MIT License
+
+## Getting help
+
+| I want to... | Go here |
+|---|---|
+| User/operator docs | [https://adammatthewsteinberger.github.io/claudeloop/](https://adammatthewsteinberger.github.io/claudeloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/claudeloop/discussions) |
+| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=feature_request.yml) |
+| Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
+| Same map, shorter | [SUPPORT.md](SUPPORT.md) |
+
+Blank issues are disabled on purpose. If none of the forms fit, open a
+Discussion instead of a free-form issue.
+
+## Code of Conduct
+
+Participation in this project is governed by the
+[Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). Report
+unacceptable behavior to adam@matthewsteinberger.com.
+
+## License of contributions
+
+This repository is MIT-licensed ([LICENSE](LICENSE)). By opening a pull
+request you agree that your contribution is provided under the same MIT
+License (inbound = outbound). There is no CLA.
