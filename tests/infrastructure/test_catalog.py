@@ -75,3 +75,61 @@ def test_git_branch_passthrough() -> None:
     info = _FakeSDKSessionInfo(session_id="abc", cwd="/repo", git_branch="main")
     ref = _to_session_ref(info, cwd="/repo")  # type: ignore[arg-type]
     assert ref.git_branch == "main"
+
+
+def test_most_recent_returns_none_when_no_sessions() -> None:
+    from unittest.mock import patch
+    from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
+
+    with patch("claudeloop.infrastructure.agent.catalog.list_sessions", return_value=[]):
+        catalog = SdkSessionCatalog()
+        result = catalog.most_recent("/repo")
+        assert result is None
+
+
+def test_most_recent_returns_first_session() -> None:
+    from unittest.mock import patch
+    from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
+
+    fake_session = _FakeSDKSessionInfo(
+        session_id="sess-1", cwd="/repo", last_modified=1786328953799
+    )
+    with patch(
+        "claudeloop.infrastructure.agent.catalog.list_sessions", return_value=[fake_session]
+    ):
+        catalog = SdkSessionCatalog()
+        result = catalog.most_recent("/repo")
+        assert result is not None
+        assert result.session_id == "sess-1"
+
+
+def test_list_all_returns_all_sessions() -> None:
+    from unittest.mock import patch
+    from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
+
+    sessions = [
+        _FakeSDKSessionInfo(session_id="sess-1", cwd="/repo"),
+        _FakeSDKSessionInfo(session_id="sess-2", cwd="/repo"),
+    ]
+    with patch("claudeloop.infrastructure.agent.catalog.list_sessions", return_value=sessions):
+        catalog = SdkSessionCatalog()
+        result = catalog.list_all("/repo")
+        assert len(result) == 2
+        assert result[0].session_id == "sess-1"
+        assert result[1].session_id == "sess-2"
+
+
+def test_list_all_without_cwd_uses_session_cwd() -> None:
+    from unittest.mock import patch
+    from claudeloop.infrastructure.agent.catalog import SdkSessionCatalog
+
+    sessions = [
+        _FakeSDKSessionInfo(session_id="sess-1", cwd="/repo1"),
+        _FakeSDKSessionInfo(session_id="sess-2", cwd="/repo2"),
+    ]
+    with patch("claudeloop.infrastructure.agent.catalog.list_sessions", return_value=sessions):
+        catalog = SdkSessionCatalog()
+        result = catalog.list_all(cwd=None)
+        assert len(result) == 2
+        assert result[0].cwd == "/repo1"
+        assert result[1].cwd == "/repo2"

@@ -263,8 +263,11 @@ class TestStreamAppTickReplay:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
+        # Prevent auto-play timer from racing the manual tick below.
+        app._playing = False
         async with app.run_test(size=(120, 40)):
             app._load_all()
+            app._playing = True
             app._tick_replay()
             assert app._replay_index == 1
 
@@ -275,9 +278,10 @@ class TestStreamAppTickReplay:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
+        # Set paused before run_test() to prevent auto-play timer race.
+        app.paused = True
         async with app.run_test(size=(120, 40)):
             app._load_all()
-            app.paused = True
             app._tick_replay()
             assert app._replay_index == 0
 
