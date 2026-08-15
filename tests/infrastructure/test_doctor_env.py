@@ -261,3 +261,35 @@ def test_api_surface_method_count_returns_int() -> None:
     env = RealDoctorEnvironment()
     count = env.api_surface_method_count()
     assert count is None or isinstance(count, int)
+
+
+def test_anthropic_sdk_version_import_error() -> None:
+    """anthropic_sdk_version returns None when anthropic module cannot be imported."""
+    import sys
+    from unittest.mock import patch
+
+    env = RealDoctorEnvironment()
+    # Mock the import to raise ImportError
+    with patch.dict(sys.modules, {"anthropic": None}):
+        with patch("builtins.__import__", side_effect=ImportError("no module")):
+            result = env.anthropic_sdk_version()
+            assert result is None
+
+
+def test_api_surface_method_count_import_error() -> None:
+    """api_surface_method_count returns None when introspect module cannot be imported."""
+    import sys
+    from unittest.mock import patch
+
+    env = RealDoctorEnvironment()
+    # Mock the import to raise ImportError
+    original_import = __builtins__.__import__
+
+    def mock_import(name, *args, **kwargs):
+        if "introspect" in name:
+            raise ImportError("introspect not available")
+        return original_import(name, *args, **kwargs)
+
+    with patch("builtins.__import__", side_effect=mock_import):
+        result = env.api_surface_method_count()
+        assert result is None

@@ -115,3 +115,37 @@ def test_build_call_kwargs_fills_non_omit_defaults_when_absent() -> None:
     )
     assert kwargs == {"model": "claude-sonnet", "max_tokens": 256}
     assert "top_p" not in kwargs
+
+
+def test_normalize_annotation_with_single_filtered_type() -> None:
+    """_normalize_annotation handles Optional[str] by extracting str."""
+    from typing import Optional
+
+    from claudeloop.infrastructure.api.params import _normalize_annotation
+
+    result = _normalize_annotation(Optional[str])
+    assert result is str
+
+
+def test_is_scalar_annotation_with_unknown_forward_ref() -> None:
+    """is_scalar_annotation rejects string forward refs not in _SCALAR_BY_NAME."""
+    from claudeloop.infrastructure.api.params import is_scalar_annotation
+
+    # A forward ref that's not a known scalar type name
+    result = is_scalar_annotation("UnknownComplexType")
+    assert result is False
+
+
+def test_build_call_kwargs_skips_already_present_kwargs() -> None:
+    """build_call_kwargs doesn't override kwargs already present from json_payload."""
+
+    def sample(model: str, max_tokens: int = 500) -> None:
+        raise NotImplementedError
+
+    kwargs = build_call_kwargs(
+        inspect.signature(sample),
+        json_payload={"model": "claude-opus", "max_tokens": 200},
+        scalar_values={},
+    )
+    # max_tokens from json_payload should be preserved, not overridden by default
+    assert kwargs["max_tokens"] == 200

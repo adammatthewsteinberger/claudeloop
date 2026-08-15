@@ -205,3 +205,52 @@ class TestGitSavePointStore:
         store.create(run_id="r1", label="second", message="second")
         result = store.unwind(run_id="r1", to=p1.sha[:8], backup=False)
         assert result.restored_sha == p1.sha
+
+    def test_list_points_when_index_exists_already(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        # Pre-create the index file
+        index.write_text("", encoding="utf-8")
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        store.create(run_id="r1", label="test")
+        points = store.list_points("r1")
+        assert len(points) == 1
+
+    def test_list_points_skips_blank_lines(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        p1 = store.create(run_id="r1", label="test")
+        # Manually add a blank line to the index
+        index.write_text(index.read_text(encoding="utf-8") + "\n\n", encoding="utf-8")
+        points = store.list_points("r1")
+        assert len(points) == 1
+
+    def test_git_changes_summary_with_since_sha(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        p1 = store.create(run_id="r1", label="first")
+        (repo / "b.txt").write_text("b", encoding="utf-8")
+        store.create(run_id="r1", label="second", message="add b")
+        summary = store._git_changes_summary(since_sha=p1.sha)
+        assert "add b" in summary
+
+    def test_staged_paths_returns_empty_on_no_staged(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        paths = store._staged_paths()
+        assert paths == ()
+
+    def test_resolve_target_by_ref(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        p1 = store.create(run_id="r1", label="first")
+        point = store._resolve_target(store.list_points("r1"), p1.ref)
+        assert point.ref == p1.ref
