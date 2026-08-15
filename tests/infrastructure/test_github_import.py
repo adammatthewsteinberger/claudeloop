@@ -128,3 +128,110 @@ class TestMaterializeIssueAttachment:
         attachments = tmp_path / "deep" / "attachments"
         materialize_issue_attachment(issue, attachments)
         assert attachments.is_dir()
+
+
+class TestImportGithubIssue:
+    def test_import_via_gh_cli(self) -> None:
+        from unittest.mock import MagicMock, patch
+        from claudeloop.infrastructure.github_import import import_github_issue
+
+        mock_result = MagicMock()
+        mock_result.stdout = '{"title":"Test","body":"Body","html_url":"https://github.com/o/r/issues/1"}'
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            issue = import_github_issue("o/r#1")
+            assert issue.title == "Test"
+            assert issue.body == "Body"
+            assert issue.owner == "o"
+            assert issue.repo == "r"
+            assert issue.number == 1
+            mock_run.assert_called_once()
+            args = mock_run.call_args[0][0]
+            assert "gh" in args
+            assert "repos/o/r/issues/1" in args
+
+    def test_import_fallback_to_api_on_gh_not_found(self) -> None:
+        from unittest.mock import patch
+        from claudeloop.infrastructure.github_import import import_github_issue
+
+        with (
+            patch("subprocess.run", side_effect=FileNotFoundError("gh not found")),
+            patch(
+                "claudeloop.infrastructure.github_import._fetch_issue_api"
+            ) as mock_fetch,
+        ):
+            mock_fetch.return_value = {
+                "title": "API Title",
+                "body": "API Body",
+                "html_url": "https://github.com/owner/repo/issues/42",
+            }
+            issue = import_github_issue("owner/repo#42")
+            assert issue.title == "API Title"
+            assert issue.body == "API Body"
+            mock_fetch.assert_called_once_with("owner", "repo", 42)
+
+    def test_import_fallback_to_api_on_gh_error(self) -> None:
+        from subprocess import CalledProcessError
+        from unittest.mock import patch
+        from claudeloop.infrastructure.github_import import import_github_issue
+
+        with (
+            patch(
+                "subprocess.run",
+                side_effect=CalledProcessError(1, ["gh"], stderr="error"),
+            ),
+            patch(
+                "claudeloop.infrastructure.github_import._fetch_issue_api"
+            ) as mock_fetch,
+        ):
+            mock_fetch.return_value = {"title": "T", "body": "B", "html_url": "u"}
+            issue = import_github_issue("o/r#1")
+            assert issue.title == "T"
+            mock_fetch.assert_called_once()
+
+
+class TestFetchIssueApi:
+    def test_fetch_with_token(self) -> None:
+        from unittest.mock import MagicMock, patch
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'{"title":"API Issue","body":"Content","html_url":"url"}'
+        mock_response.__enter__ = lambda self: self
+        mock_response.__exit__ = lambda self, *args: None
+
+        with (
+            patch("urllib.request.urlopen", return_value=mock_response),
+            patch.dict("os.environ", {"GITHUB_TOKEN": "ghp_test123"}),
+        ):
+            result = _fetch_issue_api("owner", "repo", 99)
+            assert result["title"] == "API Issue"
+            assert result["body"] == "Content"
+
+    def test_fetch_without_token(self) -> None:
+        from unittest.mock import MagicMock, patch
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'{"title":"T","body":"B","html_url":"u"}'
+        mock_response.__enter__ = lambda self: self
+        mock_response.__exit__ = lambda self, *args: None
+
+        with (
+            patch("urllib.request.urlopen", return_value=mock_response),
+            patch.dict("os.environ", {}, clear=True),
+        ):
+            result = _fetch_issue_api("o", "r", 1)
+            assert result["title"] == "T"
+
+    def test_fetch_http_error_raises(self) -> None:
+        from unittest.mock import patch
+        from urllib.error import HTTPError
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        with patch(
+            "urllib.request.urlopen",
+            side_effect=HTTPError("url", 404, "Not found", {}, None),
+        ):
+            with pytest.raises(RuntimeError, match="failed to import"):
+                _fetch_issue_api("owner", "repo", 999)

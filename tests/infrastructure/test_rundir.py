@@ -206,3 +206,67 @@ class TestHelpers:
         rd2.update_meta(status="finished")
         resolved = resolve_run_directory(tmp_path)
         assert resolved.root.name == "b-run"
+
+    def test_handoff_marker_path(self, tmp_path: Path) -> None:
+        runs = runs_root_for(tmp_path)
+        rd = RunDirectory.create(runs, cwd=tmp_path)
+        marker_path = rd.handoff_marker_path
+        assert marker_path.parent == rd.root
+        assert marker_path.name == "HANDOFF.md"
+
+    def test_write_handoff_marker(self, tmp_path: Path) -> None:
+        from claudeloop.domain.handoff import HandoffMarker
+
+        runs = runs_root_for(tmp_path)
+        rd = RunDirectory.create(runs, cwd=tmp_path)
+        marker = HandoffMarker(
+            reason="test reason",
+            trace_id="trace-1",
+            run_id="run-1",
+            snapshot_digest="abc123",
+        )
+        result_path = rd.write_handoff_marker(marker)
+        assert result_path.exists()
+        assert result_path == rd.handoff_marker_path
+        content = result_path.read_text(encoding="utf-8")
+        assert "test reason" in content
+
+
+class TestPidAlive:
+    def test_negative_pid_returns_false(self) -> None:
+        from claudeloop.infrastructure.rundir import _pid_alive
+
+        assert _pid_alive(-1) is False
+
+    def test_zero_pid_returns_false(self) -> None:
+        from claudeloop.infrastructure.rundir import _pid_alive
+
+        assert _pid_alive(0) is False
+
+    def test_current_pid_returns_true(self) -> None:
+        import os
+        from claudeloop.infrastructure.rundir import _pid_alive
+
+        assert _pid_alive(os.getpid()) is True
+
+    def test_nonexistent_pid_returns_false(self) -> None:
+        from claudeloop.infrastructure.rundir import _pid_alive
+
+        # Use a very high PID that's unlikely to exist
+        assert _pid_alive(999999999) is False
+
+
+class TestResolveRunDirectoryWithActivePid:
+    def test_resolves_to_active_run(self, tmp_path: Path) -> None:
+        import os
+
+        runs = runs_root_for(tmp_path)
+        # Create an inactive run
+        rd1 = RunDirectory.create(runs, cwd=tmp_path, run_id="inactive")
+        rd1.update_meta(status="finished")
+        # Create an active run with current PID
+        rd2 = RunDirectory.create(runs, cwd=tmp_path, run_id="active")
+        rd2.update_meta(status="active", pid=os.getpid())
+
+        resolved = resolve_run_directory(tmp_path)
+        assert resolved.root.name == "active"

@@ -177,3 +177,45 @@ def test_render_stop_summary_includes_sections() -> None:
     assert "stopped by operator" in md
     assert "item a" in md
     assert "resume please" in md
+
+
+def test_file_run_control_wind_down_command(tmp_path: Path) -> None:
+    control = FileRunControl(tmp_path / "inbox")
+    control.enqueue(WindDownCommand(reason="test wind down"))
+    polled = control.poll()
+    assert len(polled) == 1
+    assert isinstance(polled[0], WindDownCommand)
+    assert polled[0].reason == "test wind down"
+
+
+def test_file_run_control_skips_corrupt_command_file(tmp_path: Path) -> None:
+    inbox = tmp_path / "inbox"
+    inbox.mkdir()
+    # Write a corrupt JSON file
+    (inbox / "corrupt.cmd.json").write_text("{invalid json", encoding="utf-8")
+    # Write a valid command
+    control = FileRunControl(inbox)
+    control.enqueue(StopCommand())
+
+    polled = control.poll()
+    # Should get the valid command, corrupt file should be skipped
+    assert polled == [StopCommand()]
+    # Corrupt file should still exist (not deleted)
+    assert (inbox / "corrupt.cmd.json").exists()
+
+
+def test_command_to_payload_unsupported_type_raises() -> None:
+    from claudeloop.infrastructure.control import _command_to_payload
+
+    class UnsupportedCommand:
+        pass
+
+    with pytest.raises(TypeError, match="unsupported control command"):
+        _command_to_payload(UnsupportedCommand())  # type: ignore[arg-type]
+
+
+def test_payload_to_command_unknown_type_raises() -> None:
+    from claudeloop.infrastructure.control import _payload_to_command
+
+    with pytest.raises(ValueError, match="unknown control command type"):
+        _payload_to_command({"type": "unknown_command_type"})

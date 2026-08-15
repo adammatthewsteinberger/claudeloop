@@ -79,3 +79,33 @@ def test_file_state_bus_publish_and_status(tmp_path: Path) -> None:
     text = status.read_text(encoding="utf-8")
     assert "RUNNING" in text
     assert "r1" in bus.read_text(encoding="utf-8")
+
+
+def test_file_state_bus_when_bus_already_exists(tmp_path: Path) -> None:
+    status = tmp_path / "status.json"
+    bus = tmp_path / "bus.jsonl"
+    bus.write_text("existing content\n", encoding="utf-8")
+    publisher = FileStateBus(status_path=status, bus_path=bus, run_id="r2")
+    publisher.publish("test.event", {"data": "value"})
+    content = bus.read_text(encoding="utf-8")
+    assert "existing content" in content
+    assert "value" in content
+
+
+def test_file_state_bus_atomic_write_cleanup_on_error(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    status = tmp_path / "status.json"
+    bus = tmp_path / "bus.jsonl"
+    publisher = FileStateBus(status_path=status, bus_path=bus, run_id="r3")
+
+    # Force os.replace to fail to trigger the exception handler
+    with patch("os.replace", side_effect=OSError("simulated replace failure")):
+        try:
+            publisher.publish("test", {"data": "x"})
+        except OSError:
+            pass  # Expected
+
+    # Verify no .status-* temp files are left behind
+    temp_files = list(tmp_path.glob(".status-*"))
+    assert len(temp_files) == 0
