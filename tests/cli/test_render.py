@@ -151,7 +151,9 @@ def test_render_session_warning_contains_all_key_elements() -> None:
     output = render_session_warning(ref, cwd="/project")
     assert "WARNING" in output
     assert "sess-warned" in output
-    assert "2026-08-15T14:30:00+00:00" in output
+    # render_session_warning interpolates the datetime with str(), not
+    # isoformat() -- space-separated, not "T"-separated.
+    assert "2026-08-15 14:30:00+00:00" in output
     assert "develop" in output
     assert "Implement feature X" in output
     assert "/project" in output

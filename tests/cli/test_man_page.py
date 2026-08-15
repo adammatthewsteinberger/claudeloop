@@ -17,8 +17,7 @@ def test_render_man_page_includes_all_required_sections() -> None:
     assert "SYNOPSIS" in output
     assert "DESCRIPTION" in output
     assert "COMMANDS" in output
-    assert "OPTIONS" in output
-    assert "CONFIGURATION" in output
+    assert "LOGGING" in output
     assert "EXIT STATUS" in output
     assert "EXAMPLES" in output
     assert "FILES" in output

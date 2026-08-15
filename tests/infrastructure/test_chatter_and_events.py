@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from claudeloop.infrastructure.chatter_log import chatter_payload
+from claudeloop.infrastructure.chatter_log import chatter_payload, summarize_tool
 from claudeloop.infrastructure.events import JsonlRunEventSink
 from claudeloop.infrastructure.stream_ui import dump_transcript, iter_event_records
 
@@ -50,6 +50,32 @@ def test_chatter_payload_summary_keeps_full_prompt_text() -> None:
     assert payload["text"] == prompt
     assert payload["length"] == len(prompt)
     assert len(payload["preview"]) <= 512
+
+
+def test_summarize_tool_off_mode() -> None:
+    assert summarize_tool("Bash", "echo hi", mode="off") is None
+
+
+def test_summarize_tool_string_raw() -> None:
+    result = summarize_tool("Read", "/path/to/file.py", mode="summary")
+    assert result is not None
+    assert result["name"] == "Read"
+    assert "/path/to/file.py" in result["text"]
+
+
+def test_summarize_tool_dict_raw() -> None:
+    result = summarize_tool("Edit", {"file": "a.py", "old": "x", "new": "y"}, mode="full")
+    assert result is not None
+    assert result["name"] == "Edit"
+    assert "a.py" in result["text"]
+
+
+def test_summarize_tool_non_serializable() -> None:
+    class Weird:
+        pass
+    result = summarize_tool("Custom", Weird(), mode="summary")
+    assert result is not None
+    assert result["name"] == "Custom"
 
 
 def test_dump_transcript(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -115,7 +115,7 @@ def test_audit_log_redacts_sensitive_data(tmp_path: Path) -> None:
 
     entry = json.loads(audit_path.read_text(encoding="utf-8"))
     # The redact function should have redacted the api_key field
-    assert entry["api_key"] == "REDACTED"
+    assert entry["api_key"] == "***REDACTED***"
     assert entry["data"] == "safe"
 
 

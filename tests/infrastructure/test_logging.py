@@ -99,13 +99,13 @@ class TestNullAppLogger:
 
 class TestApplyThirdPartyLevel:
     def test_third_party_stays_quiet_by_default(self) -> None:
-        plan = LogPlan(level="DEBUG", include_third_party=False)
+        plan = LogPlan(level="DEBUG", include_third_party=False, include_payloads=False)
         apply_third_party_level(plan)
         for name in ("anthropic", "httpx", "httpcore"):
             assert logging.getLogger(name).level >= logging.WARNING
 
     def test_third_party_widened(self) -> None:
-        plan = LogPlan(level="DEBUG", include_third_party=True)
+        plan = LogPlan(level="DEBUG", include_third_party=True, include_payloads=False)
         apply_third_party_level(plan)
         for name in ("anthropic", "httpx", "httpcore"):
             assert logging.getLogger(name).level == logging.DEBUG

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-import anyio
 import pytest
 
 from claudeloop.infrastructure.clock import AnyioSleeper, SystemClock
@@ -24,7 +23,7 @@ def test_system_clock_is_recent() -> None:
     assert delta < 2
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_sleeper_skips_when_already_past() -> None:
     clock = SystemClock()
     sleeper = AnyioSleeper(clock)
@@ -32,7 +31,7 @@ async def test_sleeper_skips_when_already_past() -> None:
     await sleeper.sleep_until(past)  # should not block
 
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_sleeper_sleeps_briefly() -> None:
     clock = SystemClock()
     sleeper = AnyioSleeper(clock)

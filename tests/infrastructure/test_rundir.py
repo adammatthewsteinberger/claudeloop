@@ -179,9 +179,14 @@ class TestHelpers:
             resolve_run_directory(tmp_path)
 
     def test_resolve_run_directory_latest_fallback(self, tmp_path: Path) -> None:
+        """With no active run, the fallback is the last entry in
+        ``list_run_directories`` -- directory-name sort order, not creation
+        order. Names are chosen to sort the same way either scheme would put
+        them, so the assertion cannot pass for the wrong reason."""
         runs = runs_root_for(tmp_path)
-        RunDirectory.create(runs, cwd=tmp_path, run_id="old")
-        rd2 = RunDirectory.create(runs, cwd=tmp_path, run_id="newer")
+        rd1 = RunDirectory.create(runs, cwd=tmp_path, run_id="a-run")
+        rd1.update_meta(status="finished")
+        rd2 = RunDirectory.create(runs, cwd=tmp_path, run_id="b-run")
         rd2.update_meta(status="finished")
         resolved = resolve_run_directory(tmp_path)
-        assert resolved.root.name == "newer"
+        assert resolved.root.name == "b-run"
