@@ -40,6 +40,24 @@ MCP), memories/artifacts, chat metadata, and response actions. See
 historical plans under [`plans/`](plans/architecture-and-roadmap.md) are
 preserved design records.
 
+## Supported platforms
+
+**macOS and Linux.** Python 3.10–3.13. Windows is not a supported target —
+see [installation](getting-started/installation.md#requirements).
+
+## Getting help
+
+| I want to... | Go here |
+|---|---|
+| Contribute code | [Development guide](contributing/development.md) and [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/CONTRIBUTING.md) |
+| Ask a question | [GitHub Discussions](https://github.com/adammatthewsteinberger/claudeloop/discussions) |
+| Report a bug or request a feature | [Issues](https://github.com/adammatthewsteinberger/claudeloop/issues) (templated; blank issues are off) |
+| Report a vulnerability | [SECURITY.md](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/SECURITY.md) |
+| Same map, shorter | [SUPPORT.md](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/SUPPORT.md) |
+
 ## License
 
 MIT. See [LICENSE](https://github.com/adammatthewsteinberger/claudeloop/blob/main/LICENSE).
+
+Participation is governed by the
+[Code of Conduct](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/CODE_OF_CONDUCT.md).

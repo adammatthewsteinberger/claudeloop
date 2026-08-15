@@ -27,7 +27,12 @@ hand-write a changelog entry, or hold a PyPI API token anywhere.
 ## One-time manual setup (already done for this repo, documented for forks)
 
 1. **Create the GitHub repo** `adammatthewsteinberger/claudeloop`, push
-   `main` and `develop`, set `main` as the default branch.
+   `main` and `develop`. Set **`develop` as the default branch** so the
+   GitHub front door is the integration branch contributors PR into.
+   `main` stays the always-releasable line that release-please watches.
+   Fill in the About box (description, website, topics) as documented in
+   [documentation.md](documentation.md#github-about-box-not-stored-in-git);
+   enable Discussions; leave the wiki off.
 2. **PyPI → Account settings → Publishing → Add a new pending publisher:**
 
    | Field | Value |

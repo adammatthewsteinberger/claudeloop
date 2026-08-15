@@ -1,11 +1,12 @@
 site_name: claudeloop
 site_description: >-
   Onion-architected, autonomous Claude Code session runner and full
-  Anthropic SDK CLI.
+  Anthropic SDK CLI — never blocks on a human, distinguishes rate limits
+  from exhausted credits, and resumes safely across usage windows.
 site_url: https://adammatthewsteinberger.github.io/claudeloop/
 repo_url: https://github.com/adammatthewsteinberger/claudeloop
 repo_name: adammatthewsteinberger/claudeloop
-edit_uri: edit/main/docs/
+edit_uri: edit/develop/docs/
 
 theme:
   name: material

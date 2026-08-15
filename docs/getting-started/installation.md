@@ -2,14 +2,17 @@
 
 ## Requirements
 
-- Python 3.10 or newer (CI tests 3.10–3.13).
-- macOS or Linux (Unix-based systems only — see
-  [`../index.md`](../index.md) for why Windows isn't a target).
+- Python 3.10 or newer (CI tests 3.10–3.13 on Ubuntu).
+- **macOS or Linux only.** Windows is not a supported target: this project
+  is developed and CI-tested on Unix, classifiers declare MacOS and POSIX
+  Linux only, and optional TTS falls back to `say` / `espeak`. POSIX paths
+  and permission-bypass operation are assumed throughout. Windows-only bug
+  reports will be closed unless someone is volunteering to own a port.
 - The [Claude Code CLI](https://code.claude.com) installed and authenticated
   (`claude auth login`, or an `ANTHROPIC_API_KEY` in the environment) — this
   package drives it, it doesn't replace it.
 
-## From PyPI (once published)
+## From PyPI
 
 ```bash
 pipx install claudeloop

@@ -73,10 +73,10 @@ Report privately via one of:
   session content, or CLI arguments — the project's explicit design goal is
   "no `shell=True` anywhere," and any path that reintroduces that class of
   risk is a real finding.
-- Any way the generated REST surface (`claudeloop api ...`, once built)
-  could execute an unintended request against a live Anthropic account —
-  destructive actions (archiving agents/environments/vaults, deleting
-  resources) executed without a clear, deliberate invocation.
+- Any way the generated REST surface (`claudeloop api ...`) could execute
+  an unintended request against a live Anthropic account — destructive
+  actions (archiving agents/environments/vaults, deleting resources)
+  executed without a clear, deliberate invocation.
 
 **Out of scope:**
 

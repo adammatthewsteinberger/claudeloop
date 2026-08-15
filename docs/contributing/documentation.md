@@ -70,3 +70,21 @@ ships, update every page carrying a `Roadmap` admonition for the feature
 that just landed — remove the admonition, correct any command examples that
 were aspirational, and add or update the relevant ADR if the implementation
 diverged from the original plan.
+
+## GitHub About box (not stored in git)
+
+The repository **Description**, **Website**, and **Topics** live in GitHub
+Settings → General, not in this tree. Keep them in lockstep with
+`pyproject.toml`:
+
+| Field | Value |
+|---|---|
+| Description | The `[project].description` string from `pyproject.toml` (GitHub caps this at 350 characters) |
+| Website | `https://adammatthewsteinberger.github.io/claudeloop/` |
+| Topics | `python`, `cli`, `anthropic`, `claude`, `claude-code`, `llm`, `agent`, `automation`, `mit-license` |
+| Default branch | `develop` (contributors PR here; `main` stays the releasable line) |
+| Discussions | enabled |
+| Wiki | disabled — documentation lives in `docs/` |
+
+Forks that republish should set the same shape on their own repo, pointing
+Website at their own docs URL.
