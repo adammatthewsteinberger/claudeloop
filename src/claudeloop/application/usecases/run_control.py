@@ -21,6 +21,7 @@ from claudeloop.domain.control import (
     SetPresetCommand,
     SlashCommand,
     StopCommand,
+    WindDownCommand,
 )
 
 
@@ -28,6 +29,13 @@ from claudeloop.domain.control import (
 class EnqueueResult:
     run_id: str
     command_type: str
+
+
+def request_wind_down(
+    inbox: ControlInbox, *, reason: str = "operator", run_id: str
+) -> EnqueueResult:
+    inbox.enqueue(WindDownCommand(reason=reason))
+    return EnqueueResult(run_id=run_id, command_type="wind_down")
 
 
 def request_stop(inbox: ControlInbox, *, run_id: str) -> EnqueueResult:

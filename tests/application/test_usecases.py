@@ -6,10 +6,12 @@ from claudeloop.application.dto import RunResult
 from claudeloop.application.usecases.doctor import DoctorCheck, all_passed, run_doctor
 from claudeloop.application.usecases.list_sessions import list_sessions
 from claudeloop.application.usecases.resume_session import resolve_most_recent, resume_explicit
+from claudeloop.application.usecases.run_control import request_wind_down
 from claudeloop.application.usecases.run_plan import (
     run_from_plan_file,
     with_done_marker_instruction,
 )
+from claudeloop.domain.control import WindDownCommand
 from claudeloop.domain.errors import InvalidSessionSelectorError
 from claudeloop.domain.session import SessionRef
 
@@ -203,3 +205,20 @@ def test_doctor_check_is_a_plain_value_object() -> None:
 
 def test_all_passed_empty_list_is_true() -> None:
     assert all_passed([]) is True
+
+
+class _FakeInbox:
+    def __init__(self) -> None:
+        self.commands: list[object] = []
+
+    def enqueue(self, command: object) -> object:
+        self.commands.append(command)
+        return command
+
+
+def test_request_wind_down_enqueues_the_command_with_its_reason() -> None:
+    inbox = _FakeInbox()
+    result = request_wind_down(inbox, reason="rotate", run_id="run-1")
+    assert result.run_id == "run-1"
+    assert result.command_type == "wind_down"
+    assert inbox.commands == [WindDownCommand(reason="rotate")]

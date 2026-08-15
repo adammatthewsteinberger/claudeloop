@@ -23,6 +23,7 @@ from claudeloop.domain.control import (
     SetPresetCommand,
     SlashCommand,
     StopCommand,
+    WindDownCommand,
     stop_outranks,
 )
 
@@ -57,6 +58,8 @@ class FileRunControl:
 def _command_to_payload(command: ControlCommand) -> dict[str, Any]:
     if isinstance(command, StopCommand):
         return {"type": "stop"}
+    if isinstance(command, WindDownCommand):
+        return {"type": "wind_down", "reason": command.reason}
     if isinstance(command, PromptNowCommand):
         return {"type": "prompt_now", "text": command.text}
     if isinstance(command, PromptDeferredCommand):
@@ -104,6 +107,8 @@ def _payload_to_command(raw: dict[str, object]) -> ControlCommand:
     kind = str(raw["type"])
     if kind == "stop":
         return StopCommand()
+    if kind == "wind_down":
+        return WindDownCommand(reason=str(raw.get("reason", "operator")))
     if kind == "prompt_now":
         return PromptNowCommand(text=str(raw["text"]))
     if kind == "prompt_deferred":

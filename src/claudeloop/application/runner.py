@@ -53,10 +53,13 @@ from claudeloop.domain.control import (
     SetPresetCommand,
     SlashCommand,
     StopCommand,
+    WindDownCommand,
 )
 from claudeloop.domain.forecast import (
     BurnRate,
     CapacityForecast,
+    Headroom,
+    WindDown,
     WindDownPolicy,
     forecast,
     should_wind_down,
@@ -310,6 +313,7 @@ class AutonomousRunner:
         self._handoff_marker_writer = handoff_marker_writer
         self._wind_down_policy = wind_down_policy or WindDownPolicy()
         self._last_resets_at: datetime | None = None
+        self._wind_down_requested: str | None = None
         self._meta_updater = meta_updater
         self._events_path = events_path
         self._state_bus = state_bus or _NullStateBus()
@@ -562,6 +566,20 @@ class AutonomousRunner:
                         if projection is not None
                         else None
                     )
+                    if wind_down is None and self._wind_down_requested is not None:
+                        # An operator asking for a handoff does not need the
+                        # policy enabled, and does not need any headroom to be
+                        # low. It is a decision, not a prediction.
+                        wind_down = WindDown(
+                            reason=f"operator:{self._wind_down_requested}",
+                            forecast=projection
+                            or CapacityForecast(
+                                binding=Headroom(None, "unknown"),
+                                dimensions=(Headroom(None, "unknown"),),
+                                turns_until_exhaustion=None,
+                                seconds_until_reset=None,
+                            ),
+                        )
                     state, decision = decide_after_turn(
                         state,
                         capacity=capacity,
@@ -850,6 +868,16 @@ class AutonomousRunner:
                 self._events.emit("control.stop", {})
                 self._log.info("control.stop")
                 return
+            if isinstance(command, WindDownCommand):
+                # Held, not dropped. A soft stop that arrives mid-turn has to
+                # survive until the next natural break -- discarding it would
+                # make the command silently depend on poll timing.
+                self._wind_down_requested = command.reason
+                self._events.emit("control.wind_down", {"reason": command.reason})
+                self._log.info(
+                    "control.wind_down", reason=command.reason, natural_break=natural_break
+                )
+                continue
             if isinstance(command, PromptNowCommand):
                 self._prompt_now = command.text
                 self._events.emit("control.prompt_now", {"length": len(command.text)})

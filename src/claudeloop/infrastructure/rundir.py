@@ -11,6 +11,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from claudeloop.domain.handoff_marker import (
+    HANDOFF_MARKER_FILENAME,
+    HandoffMarker,
+)
+
 RUN_ID_PATTERN = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")
 
 
@@ -148,6 +153,23 @@ class RunDirectory:
     def write_stop_summary(self, markdown: str) -> Path:
         self.stop_summary_path.write_text(markdown, encoding="utf-8")
         return self.stop_summary_path
+
+    @property
+    def handoff_marker_path(self) -> Path:
+        return self.root / HANDOFF_MARKER_FILENAME
+
+    def write_handoff_marker(self, marker: HandoffMarker) -> Path:
+        """Write the marker atomically, as the last act of a wind-down.
+
+        tmp-then-replace so a reader never sees a partial marker: its whole
+        purpose is to assert that the artifacts it names are on disk, and a
+        truncated one would assert that falsely.
+        """
+        target = self.handoff_marker_path
+        tmp = target.with_suffix(".json.tmp")
+        tmp.write_text(marker.to_json(), encoding="utf-8")
+        os.replace(tmp, target)
+        return target
 
     @property
     def resources_root(self) -> Path:

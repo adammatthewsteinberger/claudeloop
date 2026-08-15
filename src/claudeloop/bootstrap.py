@@ -270,6 +270,7 @@ def build_runner(
         save_points=save_points,
         plan=plan,
         stop_summary_writer=run_dir.write_stop_summary,
+        handoff_marker_writer=run_dir.write_handoff_marker,
         meta_updater=_meta_updater,
         events_path=str(run_dir.events_path),
         state_bus=state_bus,

@@ -10,6 +10,10 @@ from claudeloop import bootstrap
 from claudeloop.application.usecases.run_plan import parse_plan_file, run_from_plan_file
 from claudeloop.cli.asyncio import async_command
 from claudeloop.domain.errors import InvalidPlanError
+from claudeloop.domain.handoff_marker import (
+    EXIT_WIND_DOWN,
+    HANDOFF_MARKER_FILENAME,
+)
 from claudeloop.infrastructure.config import load_config
 from claudeloop.infrastructure.logging import configure_logging
 from claudeloop.infrastructure.stream_ui import BufferingStreamUi, run_textual_app
@@ -294,6 +298,15 @@ async def _run(
         raise typer.Exit(code=1) from exc
 
     if not result.success:
+        if result.reason.startswith("wind-down:"):
+            # Not a failure: the run handed its work over on purpose. A distinct
+            # exit code is how a supervisor tells "resume me elsewhere" from
+            # "this failed" without parsing the reason string.
+            typer.echo(f"Wound down: {result.reason}", err=True)
+            marker = context.run_dir.root / HANDOFF_MARKER_FILENAME
+            if marker.is_file():
+                typer.echo(f"Handoff: {marker}", err=True)
+            raise typer.Exit(code=EXIT_WIND_DOWN)
         typer.echo(f"Run failed: {result.reason}", err=True)
         if "stopped" in result.reason:
             summary = context.run_dir.stop_summary_path

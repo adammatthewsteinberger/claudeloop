@@ -48,6 +48,7 @@ from claudeloop.cli.commands.voice_cmd import app as voice_app
 from claudeloop.cli.commands.voice_cmd import speak
 from claudeloop.cli.commands.watch import watch
 from claudeloop.cli.commands.web_search_cmd import web_search_cmd
+from claudeloop.cli.commands.wind_down_cmd import wind_down
 from claudeloop.cli.man_page import write_man_page
 from claudeloop.domain.verbosity import resolve_log_plan
 
@@ -71,6 +72,7 @@ app = typer.Typer(
 app.command(name="run")(run)
 app.command(name="resume")(resume)
 app.command(name="stop")(stop)
+app.command(name="wind-down")(wind_down)
 app.command(name="prompt")(prompt)
 app.command(name="model")(model_cmd)
 app.command(name="effort")(effort_cmd)
