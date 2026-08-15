@@ -14,9 +14,9 @@ from typing import Any
 
 import click
 
+from claudeloop.application.interfaces import DoctorEnvironment
 from claudeloop.application.ports import AgentGateway, CapacityProbe, StreamUi
 from claudeloop.application.runner import AutonomousRunner
-from claudeloop.application.usecases.doctor import DoctorEnvironment
 from claudeloop.domain.budget import Budget
 from claudeloop.domain.control import SlashCommand
 from claudeloop.domain.permission import parse_user_permission_mode

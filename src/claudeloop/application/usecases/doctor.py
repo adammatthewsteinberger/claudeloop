@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+
+from claudeloop.application.interfaces import DoctorEnvironment
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,19 +19,6 @@ class DoctorCheck:
     name: str
     passed: bool
     detail: str
-
-
-class DoctorEnvironment(Protocol):
-    """What doctor needs from the outside world — kept separate from the
-    larger AgentGateway/SessionCatalog ports so `doctor` stays cheap to run
-    and doesn't require a live SDK connection."""
-
-    def find_claude_cli(self) -> str | None: ...
-    def claude_cli_version(self, path: str) -> str | None: ...
-    def is_authenticated(self) -> bool: ...
-    def configured_mcp_servers(self) -> list[str]: ...
-    def anthropic_sdk_version(self) -> str | None: ...
-    def api_surface_method_count(self) -> int | None: ...
 
 
 def run_doctor(env: DoctorEnvironment, *, cwd: Path) -> list[DoctorCheck]:

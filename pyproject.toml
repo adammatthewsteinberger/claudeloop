@@ -158,3 +158,17 @@ name = "Infrastructure only reachable from bootstrap"
 type = "forbidden"
 source_modules = ["claudeloop.domain", "claudeloop.application"]
 forbidden_modules = ["claudeloop.infrastructure"]
+
+# The interfaces package is the bottom of the application layer: it declares
+# the seams, so it must not depend on the use cases that consume them.
+[[tool.importlinter.contracts]]
+name = "Interfaces declare seams, never consume them"
+type = "forbidden"
+source_modules = ["claudeloop.application.interfaces"]
+forbidden_modules = [
+    "claudeloop.application.runner",
+    "claudeloop.application.usecases",
+    "claudeloop.infrastructure",
+    "claudeloop.cli",
+    "claudeloop.bootstrap",
+]

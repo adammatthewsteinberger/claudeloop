@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
 
+from claudeloop.application.interfaces import ControlInbox
 from claudeloop.domain.control import (
     ApproveToolCommand,
     ControlCommand,
@@ -22,10 +22,6 @@ from claudeloop.domain.control import (
     SlashCommand,
     StopCommand,
 )
-
-
-class ControlInbox(Protocol):
-    def enqueue(self, command: ControlCommand) -> object: ...
 
 
 @dataclass(frozen=True, slots=True)
