@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from claudeloop.domain.verbosity import LogPlan
 from claudeloop.infrastructure.logging import (
     NullAppLogger,
     StructlogAppLogger,
@@ -12,7 +13,6 @@ from claudeloop.infrastructure.logging import (
     configure_logging,
     get_logger,
 )
-from claudeloop.domain.verbosity import LogPlan
 
 
 class TestConfigureLogging:
@@ -29,10 +29,7 @@ class TestConfigureLogging:
         try:
             configure_logging(log_file=log_file, level="DEBUG")
             root = logging.getLogger()
-            file_handlers = [
-                h for h in root.handlers
-                if isinstance(h, logging.FileHandler)
-            ]
+            file_handlers = [h for h in root.handlers if isinstance(h, logging.FileHandler)]
             assert len(file_handlers) == 1
         finally:
             logging.getLogger().handlers.clear()

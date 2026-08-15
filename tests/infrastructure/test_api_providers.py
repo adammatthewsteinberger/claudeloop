@@ -16,8 +16,13 @@ from claudeloop.infrastructure.api.providers import (
 class TestProviderFactories:
     def test_all_providers_present(self) -> None:
         expected = {
-            "first-party", "aws", "google-cloud",
-            "foundry", "bedrock", "bedrock-mantle", "vertex",
+            "first-party",
+            "aws",
+            "google-cloud",
+            "foundry",
+            "bedrock",
+            "bedrock-mantle",
+            "vertex",
         }
         assert set(PROVIDER_FACTORIES.keys()) == expected
 

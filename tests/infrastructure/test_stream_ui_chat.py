@@ -191,14 +191,16 @@ class TestBufferingStreamUiExtended:
 
     def test_on_status_updates_fields(self) -> None:
         ui = BufferingStreamUi()
-        ui.on_status({
-            "model": "claude-sonnet",
-            "effort": "high",
-            "phase": "RUNNING",
-            "dollars_spent": 1.23,
-            "run_id": "r1",
-            "trace_id": "tr1",
-        })
+        ui.on_status(
+            {
+                "model": "claude-sonnet",
+                "effort": "high",
+                "phase": "RUNNING",
+                "dollars_spent": 1.23,
+                "run_id": "r1",
+                "trace_id": "tr1",
+            }
+        )
         assert ui.state.model == "claude-sonnet"
         assert ui.state.effort == "high"
         assert ui.state.phase == "RUNNING"
@@ -300,7 +302,7 @@ class TestFollowEventsPlain:
         f = tmp_path / "events.jsonl"
         f.write_text(
             '{"event_type":"chatter.delta","payload":{"text":"ok"}}\n'
-            '{bad json}\n'
+            "{bad json}\n"
             '{"event_type":"chatter.delta","payload":{"text":"fine"}}\n',
             encoding="utf-8",
         )
@@ -332,6 +334,8 @@ class TestFollowEventsPlain:
 
 class TestRunTextualApp:
     def test_raises_when_not_tty(self, tmp_path: Path) -> None:
-        with patch.object(sys.stdout, "isatty", return_value=False):
-            with pytest.raises(RuntimeError, match="stream UI requires a TTY"):
-                run_textual_app(events_path=tmp_path / "events.jsonl")
+        with (
+            patch.object(sys.stdout, "isatty", return_value=False),
+            pytest.raises(RuntimeError, match="stream UI requires a TTY"),
+        ):
+            run_textual_app(events_path=tmp_path / "events.jsonl")

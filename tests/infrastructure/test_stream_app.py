@@ -57,8 +57,12 @@ class TestStreamAppInit:
 class TestStreamAppHeaderText:
     def test_header_text(self, tmp_path: Path) -> None:
         state = StreamUiState(
-            run_id="r1", trace_id="t1", model="opus",
-            effort="high", attempt=3, phase="RUNNING",
+            run_id="r1",
+            trace_id="t1",
+            model="opus",
+            effort="high",
+            attempt=3,
+            phase="RUNNING",
         )
         state.spend = 1.5
         app = _make_app(tmp_path / "events.jsonl", initial=state)
@@ -105,8 +109,8 @@ class TestStreamAppLoadAll:
         f = tmp_path / "events.jsonl"
         f.write_text(
             '{"event_type":"chatter.delta","payload":{"text":"ok"}}\n'
-            '{bad}\n'
-            '\n'
+            "{bad}\n"
+            "\n"
             '{"event_type":"chatter.delta","payload":{"text":"fine"}}\n',
             encoding="utf-8",
         )
@@ -120,7 +124,7 @@ class TestStreamAppCompose:
     async def test_compose_widgets(self, tmp_path: Path) -> None:
         f = _write_events(tmp_path, [])
         app = _make_app(f, follow=False)
-        async with app.run_test(size=(120, 40)) as pilot:
+        async with app.run_test(size=(120, 40)):
             assert app.query_one("#assistant") is not None
             assert app.query_one("#tools") is not None
             assert app.query_one("#header-bar") is not None
@@ -131,7 +135,12 @@ class TestStreamAppApplyRecord:
     @pytest.mark.asyncio
     async def test_apply_record_sets_trace_and_run(self, tmp_path: Path) -> None:
         events = [
-            {"event_type": "chatter.delta", "payload": {"text": "hi"}, "trace_id": "t1", "run_id": "r1"},
+            {
+                "event_type": "chatter.delta",
+                "payload": {"text": "hi"},
+                "trace_id": "t1",
+                "run_id": "r1",
+            },
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, follow=False)
@@ -300,10 +309,7 @@ class TestStreamAppTickReplay:
 
     @pytest.mark.asyncio
     async def test_tick_replay_speed_zero(self, tmp_path: Path) -> None:
-        events = [
-            {"event_type": "chatter.delta", "payload": {"text": f"t{i}"}}
-            for i in range(30)
-        ]
+        events = [{"event_type": "chatter.delta", "payload": {"text": f"t{i}"}} for i in range(30)]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False, speed=0)
         async with app.run_test(size=(120, 40)):
@@ -413,7 +419,9 @@ class TestStreamAppThinking:
             app._set_thinking(True)
             assert app._thinking is True
             bar = app.query_one("#thinking-bar")
-            assert "thinking" in bar.renderable.lower() if hasattr(bar.renderable, "lower") else True
+            # Static has no public `.renderable`; the content set by update()
+            # is read back through render().
+            assert "thinking" in str(bar.render()).lower()
 
             app._set_thinking(False)
             assert app._thinking is False
@@ -446,6 +454,7 @@ class TestStreamAppApplyChatUpdate:
         app = _make_app(f, follow=False)
         async with app.run_test(size=(120, 40)):
             from claudeloop.infrastructure.stream_ui.app import ChatUpdate
+
             update = ChatUpdate(
                 clear=True,
                 assistant_lines=["new content"],
@@ -462,6 +471,7 @@ class TestStreamAppApplyChatUpdate:
         app = _make_app(f, follow=False)
         async with app.run_test(size=(120, 40)):
             from claudeloop.infrastructure.stream_ui.app import ChatUpdate
+
             update = ChatUpdate(
                 assistant_lines=["prompt text"],
                 saw_delta=False,

@@ -15,17 +15,23 @@ def _init_repo(path: Path) -> Path:
     subprocess.run(["git", "init", str(path)], check=True, capture_output=True)
     subprocess.run(
         ["git", "config", "user.email", "test@test.com"],
-        cwd=path, check=True, capture_output=True,
+        cwd=path,
+        check=True,
+        capture_output=True,
     )
     subprocess.run(
         ["git", "config", "user.name", "Test"],
-        cwd=path, check=True, capture_output=True,
+        cwd=path,
+        check=True,
+        capture_output=True,
     )
     (path / "README.md").write_text("# init\n", encoding="utf-8")
     subprocess.run(["git", "add", "."], cwd=path, check=True, capture_output=True)
     subprocess.run(
         ["git", "commit", "-m", "initial commit", "--no-verify"],
-        cwd=path, check=True, capture_output=True,
+        cwd=path,
+        check=True,
+        capture_output=True,
     )
     return path
 
@@ -109,8 +115,12 @@ class TestGitSavePointStore:
             store.unwind(run_id="r1", to="999", backup=False)
 
     def test_changes_since_no_git(self, tmp_path: Path) -> None:
+        # cwd has to exist for the subprocess to spawn at all -- the case
+        # under test is "exists but isn't a git repo", not "doesn't exist".
+        not_a_repo = tmp_path / "not-a-repo"
+        not_a_repo.mkdir()
         index = tmp_path / "index.jsonl"
-        store = GitSavePointStore(cwd=tmp_path / "not-a-repo", index_path=index)
+        store = GitSavePointStore(cwd=not_a_repo, index_path=index)
         assert store.changes_since(None) == ""
 
     def test_changes_since_with_sha(self, tmp_path: Path) -> None:
@@ -118,14 +128,19 @@ class TestGitSavePointStore:
         index = tmp_path / "index.jsonl"
         store = GitSavePointStore(cwd=repo, index_path=index)
         sha = subprocess.run(
-            ["git", "rev-parse", "HEAD"], cwd=repo,
-            check=True, capture_output=True, text=True,
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
         ).stdout.strip()
         (repo / "new.txt").write_text("x", encoding="utf-8")
         subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
         subprocess.run(
             ["git", "commit", "-m", "second", "--no-verify"],
-            cwd=repo, check=True, capture_output=True,
+            cwd=repo,
+            check=True,
+            capture_output=True,
         )
         result = store.changes_since(sha)
         assert "second" in result
@@ -138,8 +153,10 @@ class TestGitSavePointStore:
         assert isinstance(result, str)
 
     def test_create_returns_none_for_non_git(self, tmp_path: Path) -> None:
+        not_repo = tmp_path / "not-repo"
+        not_repo.mkdir()
         index = tmp_path / "index.jsonl"
-        store = GitSavePointStore(cwd=tmp_path / "not-repo", index_path=index)
+        store = GitSavePointStore(cwd=not_repo, index_path=index)
         assert store.create(run_id="r1", label="x") is None
 
     def test_multiple_savepoints_increment_n(self, tmp_path: Path) -> None:
@@ -157,8 +174,11 @@ class TestGitSavePointStore:
         store = GitSavePointStore(cwd=repo, index_path=index)
         (repo / "z.txt").write_text("z", encoding="utf-8")
         point = store.create(
-            run_id="r1", label="turn-3", attempt=3,
-            verdict_name="Continue", summary="Added z",
+            run_id="r1",
+            label="turn-3",
+            attempt=3,
+            verdict_name="Continue",
+            summary="Added z",
             remaining_work=("task-a", "task-b"),
         )
         assert point is not None
@@ -172,7 +192,7 @@ class TestGitSavePointStore:
         store.create(run_id="r1", label="milestone")
         (repo / "b.txt").write_text("b", encoding="utf-8")
         store.create(run_id="r1", label="later", message="add b")
-        result = store.unwind(run_id="r1", to="milestone", backup=False)
+        store.unwind(run_id="r1", to="milestone", backup=False)
         assert not (repo / "b.txt").exists()
 
     def test_resolve_target_by_sha_prefix(self, tmp_path: Path) -> None:

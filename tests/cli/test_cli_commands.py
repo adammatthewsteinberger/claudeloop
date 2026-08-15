@@ -47,7 +47,9 @@ class TestPromptCommand:
     def test_prompt_both_now_and_at_break(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["prompt", "hello", "--now", "--at-break"], env=_ENV,
+            app,
+            ["prompt", "hello", "--now", "--at-break"],
+            env=_ENV,
         )
         assert result.exit_code == 2
 
@@ -56,7 +58,9 @@ class TestPromptCommand:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["prompt", "hello", "--now", "--run-id", run_id], env=_ENV,
+            app,
+            ["prompt", "hello", "--now", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "Enqueued" in result.output
@@ -66,7 +70,9 @@ class TestPromptCommand:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["prompt", "hello", "--at-break", "--run-id", run_id], env=_ENV,
+            app,
+            ["prompt", "hello", "--at-break", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -118,7 +124,9 @@ class TestSlashCommand:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["slash", "/help", "--run-id", run_id], env=_ENV,
+            app,
+            ["slash", "/help", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "slash" in result.output.lower()
@@ -130,7 +138,9 @@ class TestWindDownCommand:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["wind-down", "--run-id", run_id], env=_ENV,
+            app,
+            ["wind-down", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "Wind-down requested" in result.output
@@ -222,7 +232,9 @@ class TestUnwindCommand:
     def test_unwind_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["unwind", "--to", "1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["unwind", "--to", "1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -267,7 +279,9 @@ class TestChatCommands:
     def test_chat_project(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["chat", "project", "s1", "my-project"], env=_ENV,
+            app,
+            ["chat", "project", "s1", "my-project"],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "project" in result.output.lower()
@@ -310,7 +324,9 @@ class TestConnectorCommands:
     def test_connector_list_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["connector", "list", "--run-id", "nope"], env=_ENV,
+            app,
+            ["connector", "list", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -319,24 +335,20 @@ class TestToolCommands:
     def test_tool_approve_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["tool", "approve", "req-1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["tool", "approve", "req-1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_tool_deny_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["tool", "deny", "req-1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["tool", "deny", "req-1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
-
-
-class TestWatchCommand:
-    def test_watch_sys_stdout_isatty(self) -> None:
-        from claudeloop.cli.commands.watch import sys_stdout_isatty
-
-        result = sys_stdout_isatty()
-        assert isinstance(result, bool)
 
 
 class TestVoiceCommands:
@@ -371,14 +383,18 @@ class TestAttachCommand:
         f = tmp_path / "note.txt"
         f.write_text("hi", encoding="utf-8")
         result = runner.invoke(
-            app, ["attach", str(f), "--run-id", "nope"], env=_ENV,
+            app,
+            ["attach", str(f), "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_unattach_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["unattach", "note.txt", "--run-id", "nope"], env=_ENV,
+            app,
+            ["unattach", "note.txt", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -387,14 +403,18 @@ class TestFolderCommands:
     def test_folder_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["folder", "add", str(tmp_path), "--run-id", "nope"], env=_ENV,
+            app,
+            ["folder", "add", str(tmp_path), "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_folder_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["folder", "rm", str(tmp_path), "--run-id", "nope"], env=_ENV,
+            app,
+            ["folder", "rm", str(tmp_path), "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -403,14 +423,18 @@ class TestSkillCommands:
     def test_skill_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["skill", "add", "s1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["skill", "add", "s1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_skill_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["skill", "rm", "s1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["skill", "rm", "s1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -419,14 +443,18 @@ class TestPluginCommands:
     def test_plugin_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["plugin", "add", "p1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["plugin", "add", "p1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_plugin_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["plugin", "rm", "p1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["plugin", "rm", "p1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -435,28 +463,36 @@ class TestMemoryCommands:
     def test_memory_list_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["memory", "list", "--run-id", "nope"], env=_ENV,
+            app,
+            ["memory", "list", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_memory_get_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["memory", "get", "note1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["memory", "get", "note1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_memory_set_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["memory", "set", "note1", "body", "--run-id", "nope"], env=_ENV,
+            app,
+            ["memory", "set", "note1", "body", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_memory_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["memory", "rm", "note1", "--run-id", "nope"], env=_ENV,
+            app,
+            ["memory", "rm", "note1", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -465,14 +501,17 @@ class TestGithubCommands:
     def test_github_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["github", "add", "owner/repo", "--run-id", "nope"], env=_ENV,
+            app,
+            ["github", "add", "owner/repo", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_github_import_issue_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["github", "import-issue", "owner/repo#1", "--run-id", "nope"],
+            app,
+            ["github", "import-issue", "owner/repo#1", "--run-id", "nope"],
             env=_ENV,
         )
         assert result.exit_code == 1
@@ -482,21 +521,27 @@ class TestArtifactCommands:
     def test_artifact_list_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["artifact", "list", "--run-id", "nope"], env=_ENV,
+            app,
+            ["artifact", "list", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_artifact_get_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["artifact", "get", "thing", "--run-id", "nope"], env=_ENV,
+            app,
+            ["artifact", "get", "thing", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_artifact_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["artifact", "rm", "thing", "--run-id", "nope"], env=_ENV,
+            app,
+            ["artifact", "rm", "thing", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -505,14 +550,18 @@ class TestResearchCommands:
     def test_research_start_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["research", "start", "query", "--run-id", "nope"], env=_ENV,
+            app,
+            ["research", "start", "query", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_research_status_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["research", "status", "--run-id", "nope"], env=_ENV,
+            app,
+            ["research", "status", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -521,14 +570,18 @@ class TestWebSearchCommand:
     def test_web_search_enable_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["web-search", "enable", "--run-id", "nope"], env=_ENV,
+            app,
+            ["web-search", "enable", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_web_search_disable_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["web-search", "disable", "--run-id", "nope"], env=_ENV,
+            app,
+            ["web-search", "disable", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -537,7 +590,9 @@ class TestPermissionModeCommand:
     def test_permission_mode_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["permission-mode", "manual", "--run-id", "nope"], env=_ENV,
+            app,
+            ["permission-mode", "manual", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -546,7 +601,9 @@ class TestCwdCommand:
     def test_cwd_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["cwd", str(tmp_path), "--run-id", "nope"], env=_ENV,
+            app,
+            ["cwd", str(tmp_path), "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -555,7 +612,9 @@ class TestResponseCommand:
     def test_response_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["response", "--run-id", "nope"], env=_ENV,
+            app,
+            ["response", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code != 0
 
@@ -604,7 +663,9 @@ class TestConnectorAddSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["connector", "list", "--run-id", run_id], env=_ENV,
+            app,
+            ["connector", "list", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -613,28 +674,36 @@ class TestResponseSubcommands:
     def test_response_copy_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["response", "copy", "--run-id", "nope"], env=_ENV,
+            app,
+            ["response", "copy", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_response_good_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["response", "good", "--run-id", "nope"], env=_ENV,
+            app,
+            ["response", "good", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_response_bad_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["response", "bad", "--run-id", "nope"], env=_ENV,
+            app,
+            ["response", "bad", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
     def test_response_retry_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["response", "retry", "--run-id", "nope"], env=_ENV,
+            app,
+            ["response", "retry", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -643,7 +712,9 @@ class TestResponseSubcommands:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["response", "good", "--run-id", run_id], env=_ENV,
+            app,
+            ["response", "good", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "good feedback" in result.output.lower()
@@ -653,7 +724,8 @@ class TestResponseSubcommands:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["response", "bad", "--note", "needs fix", "--run-id", run_id],
+            app,
+            ["response", "bad", "--note", "needs fix", "--run-id", run_id],
             env=_ENV,
         )
         assert result.exit_code == 0
@@ -664,7 +736,9 @@ class TestResponseSubcommands:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["response", "retry", "--run-id", run_id], env=_ENV,
+            app,
+            ["response", "retry", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "retry" in result.output.lower()
@@ -680,10 +754,18 @@ class TestLogsSuccess:
 
 
 class TestWatchCommand:
+    def test_watch_sys_stdout_isatty(self) -> None:
+        from claudeloop.cli.commands.watch import sys_stdout_isatty
+
+        result = sys_stdout_isatty()
+        assert isinstance(result, bool)
+
     def test_watch_no_run(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.chdir(tmp_path)
         result = runner.invoke(
-            app, ["watch", "--no-follow", "--run-id", "nope"], env=_ENV,
+            app,
+            ["watch", "--no-follow", "--run-id", "nope"],
+            env=_ENV,
         )
         assert result.exit_code == 1
 
@@ -699,7 +781,9 @@ class TestToolCommandsSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["tool", "approve", "req-1", "--run-id", run_id], env=_ENV,
+            app,
+            ["tool", "approve", "req-1", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -708,7 +792,9 @@ class TestToolCommandsSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["tool", "deny", "req-1", "--run-id", run_id], env=_ENV,
+            app,
+            ["tool", "deny", "req-1", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -734,7 +820,9 @@ class TestAttachSuccess:
         f = tmp_path / "note.txt"
         f.write_text("content", encoding="utf-8")
         result = runner.invoke(
-            app, ["attach", str(f), "--run-id", run_id], env=_ENV,
+            app,
+            ["attach", str(f), "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -743,7 +831,9 @@ class TestAttachSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["unattach", "note.txt", "--run-id", run_id], env=_ENV,
+            app,
+            ["unattach", "note.txt", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -754,7 +844,9 @@ class TestFolderSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["folder", "add", str(tmp_path), "--run-id", run_id], env=_ENV,
+            app,
+            ["folder", "add", str(tmp_path), "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -763,7 +855,9 @@ class TestFolderSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["folder", "rm", str(tmp_path), "--run-id", run_id], env=_ENV,
+            app,
+            ["folder", "rm", str(tmp_path), "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -774,7 +868,9 @@ class TestSkillSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["skill", "add", "my-skill", "--run-id", run_id], env=_ENV,
+            app,
+            ["skill", "add", "my-skill", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -783,7 +879,9 @@ class TestSkillSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["skill", "rm", "my-skill", "--run-id", run_id], env=_ENV,
+            app,
+            ["skill", "rm", "my-skill", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -794,7 +892,9 @@ class TestPluginSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["plugin", "add", "my-plugin", "--run-id", run_id], env=_ENV,
+            app,
+            ["plugin", "add", "my-plugin", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -803,7 +903,9 @@ class TestPluginSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["plugin", "rm", "my-plugin", "--run-id", run_id], env=_ENV,
+            app,
+            ["plugin", "rm", "my-plugin", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -814,12 +916,15 @@ class TestMemorySuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["memory", "set", "prefs", "be concise", "--run-id", run_id],
+            app,
+            ["memory", "set", "prefs", "be concise", "--run-id", run_id],
             env=_ENV,
         )
         assert result.exit_code == 0
         result = runner.invoke(
-            app, ["memory", "list", "--run-id", run_id], env=_ENV,
+            app,
+            ["memory", "list", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "prefs" in result.output
@@ -829,11 +934,14 @@ class TestMemorySuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         runner.invoke(
-            app, ["memory", "set", "note1", "body text", "--run-id", run_id],
+            app,
+            ["memory", "set", "note1", "body text", "--run-id", run_id],
             env=_ENV,
         )
         result = runner.invoke(
-            app, ["memory", "get", "note1", "--run-id", run_id], env=_ENV,
+            app,
+            ["memory", "get", "note1", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
         assert "body text" in result.output
@@ -843,11 +951,14 @@ class TestMemorySuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         runner.invoke(
-            app, ["memory", "set", "note1", "body", "--run-id", run_id],
+            app,
+            ["memory", "set", "note1", "body", "--run-id", run_id],
             env=_ENV,
         )
         result = runner.invoke(
-            app, ["memory", "rm", "note1", "--run-id", run_id], env=_ENV,
+            app,
+            ["memory", "rm", "note1", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -858,7 +969,9 @@ class TestGithubSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["github", "add", "owner/repo", "--run-id", run_id], env=_ENV,
+            app,
+            ["github", "add", "owner/repo", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -869,7 +982,9 @@ class TestArtifactSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["artifact", "list", "--run-id", run_id], env=_ENV,
+            app,
+            ["artifact", "list", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -880,7 +995,9 @@ class TestResearchSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["research", "start", "my query", "--run-id", run_id], env=_ENV,
+            app,
+            ["research", "start", "my query", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -889,7 +1006,9 @@ class TestResearchSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["research", "status", "--run-id", run_id], env=_ENV,
+            app,
+            ["research", "status", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -900,7 +1019,9 @@ class TestWebSearchSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["web-search", "enable", "--run-id", run_id], env=_ENV,
+            app,
+            ["web-search", "enable", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -909,7 +1030,9 @@ class TestWebSearchSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["web-search", "disable", "--run-id", run_id], env=_ENV,
+            app,
+            ["web-search", "disable", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -920,7 +1043,9 @@ class TestPermissionModeSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["permission-mode", "plan", "--run-id", run_id], env=_ENV,
+            app,
+            ["permission-mode", "plan", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -929,7 +1054,9 @@ class TestPermissionModeSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["permission-mode", "manual", "--run-id", run_id], env=_ENV,
+            app,
+            ["permission-mode", "manual", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -940,7 +1067,9 @@ class TestCwdSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["cwd", str(tmp_path), "--run-id", run_id], env=_ENV,
+            app,
+            ["cwd", str(tmp_path), "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0
 
@@ -951,6 +1080,8 @@ class TestSavepointsSuccess:
         directory = _run_dir(tmp_path)
         run_id = directory.read_meta().run_id
         result = runner.invoke(
-            app, ["savepoints", "--run-id", run_id], env=_ENV,
+            app,
+            ["savepoints", "--run-id", run_id],
+            env=_ENV,
         )
         assert result.exit_code == 0

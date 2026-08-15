@@ -20,7 +20,7 @@ def test_lock_acquire_success(tmp_path: Path) -> None:
 def test_lock_acquire_creates_directory(tmp_path: Path) -> None:
     """FileSessionLock creates lock directory if it doesn't exist."""
     lock_dir = tmp_path / "nested" / "locks"
-    lock = FileSessionLock(lock_dir)
+    FileSessionLock(lock_dir)
     assert lock_dir.is_dir()
 
 

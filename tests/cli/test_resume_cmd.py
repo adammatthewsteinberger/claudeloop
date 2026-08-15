@@ -28,10 +28,14 @@ class TestResumeSuccess:
             patch("claudeloop.cli.commands.resume.load_config") as mock_config,
             patch("claudeloop.cli.commands.resume.configure_logging"),
             patch("claudeloop.cli.commands.resume.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock) as mock_resume,
+            patch(
+                "claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock
+            ) as mock_resume,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_bootstrap.build_runner.return_value = mock_context
             mock_resume.return_value = mock_result
@@ -58,10 +62,14 @@ class TestResumeSuccess:
             patch("claudeloop.cli.commands.resume.load_config") as mock_config,
             patch("claudeloop.cli.commands.resume.configure_logging"),
             patch("claudeloop.cli.commands.resume.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock) as mock_resume,
+            patch(
+                "claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock
+            ) as mock_resume,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_bootstrap.build_runner.return_value = mock_context
             mock_resume.return_value = mock_result
@@ -87,10 +95,14 @@ class TestResumeSuccess:
             patch("claudeloop.cli.commands.resume.load_config") as mock_config,
             patch("claudeloop.cli.commands.resume.configure_logging"),
             patch("claudeloop.cli.commands.resume.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock) as mock_resume,
+            patch(
+                "claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock
+            ) as mock_resume,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_bootstrap.build_runner.return_value = mock_context
             mock_resume.return_value = mock_result
@@ -112,7 +124,9 @@ class TestResumeSuccess:
             patch("claudeloop.cli.commands.resume.resolve_most_recent") as mock_resolve,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_bootstrap.build_session_catalog.return_value = MagicMock()
             mock_resolve.side_effect = InvalidSessionSelectorError("no sessions")

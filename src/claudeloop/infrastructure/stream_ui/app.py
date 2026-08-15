@@ -316,9 +316,14 @@ class StreamApp(App[None]):
         if not self.replay or not self._turn_starts:
             return
         current = self._replay_index
-        prev = 0
+        prev = self._turn_starts[0]
+        # Landing on a turn always leaves _replay_index one past that turn's
+        # own start (see below), so comparing against the raw current index
+        # re-selects the turn we're already on and repeated presses get stuck
+        # there forever. Compare against current - 1 -- the turn's own start
+        # -- so a press always walks to a strictly earlier turn.
         for start in self._turn_starts:
-            if start < current:
+            if start < current - 1:
                 prev = start
             else:
                 break

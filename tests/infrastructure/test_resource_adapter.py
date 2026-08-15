@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -108,7 +107,9 @@ class TestResourcePortAdapter:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)
         result = adapter.apply_mutate(
-            action="add", kind="connector", value="http://localhost",
+            action="add",
+            kind="connector",
+            value="http://localhost",
             name="my-conn",
         )
         assert result["connector"] == "my-conn"
@@ -117,7 +118,9 @@ class TestResourcePortAdapter:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)
         result = adapter.apply_mutate(
-            action="set", kind="mcp", value='{"url":"http://x"}',
+            action="set",
+            kind="mcp",
+            value='{"url":"http://x"}',
             name="mc",
         )
         assert result["connector"] == "mc"
@@ -126,7 +129,10 @@ class TestResourcePortAdapter:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)
         adapter.apply_mutate(
-            action="add", kind="connector", value="http://localhost", name="c1",
+            action="add",
+            kind="connector",
+            value="http://localhost",
+            name="c1",
         )
         result = adapter.apply_mutate(action="rm", kind="connector", name="c1", value="c1")
         assert result["removed"] == "c1"
@@ -149,7 +155,10 @@ class TestResourcePortAdapter:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)
         result = adapter.apply_mutate(
-            action="set", kind="memory", value="remember this", name="note1",
+            action="set",
+            kind="memory",
+            value="remember this",
+            name="note1",
         )
         assert "path" in result
         result = adapter.apply_mutate(action="rm", kind="memory", value="note1", name="note1")

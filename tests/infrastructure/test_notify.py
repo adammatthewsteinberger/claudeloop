@@ -64,7 +64,7 @@ def test_notify_writes_to_stderr_not_stdout(monkeypatch) -> None:
     monkeypatch.setattr(sys, "stderr", stderr_capture)
     notifier.notify("Alert")
     assert "Alert" in stderr_capture.getvalue()
-    assert "" == stdout_capture.getvalue()
+    assert stdout_capture.getvalue() == ""
 
 
 def test_notify_banner_appears_before_and_after_message() -> None:

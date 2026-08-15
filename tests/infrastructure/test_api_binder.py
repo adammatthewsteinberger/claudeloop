@@ -43,10 +43,10 @@ class TestMakeClickCommand:
 
         gateway = MagicMock()
 
-        with patch(
-            "claudeloop.infrastructure.api.binder.resolve_callable"
-        ) as mock_resolve:
-            import inspect
+        # _make_click_command imports resolve_callable locally from introspect
+        # (avoids a module-level import cycle), so the patch target is where
+        # it's defined, not where binder.py happens to call it.
+        with patch("claudeloop.infrastructure.api.introspect.resolve_callable") as mock_resolve:
 
             def dummy_fn(*, model: str = "claude-sonnet") -> None:
                 pass

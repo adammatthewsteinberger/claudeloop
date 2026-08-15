@@ -16,7 +16,7 @@ from claudeloop.infrastructure.agent.gateway import (
 
 
 def _make_gateway(**kwargs):
-    defaults = dict(cwd="/tmp/test")
+    defaults = {"cwd": "/tmp/test"}
     defaults.update(kwargs)
     return ClaudeAgentGateway(**defaults)
 
@@ -72,7 +72,10 @@ class TestClaudeAgentGatewayInit:
 class TestSetEventListener:
     def test_set_listener(self) -> None:
         gw = _make_gateway()
-        fn = lambda e: None
+
+        def fn(e):
+            return None
+
         gw.set_event_listener(fn)
         assert gw._on_event is fn
 
@@ -277,6 +280,10 @@ class TestSendTurn:
         result_msg.session_id = "sess-123"
         result_msg.num_turns = 1
         result_msg.total_cost_usd = 0.01
+        # translate.py falls back to message.result for the outcome text when
+        # no TextBlock arrived; spec= restricts attributes but does not set
+        # them, so an unset .result is a MagicMock, not a string.
+        result_msg.result = "done"
 
         async def fake_receive():
             yield result_msg
@@ -289,7 +296,7 @@ class TestSendTurn:
             "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
             return_value=mock_client,
         ):
-            outcome = await gw.send_turn("hello")
+            await gw.send_turn("hello")
 
         mock_client.connect.assert_awaited_once()
         mock_client.query.assert_awaited_once_with("hello")
@@ -347,6 +354,7 @@ class TestClaudeCapacityProbe:
         result_msg.session_id = "probe-sess"
         result_msg.num_turns = 1
         result_msg.total_cost_usd = 0.001
+        result_msg.result = "probe done"
 
         mock_client = AsyncMock()
 
@@ -362,7 +370,7 @@ class TestClaudeCapacityProbe:
             "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
             return_value=mock_client,
         ):
-            outcome = await probe.probe()
+            await probe.probe()
 
         mock_client.connect.assert_awaited_once()
         mock_client.query.assert_awaited_once()

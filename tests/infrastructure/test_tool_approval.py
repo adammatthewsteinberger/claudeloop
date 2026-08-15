@@ -12,14 +12,16 @@ from claude_agent_sdk.types import (
 )
 
 from claudeloop.infrastructure.tool_approval import (
-    PendingApproval,
     ToolApprovalGate,
     _summarize_input,
 )
 
 
 def _context() -> ToolPermissionContext:
-    return ToolPermissionContext(tool_name="test_tool", tool_input={})
+    # tool_name/tool_input are separate positional args to can_use_tool();
+    # ToolPermissionContext itself carries only request metadata (signal,
+    # tool_use_id, etc.), none of it required here.
+    return ToolPermissionContext()
 
 
 class TestSummarizeInput:

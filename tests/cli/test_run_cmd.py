@@ -95,10 +95,14 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.configure_logging"),
             patch("claudeloop.cli.commands.run.parse_plan_file") as mock_parse,
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock) as mock_run,
+            patch(
+                "claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock
+            ) as mock_run,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.return_value = mock_context
@@ -130,10 +134,14 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.configure_logging"),
             patch("claudeloop.cli.commands.run.parse_plan_file") as mock_parse,
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock) as mock_run,
+            patch(
+                "claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock
+            ) as mock_run,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.return_value = mock_context
@@ -166,11 +174,15 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.configure_logging"),
             patch("claudeloop.cli.commands.run.parse_plan_file") as mock_parse,
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock) as mock_run,
+            patch(
+                "claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock
+            ) as mock_run,
             patch("claudeloop.cli.commands.run.HANDOFF_MARKER_FILENAME", "HANDOFF.md"),
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.return_value = mock_context
@@ -202,10 +214,14 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.configure_logging"),
             patch("claudeloop.cli.commands.run.parse_plan_file") as mock_parse,
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
-            patch("claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock) as mock_run,
+            patch(
+                "claudeloop.cli.commands.run.run_from_plan_file", new_callable=AsyncMock
+            ) as mock_run,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.return_value = mock_context
@@ -229,7 +245,9 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.side_effect = ValueError("bad config")
@@ -252,7 +270,9 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.bootstrap") as mock_bootstrap,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             mock_parse.return_value = MagicMock()
             mock_bootstrap.build_runner.side_effect = FileExistsError("exists")
@@ -275,9 +295,12 @@ class TestRunSuccess:
             patch("claudeloop.cli.commands.run.parse_plan_file") as mock_parse,
         ):
             mock_config.return_value = MagicMock(
-                log_file=None, log_level="INFO", done_marker=None,
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
             )
             from claudeloop.domain.errors import InvalidPlanError
+
             mock_parse.side_effect = InvalidPlanError("no heading")
 
             result = runner.invoke(

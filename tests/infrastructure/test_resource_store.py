@@ -34,25 +34,29 @@ class TestResourceSnapshot:
         assert snap.permission_mode == "bypass"
 
     def test_from_dict_full(self) -> None:
-        snap = ResourceSnapshot.from_dict({
-            "attachments": ["f.txt"],
-            "folders": ["/tmp"],
-            "skills": ["s1"],
-            "plugins": ["p1"],
-            "connectors": {"c": {"url": "x"}},
-            "github": {"owner": "o"},
-            "web_search": True,
-            "deep_research": True,
-            "permission_mode": "manual",
-            "cwd": "/home",
-        })
+        snap = ResourceSnapshot.from_dict(
+            {
+                "attachments": ["f.txt"],
+                "folders": ["/tmp"],
+                "skills": ["s1"],
+                "plugins": ["p1"],
+                "connectors": {"c": {"url": "x"}},
+                "github": {"owner": "o"},
+                "web_search": True,
+                "deep_research": True,
+                "permission_mode": "manual",
+                "cwd": "/home",
+            }
+        )
         assert snap.attachments == ["f.txt"]
         assert snap.web_search is True
         assert snap.permission_mode == "manual"
 
     def test_roundtrip(self) -> None:
         original = ResourceSnapshot(
-            skills=["a", "b"], plugins=["p"], web_search=True,
+            skills=["a", "b"],
+            plugins=["p"],
+            web_search=True,
         )
         restored = ResourceSnapshot.from_dict(original.to_dict())
         assert restored.skills == original.skills

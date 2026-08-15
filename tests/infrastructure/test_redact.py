@@ -82,10 +82,20 @@ def test_redact_non_string_non_container() -> None:
 
 def test_redact_all_secret_key_names() -> None:
     for key in [
-        "api_key", "apikey", "authorization_token", "access_token",
-        "refresh_token", "client_secret", "secret_value", "secret",
-        "password", "authorization", "x-api-key", "x_api_key",
-        "anthropic_api_key", "bearer",
+        "api_key",
+        "apikey",
+        "authorization_token",
+        "access_token",
+        "refresh_token",
+        "client_secret",
+        "secret_value",
+        "secret",
+        "password",
+        "authorization",
+        "x-api-key",
+        "x_api_key",
+        "anthropic_api_key",
+        "bearer",
     ]:
         data = {key: "should-be-redacted"}
         result = redact(data)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 from claudeloop.infrastructure.doctor_env import RealDoctorEnvironment
 
@@ -93,9 +93,11 @@ def test_is_authenticated_via_claude_auth_status(monkeypatch) -> None:
     mock_result.returncode = 0
     mock_result.stdout = json.dumps({"loggedIn": True})
 
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", return_value=mock_result):
-            assert env.is_authenticated() is True
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert env.is_authenticated() is True
 
 
 def test_is_authenticated_via_credentials_file(tmp_path: Path, monkeypatch) -> None:
@@ -112,9 +114,11 @@ def test_is_authenticated_via_credentials_file(tmp_path: Path, monkeypatch) -> N
     creds_file = claude_dir / ".credentials.json"
     creds_file.write_text("{}", encoding="utf-8")
 
-    with patch("pathlib.Path.home", return_value=fake_home):
-        with patch.object(env, "find_claude_cli", return_value=None):
-            assert env.is_authenticated() is True
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.object(env, "find_claude_cli", return_value=None),
+    ):
+        assert env.is_authenticated() is True
 
 
 def test_is_authenticated_false_when_nothing_found(tmp_path: Path, monkeypatch) -> None:
@@ -126,9 +130,11 @@ def test_is_authenticated_false_when_nothing_found(tmp_path: Path, monkeypatch) 
     fake_home = tmp_path / "home"
     fake_home.mkdir()
 
-    with patch("pathlib.Path.home", return_value=fake_home):
-        with patch.object(env, "find_claude_cli", return_value=None):
-            assert env.is_authenticated() is False
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.object(env, "find_claude_cli", return_value=None),
+    ):
+        assert env.is_authenticated() is False
 
 
 def test_is_authenticated_claude_auth_not_logged_in(monkeypatch) -> None:
@@ -142,10 +148,12 @@ def test_is_authenticated_claude_auth_not_logged_in(monkeypatch) -> None:
     mock_result.stdout = json.dumps({"loggedIn": False})
 
     fake_home = Path("/nonexistent")
-    with patch("pathlib.Path.home", return_value=fake_home):
-        with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-            with patch("subprocess.run", return_value=mock_result):
-                assert env.is_authenticated() is False
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert env.is_authenticated() is False
 
 
 def test_is_authenticated_claude_auth_invalid_json(monkeypatch) -> None:
@@ -159,10 +167,12 @@ def test_is_authenticated_claude_auth_invalid_json(monkeypatch) -> None:
     mock_result.stdout = "not json"
 
     fake_home = Path("/nonexistent")
-    with patch("pathlib.Path.home", return_value=fake_home):
-        with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-            with patch("subprocess.run", return_value=mock_result):
-                assert env.is_authenticated() is False
+    with (
+        patch("pathlib.Path.home", return_value=fake_home),
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert env.is_authenticated() is False
 
 
 def test_configured_mcp_servers_no_claude_cli() -> None:
@@ -178,25 +188,31 @@ def test_configured_mcp_servers_command_fails() -> None:
     mock_result = Mock()
     mock_result.returncode = 1
 
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", return_value=mock_result):
-            assert env.configured_mcp_servers() == []
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert env.configured_mcp_servers() == []
 
 
 def test_configured_mcp_servers_timeout() -> None:
     """configured_mcp_servers returns empty list on timeout."""
     env = RealDoctorEnvironment()
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("claude", 60)):
-            assert env.configured_mcp_servers() == []
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", side_effect=subprocess.TimeoutExpired("claude", 60)),
+    ):
+        assert env.configured_mcp_servers() == []
 
 
 def test_configured_mcp_servers_oserror() -> None:
     """configured_mcp_servers returns empty list on OSError."""
     env = RealDoctorEnvironment()
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", side_effect=OSError("Command failed")):
-            assert env.configured_mcp_servers() == []
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", side_effect=OSError("Command failed")),
+    ):
+        assert env.configured_mcp_servers() == []
 
 
 def test_configured_mcp_servers_success() -> None:
@@ -206,12 +222,14 @@ def test_configured_mcp_servers_success() -> None:
     mock_result.returncode = 0
     mock_result.stdout = "server1: connected\nserver2: connected\nserver3: error\n"
 
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", return_value=mock_result):
-            servers = env.configured_mcp_servers()
-            assert "server1" in servers
-            assert "server2" in servers
-            assert "server3" in servers
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        servers = env.configured_mcp_servers()
+        assert "server1" in servers
+        assert "server2" in servers
+        assert "server3" in servers
 
 
 def test_configured_mcp_servers_skips_blank_and_no_colon_lines() -> None:
@@ -221,10 +239,12 @@ def test_configured_mcp_servers_skips_blank_and_no_colon_lines() -> None:
     mock_result.returncode = 0
     mock_result.stdout = "server1: ok\n\nno-colon-line\nserver2: ok\n"
 
-    with patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"):
-        with patch("subprocess.run", return_value=mock_result):
-            servers = env.configured_mcp_servers()
-            assert servers == ["server1", "server2"]
+    with (
+        patch.object(env, "find_claude_cli", return_value="/usr/bin/claude"),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        servers = env.configured_mcp_servers()
+        assert servers == ["server1", "server2"]
 
 
 def test_anthropic_sdk_version_returns_version() -> None:

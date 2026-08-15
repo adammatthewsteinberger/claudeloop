@@ -73,6 +73,7 @@ def test_summarize_tool_dict_raw() -> None:
 def test_summarize_tool_non_serializable() -> None:
     class Weird:
         pass
+
     result = summarize_tool("Custom", Weird(), mode="summary")
     assert result is not None
     assert result["name"] == "Custom"

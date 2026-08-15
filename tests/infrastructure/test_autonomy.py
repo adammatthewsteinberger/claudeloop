@@ -6,8 +6,8 @@ import pytest
 
 from claudeloop.infrastructure.agent.autonomy import (
     AUTONOMY_SYSTEM_PROMPT_FRAGMENT,
-    _deny_ask_user_question,
     _auto_allow_permission_request,
+    _deny_ask_user_question,
     _log_notification,
     build_hooks,
 )
@@ -23,14 +23,18 @@ class TestDenyAskUserQuestion:
     @pytest.mark.asyncio
     async def test_non_ask_tool_returns_empty(self) -> None:
         result = await _deny_ask_user_question(
-            {"tool_name": "Bash"}, None, {},
+            {"tool_name": "Bash"},
+            None,
+            {},
         )
         assert result == {}
 
     @pytest.mark.asyncio
     async def test_ask_user_question_returns_deny(self) -> None:
         result = await _deny_ask_user_question(
-            {"tool_name": "AskUserQuestion"}, None, {},
+            {"tool_name": "AskUserQuestion"},
+            None,
+            {},
         )
         assert result["hookSpecificOutput"]["permissionDecision"] == "deny"
         assert "autonomously" in result["hookSpecificOutput"]["permissionDecisionReason"]

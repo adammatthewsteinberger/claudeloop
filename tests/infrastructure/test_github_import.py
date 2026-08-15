@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import json
-import subprocess
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -88,8 +85,12 @@ class TestParseRepoRef:
 class TestImportedIssue:
     def test_as_prompt_fragment(self) -> None:
         issue = ImportedIssue(
-            owner="o", repo="r", number=1,
-            title="Fix bug", body="The fix", url="https://example.com",
+            owner="o",
+            repo="r",
+            number=1,
+            title="Fix bug",
+            body="The fix",
+            url="https://example.com",
         )
         fragment = issue.as_prompt_fragment()
         assert "o/r#1" in fragment
@@ -101,8 +102,11 @@ class TestImportedIssue:
 class TestMaterializeIssueAttachment:
     def test_writes_markdown(self, tmp_path: Path) -> None:
         issue = ImportedIssue(
-            owner="owner", repo="repo", number=42,
-            title="Title", body="Body text",
+            owner="owner",
+            repo="repo",
+            number=42,
+            title="Title",
+            body="Body text",
             url="https://github.com/owner/repo/issues/42",
         )
         result = materialize_issue_attachment(issue, tmp_path / "attachments")
@@ -114,8 +118,12 @@ class TestMaterializeIssueAttachment:
 
     def test_creates_directory(self, tmp_path: Path) -> None:
         issue = ImportedIssue(
-            owner="o", repo="r", number=1,
-            title="T", body="B", url="u",
+            owner="o",
+            repo="r",
+            number=1,
+            title="T",
+            body="B",
+            url="u",
         )
         attachments = tmp_path / "deep" / "attachments"
         materialize_issue_attachment(issue, attachments)

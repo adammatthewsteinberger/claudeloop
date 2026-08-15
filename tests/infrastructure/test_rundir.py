@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 
@@ -48,7 +47,9 @@ class TestValidateRunId:
 class TestRunMeta:
     def test_to_dict(self) -> None:
         meta = RunMeta(
-            run_id="r1", pid=123, cwd="/tmp",
+            run_id="r1",
+            pid=123,
+            cwd="/tmp",
             started_at="2024-01-01T00:00:00",
         )
         d = meta.to_dict()
@@ -57,24 +58,37 @@ class TestRunMeta:
         assert d["status"] == "active"
 
     def test_from_dict_minimal(self) -> None:
-        meta = RunMeta.from_dict({
-            "run_id": "r1", "pid": 123, "cwd": "/tmp",
-            "started_at": "2024-01-01",
-        })
+        meta = RunMeta.from_dict(
+            {
+                "run_id": "r1",
+                "pid": 123,
+                "cwd": "/tmp",
+                "started_at": "2024-01-01",
+            }
+        )
         assert meta.run_id == "r1"
         assert meta.attempt == 0
         assert meta.status == "active"
 
     def test_from_dict_full(self) -> None:
-        meta = RunMeta.from_dict({
-            "run_id": "r1", "pid": 1, "cwd": "/",
-            "started_at": "2024-01-01",
-            "session_id": "s1", "plan_path": "/plan.md",
-            "status": "finished", "phase": "done",
-            "attempt": 3, "waiting_until": "2024-01-02",
-            "model": "opus", "effort": "max",
-            "preset": "high", "capacity": "ok",
-        })
+        meta = RunMeta.from_dict(
+            {
+                "run_id": "r1",
+                "pid": 1,
+                "cwd": "/",
+                "started_at": "2024-01-01",
+                "session_id": "s1",
+                "plan_path": "/plan.md",
+                "status": "finished",
+                "phase": "done",
+                "attempt": 3,
+                "waiting_until": "2024-01-02",
+                "model": "opus",
+                "effort": "max",
+                "preset": "high",
+                "capacity": "ok",
+            }
+        )
         assert meta.session_id == "s1"
         assert meta.status == "finished"
         assert meta.attempt == 3
@@ -146,7 +160,9 @@ class TestRunDirectory:
         plan = tmp_path / "plan.md"
         plan.write_text("# Plan", encoding="utf-8")
         rd = RunDirectory.create(
-            tmp_path / "runs", cwd=tmp_path, plan_path=plan,
+            tmp_path / "runs",
+            cwd=tmp_path,
+            plan_path=plan,
         )
         meta = rd.read_meta()
         assert meta.plan_path is not None
