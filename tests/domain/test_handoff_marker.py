@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 
@@ -13,7 +13,7 @@ from claudeloop.domain.handoff_marker import (
     parse_marker,
 )
 
-NOW = datetime(2026, 8, 15, 12, 0, tzinfo=UTC)
+NOW = datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc)
 
 
 def _marker(**overrides: object) -> HandoffMarker:
