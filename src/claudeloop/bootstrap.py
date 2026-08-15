@@ -73,8 +73,9 @@ def build_runner(
     from_github: str | None = None,
     import_issue: str | None = None,
     slash: str | None = None,
+    run_id: str | None = None,
 ) -> RunnerContext:
-    run_dir = RunDirectory.create(runs_root_for(cwd), cwd=cwd, plan_path=plan_path)
+    run_dir = RunDirectory.create(runs_root_for(cwd), cwd=cwd, plan_path=plan_path, run_id=run_id)
     run_id = run_dir.read_meta().run_id
     trace_id = str(uuid.uuid4())
     profile = config.resolved_profile()

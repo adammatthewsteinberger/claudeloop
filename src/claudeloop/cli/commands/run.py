@@ -32,6 +32,11 @@ def run(
     plan_file: Path = typer.Argument(
         ..., exists=True, readable=True, help="Markdown plan file to seed a fresh session with"
     ),
+    run_id: str | None = typer.Option(
+        None,
+        "--run-id",
+        help="Name this run instead of generating an id (lets a supervisor attach while it runs)",
+    ),
     cwd_dir: Path | None = typer.Option(
         None,
         "--cwd",
@@ -118,6 +123,7 @@ def run(
     docs/guides/autonomous-runs.md."""
     _run(
         plan_file=plan_file,
+        run_id=run_id,
         cwd_dir=cwd_dir,
         attach=attach,
         add_folder=add_folder,
@@ -151,6 +157,7 @@ def run(
 async def _run(
     *,
     plan_file: Path,
+    run_id: str | None,
     cwd_dir: Path | None,
     attach: list[Path] | None,
     add_folder: list[Path] | None,
@@ -226,22 +233,33 @@ async def _run(
         raise typer.Exit(code=1) from exc
 
     live_ui = BufferingStreamUi() if stream_ui else None
-    context = bootstrap.build_runner(
-        cwd=cwd,
-        config=config,
-        log_file=structlog_path,
-        plan=plan,
-        plan_path=plan_file,
-        stream_ui=live_ui,
-        attach=attach,
-        add_folders=add_folder,
-        skills=skills,
-        plugins=plugins,
-        connectors=connector_map or None,
-        from_github=from_github,
-        import_issue=import_issue,
-        slash=slash,
-    )
+    try:
+        context = bootstrap.build_runner(
+            cwd=cwd,
+            config=config,
+            log_file=structlog_path,
+            plan=plan,
+            plan_path=plan_file,
+            stream_ui=live_ui,
+            attach=attach,
+            add_folders=add_folder,
+            skills=skills,
+            plugins=plugins,
+            connectors=connector_map or None,
+            from_github=from_github,
+            import_issue=import_issue,
+            slash=slash,
+            run_id=run_id,
+        )
+    except ValueError as exc:
+        typer.echo(f"{exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    except FileExistsError as exc:
+        typer.echo(
+            f"Run id {run_id!r} already exists; pick another or use `claudeloop resume`.",
+            err=True,
+        )
+        raise typer.Exit(code=2) from exc
     typer.echo(f"Run id: {context.run_id}", err=True)
     typer.echo(f"Trace id: {context.trace_id}", err=True)
 
