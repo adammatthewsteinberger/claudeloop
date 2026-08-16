@@ -1,19 +1,6 @@
 from __future__ import annotations
 
 from datetime import timezone
-from types import SimpleNamespace
-from unittest.mock import MagicMock
-
-from claude_agent_sdk import (
-    AssistantMessage,
-    RateLimitEvent,
-    ResultMessage,
-    StreamEvent,
-    TextBlock,
-    ThinkingBlock,
-    ToolResultBlock,
-    ToolUseBlock,
-)
 
 from claudeloop.domain.capacity import WindowExhausted
 from claudeloop.domain.waiting import next_probe_instant

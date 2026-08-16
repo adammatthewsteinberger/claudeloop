@@ -60,6 +60,29 @@ def test_snapshot_cli(tmp_path: Path, monkeypatch) -> None:
     assert list(directory.snapshots_root.glob("*-manual.json"))
 
 
+def test_snapshot_cli_no_run(tmp_path: Path, monkeypatch) -> None:
+    """No matching run directory raises FileNotFoundError -> exit 1."""
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["snapshot", "--run-id", "nope"], env=_ENV)
+    assert result.exit_code == 1
+
+
+def test_snapshot_cli_no_bundle_no_out(tmp_path: Path, monkeypatch) -> None:
+    """--no-bundle and no --out skip the bundle_path/copied_to lines."""
+    monkeypatch.chdir(tmp_path)
+    directory = _run_dir(tmp_path)
+    run_id = directory.read_meta().run_id
+    result = runner.invoke(
+        app,
+        ["snapshot", "--run-id", run_id, "--no-bundle"],
+        env=_ENV,
+    )
+    assert result.exit_code == 0, result.output
+    assert "snapshot_path:" in result.output
+    assert "bundle_path:" not in result.output
+    assert "copied_to:" not in result.output
+
+
 def test_permission_mode_and_resource_enqueue(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     directory = _run_dir(tmp_path)

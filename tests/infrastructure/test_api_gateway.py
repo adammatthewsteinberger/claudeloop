@@ -72,8 +72,9 @@ def test_invoke_rejects_method_outside_provider_surface() -> None:
 
 
 def test_navigate_resource() -> None:
-    from claudeloop.infrastructure.api.gateway import _navigate_resource
     from types import SimpleNamespace
+
+    from claudeloop.infrastructure.api.gateway import _navigate_resource
 
     # Create nested mock client structure
     client = SimpleNamespace()
@@ -110,14 +111,14 @@ def test_collect_paginated_with_data_attribute_none() -> None:
 def test_invoke_with_method_none_auto_discovers() -> None:
     """Test invoke when method parameter is None - auto-discovery path."""
     from unittest.mock import MagicMock, patch
-    import inspect
 
     gateway = AnthropicApiGateway()
 
-    with patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client, \
-         patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve, \
-         patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load:
-
+    with (
+        patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client,
+        patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve,
+        patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load,
+    ):
         # Set up mocks with proper signature
         mock_load.return_value = {}
 
@@ -151,11 +152,12 @@ def test_invoke_with_json_body() -> None:
         is_list=False,
     )
 
-    with patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client, \
-         patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve, \
-         patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load, \
-         patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs:
-
+    with (
+        patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client,
+        patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve,
+        patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load,
+        patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs,
+    ):
         mock_load.return_value = {"model": "claude-3-sonnet-20240620"}
         mock_kwargs.return_value = {"model": "claude-3-sonnet-20240620"}
 
@@ -168,9 +170,17 @@ def test_invoke_with_json_body() -> None:
         client_mock.messages.create.return_value = {"id": "msg_456"}
         mock_client.return_value = client_mock
 
-        result = gateway.invoke("messages.create", method=method, json_body='{"model": "claude-3-sonnet-20240620"}')
+        body = '{"model": "claude-3-sonnet-20240620"}'
+        result = gateway.invoke(
+            "messages.create",
+            method=method,
+            json_body=body,
+        )
 
-        mock_load.assert_called_once_with(inline='{"model": "claude-3-sonnet-20240620"}', json_file=None)
+        mock_load.assert_called_once_with(
+            inline=body,
+            json_file=None,
+        )
         assert result == {"id": "msg_456"}
 
 
@@ -188,11 +198,12 @@ def test_invoke_with_raw_response() -> None:
         is_list=False,
     )
 
-    with patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client, \
-         patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve, \
-         patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load, \
-         patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs:
-
+    with (
+        patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client,
+        patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve,
+        patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load,
+        patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs,
+    ):
         mock_load.return_value = {}
         mock_kwargs.return_value = {}
 
@@ -226,11 +237,12 @@ def test_invoke_with_streaming_response() -> None:
         is_list=False,
     )
 
-    with patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client, \
-         patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve, \
-         patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load, \
-         patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs:
-
+    with (
+        patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client,
+        patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve,
+        patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load,
+        patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs,
+    ):
         mock_load.return_value = {}
         mock_kwargs.return_value = {}
 
@@ -264,11 +276,12 @@ def test_invoke_with_pagination() -> None:
         is_list=True,
     )
 
-    with patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client, \
-         patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve, \
-         patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load, \
-         patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs:
-
+    with (
+        patch("claudeloop.infrastructure.api.gateway.build_client") as mock_client,
+        patch("claudeloop.infrastructure.api.gateway.resolve_callable") as mock_resolve,
+        patch("claudeloop.infrastructure.api.gateway.load_json_payload") as mock_load,
+        patch("claudeloop.infrastructure.api.gateway.build_call_kwargs") as mock_kwargs,
+    ):
         mock_load.return_value = {}
         mock_kwargs.return_value = {}
 
@@ -300,6 +313,7 @@ def test_invoke_and_print_with_regular_result() -> None:
         result = gateway.invoke_and_print("messages.create")
 
         import json
+
         parsed = json.loads(result)
         assert parsed["id"] == "msg_789"
         assert parsed["content"] == "Hello"
@@ -322,7 +336,7 @@ def test_invoke_and_print_with_streaming_result() -> None:
 
 def test_invoke_and_print_with_bytes_stream() -> None:
     """Test invoke_and_print decodes bytes from stream.read()."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     gateway = AnthropicApiGateway()
 

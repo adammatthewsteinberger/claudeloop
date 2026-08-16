@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+import pytest
 from typer.testing import CliRunner, Result
 
 from claudeloop import __version__
@@ -145,3 +146,63 @@ def test_api_dispatch_via_main(monkeypatch) -> None:
     monkeypatch.setattr(sys, "argv", ["claudeloop", "api", "models", "list", "--help"])
     assert app_module.main() == 0
     assert called == [["models", "list", "--help"]]
+
+
+def test_api_stub_direct_invocation() -> None:
+    """Invoking the ``app`` Typer object directly with ``api`` (bypassing the
+    special-cased ``main()`` dispatch) hits the registered stub command,
+    which shells out to the real generated click group for --help."""
+    result = _invoke("api")
+    assert result.exit_code == 0
+    plain = _plain(result.output)
+    assert "Usage" in plain
+
+
+def test_main_api_click_exit_propagates_as_system_exit(monkeypatch) -> None:
+    import sys
+
+    import click
+
+    from claudeloop.cli import app as app_module
+
+    class _FakeGroup:
+        def main(self, *, args: list[str], prog_name: str, standalone_mode: bool) -> None:
+            raise click.exceptions.Exit(3)
+
+    monkeypatch.setattr(app_module, "build_api_click_group", lambda: _FakeGroup())
+    monkeypatch.setattr(sys, "argv", ["claudeloop", "api", "models", "list"])
+    raised: SystemExit | None = None
+    try:
+        app_module.main()
+    except SystemExit as exc:
+        raised = exc
+    assert raised is not None
+    assert raised.code == 3
+
+
+def test_main_dispatches_non_api_commands_to_app(monkeypatch) -> None:
+    import sys
+
+    from claudeloop.cli import app as app_module
+
+    calls: list[dict[str, str]] = []
+
+    def _fake_app(*, prog_name: str) -> None:
+        calls.append({"prog_name": prog_name})
+
+    monkeypatch.setattr(app_module, "app", _fake_app)
+    monkeypatch.setattr(sys, "argv", ["claudeloop", "status"])
+    assert app_module.main() == 0
+    assert calls == [{"prog_name": "claudeloop"}]
+
+
+def test_dunder_main_guard_invokes_main(monkeypatch) -> None:
+    """Running the module as a script (``python -m claudeloop.cli.app``)
+    hits the ``if __name__ == "__main__":`` guard at the bottom of the file."""
+    import runpy
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["claudeloop", "--version"])
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("claudeloop.cli.app", run_name="__main__")
+    assert exc_info.value.code == 0

@@ -472,7 +472,10 @@ class TestStreamAppPartialBranches:
             saw_delta=False,
         )
         assert update.saw_delta is True
-        assert all(line == "\n" or line == "" for line in update.assistant_lines) or update.assistant_lines == []
+        assert (
+            all(line in ("\n", "") for line in update.assistant_lines)
+            or update.assistant_lines == []
+        )
 
     @pytest.mark.asyncio
     async def test_append_assistant_empty_text(self, tmp_path: Path) -> None:

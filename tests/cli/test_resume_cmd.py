@@ -138,3 +138,108 @@ class TestResumeSuccess:
             )
             assert result.exit_code == 1
             assert "no sessions" in result.output
+
+    def test_resume_auto_resolve_success(self, tmp_path: Path) -> None:
+        """No --session-id and a resolvable session: prints the "most
+        recent session" warning banner, then resumes it (lines 113-114)."""
+        from datetime import datetime, timezone
+
+        from claudeloop.domain.session import SessionRef
+
+        mock_context = MagicMock()
+        mock_context.run_id = "test-run-1"
+        mock_context.trace_id = "test-trace-1"
+        mock_context.run_dir = MagicMock()
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.reason = "done"
+
+        ref = SessionRef(
+            session_id="resolved-session",
+            cwd=str(tmp_path),
+            last_modified=datetime.now(timezone.utc),
+        )
+
+        with (
+            patch("claudeloop.cli.commands.resume.load_config") as mock_config,
+            patch("claudeloop.cli.commands.resume.configure_logging"),
+            patch("claudeloop.cli.commands.resume.bootstrap") as mock_bootstrap,
+            patch("claudeloop.cli.commands.resume.resolve_most_recent") as mock_resolve,
+            patch(
+                "claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock
+            ) as mock_resume,
+        ):
+            mock_config.return_value = MagicMock(
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
+            )
+            mock_bootstrap.build_session_catalog.return_value = MagicMock()
+            mock_resolve.return_value = ref
+            mock_bootstrap.build_runner.return_value = mock_context
+            mock_resume.return_value = mock_result
+
+            result = runner.invoke(
+                app,
+                ["resume"],
+                env=_ENV,
+            )
+            assert result.exit_code == 0
+            assert "WARNING" in result.output
+            assert "resolved-session" in result.output
+            assert "Done:" in result.output
+
+
+class TestResumeStreamUi:
+    def test_resume_stream_ui_thread_runs_and_handles_runtime_error(self, tmp_path: Path) -> None:
+        """--stream-ui spawns a daemon thread that runs the Textual app and
+        swallows a RuntimeError (e.g. no TTY) — lines 129-144."""
+        import threading as real_threading
+
+        mock_context = MagicMock()
+        mock_context.run_id = "test-run-1"
+        mock_context.trace_id = "test-trace-1"
+        mock_context.run_dir = MagicMock()
+        mock_context.run_dir.events_path = tmp_path / "events.jsonl"
+
+        mock_result = MagicMock()
+        mock_result.success = True
+        mock_result.reason = "done"
+
+        class _SyncThread:
+            def __init__(self, target=None, daemon=None) -> None:
+                self._target = target
+
+            def start(self) -> None:
+                if self._target is not None:
+                    self._target()
+
+        with (
+            patch("claudeloop.cli.commands.resume.load_config") as mock_config,
+            patch("claudeloop.cli.commands.resume.configure_logging"),
+            patch("claudeloop.cli.commands.resume.bootstrap") as mock_bootstrap,
+            patch(
+                "claudeloop.cli.commands.resume.resume_explicit", new_callable=AsyncMock
+            ) as mock_resume,
+            patch(
+                "claudeloop.cli.commands.resume.run_textual_app",
+                side_effect=RuntimeError("no tty available"),
+            ),
+            patch.object(real_threading, "Thread", _SyncThread),
+        ):
+            mock_config.return_value = MagicMock(
+                log_file=None,
+                log_level="INFO",
+                done_marker=None,
+            )
+            mock_bootstrap.build_runner.return_value = mock_context
+            mock_resume.return_value = mock_result
+
+            result = runner.invoke(
+                app,
+                ["resume", "--session-id", "sess-123", "--stream-ui"],
+                env=_ENV,
+            )
+            assert result.exit_code == 0
+            assert "no tty available" in result.output

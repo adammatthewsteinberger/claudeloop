@@ -265,36 +265,42 @@ class TestFetchIssueApi:
 
         from claudeloop.infrastructure.github_import import _fetch_issue_api
 
-        with patch(
-            "claudeloop.infrastructure.github_import.urlopen",
-            side_effect=HTTPError("url", 404, "Not Found", {}, None),  # type: ignore[arg-type]
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=HTTPError("url", 404, "Not Found", {}, None),  # type: ignore[arg-type]
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
         ):
-            with pytest.raises(RuntimeError, match="failed to import o/r#1"):
-                _fetch_issue_api("o", "r", 1)
+            _fetch_issue_api("o", "r", 1)
 
     def test_url_error_raises_runtime_error(self) -> None:
         from unittest.mock import patch
 
         from claudeloop.infrastructure.github_import import _fetch_issue_api
 
-        with patch(
-            "claudeloop.infrastructure.github_import.urlopen",
-            side_effect=URLError("connection refused"),
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=URLError("connection refused"),
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
         ):
-            with pytest.raises(RuntimeError, match="failed to import o/r#1"):
-                _fetch_issue_api("o", "r", 1)
+            _fetch_issue_api("o", "r", 1)
 
     def test_timeout_error_raises_runtime_error(self) -> None:
         from unittest.mock import patch
 
         from claudeloop.infrastructure.github_import import _fetch_issue_api
 
-        with patch(
-            "claudeloop.infrastructure.github_import.urlopen",
-            side_effect=TimeoutError("timed out"),
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=TimeoutError("timed out"),
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
         ):
-            with pytest.raises(RuntimeError, match="failed to import o/r#1"):
-                _fetch_issue_api("o", "r", 1)
+            _fetch_issue_api("o", "r", 1)
 
     def test_json_decode_error_raises_runtime_error(self) -> None:
         from unittest.mock import MagicMock, patch
@@ -307,6 +313,11 @@ class TestFetchIssueApi:
         mock_cm.__enter__.return_value = mock_resp
         mock_cm.__exit__.return_value = False
 
-        with patch("claudeloop.infrastructure.github_import.urlopen", return_value=mock_cm):
-            with pytest.raises(RuntimeError, match="failed to import o/r#1"):
-                _fetch_issue_api("o", "r", 1)
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                return_value=mock_cm,
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
+        ):
+            _fetch_issue_api("o", "r", 1)

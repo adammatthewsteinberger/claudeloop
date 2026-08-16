@@ -87,3 +87,14 @@ def test_write_man_page_ends_with_newline(monkeypatch) -> None:
     write_man_page()
     output = buffer.getvalue()
     assert output.endswith("\n")
+
+
+def test_write_man_page_appends_newline_when_missing(monkeypatch) -> None:
+    """When render_man_page() doesn't end with a newline, write_man_page adds one."""
+    import claudeloop.cli.man_page as man_page_mod
+
+    monkeypatch.setattr(man_page_mod, "render_man_page", lambda: "no trailing newline")
+    buffer = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", buffer)
+    man_page_mod.write_man_page()
+    assert buffer.getvalue() == "no trailing newline\n"

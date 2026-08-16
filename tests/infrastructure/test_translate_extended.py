@@ -18,7 +18,6 @@ from claude_agent_sdk import (
 
 from claudeloop.infrastructure.agent.translate import (
     TurnAccumulator,
-    _message_to_event,
     _stream_delta_text,
 )
 
