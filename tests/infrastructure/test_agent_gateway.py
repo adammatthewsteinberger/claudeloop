@@ -302,6 +302,188 @@ class TestSendTurn:
         mock_client.query.assert_awaited_once_with("hello")
         assert gw._session_id == "sess-123"
 
+    @pytest.mark.asyncio
+    async def test_send_turn_emits_delta_events_with_seq(self) -> None:
+        """A StreamEvent whose payload carries delta_text is enriched with
+        chatter='delta' and a monotonic seq before reaching the listener.
+
+        Real SDK dataclass instances are used here (not MagicMock) because
+        ``_message_to_event`` keys off ``type(message).__name__``, and a
+        MagicMock's real type is always "MagicMock" regardless of ``spec=``
+        — so a mocked message can never satisfy the gateway's
+        ``event.get("type") == "StreamEvent"`` check.
+        """
+        from claude_agent_sdk import ResultMessage, StreamEvent
+
+        gw = _make_gateway()
+        events_received: list[dict[str, object]] = []
+        gw._on_event = lambda e: events_received.append(e)
+
+        stream_msg = StreamEvent(
+            uuid="u1",
+            session_id="sess-stream",
+            event={"type": "content_block_delta", "delta": {"text": "hi"}},
+        )
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="sess-stream",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        mock_client = AsyncMock()
+
+        async def fake_receive():
+            yield stream_msg
+            yield result_msg
+
+        mock_client.receive_response = fake_receive
+        mock_client.query = AsyncMock()
+        mock_client.connect = AsyncMock()
+
+        with patch(
+            "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
+            return_value=mock_client,
+        ):
+            await gw.send_turn("hello")
+
+        delta_events = [e for e in events_received if e.get("chatter") == "delta"]
+        assert len(delta_events) == 1
+        assert delta_events[0]["seq"] == 1
+        assert delta_events[0]["delta_text"] == "hi"
+        assert gw._delta_seq == 1
+
+    @pytest.mark.asyncio
+    async def test_send_turn_forwards_non_delta_events(self) -> None:
+        """Events that aren't a StreamEvent-with-delta_text still reach the
+        listener, just without the delta enrichment."""
+        from claude_agent_sdk import ResultMessage
+
+        gw = _make_gateway()
+        events_received: list[dict[str, object]] = []
+        gw._on_event = lambda e: events_received.append(e)
+
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="sess-plain",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        mock_client = AsyncMock()
+
+        async def fake_receive():
+            yield result_msg
+
+        mock_client.receive_response = fake_receive
+        mock_client.query = AsyncMock()
+        mock_client.connect = AsyncMock()
+
+        with patch(
+            "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
+            return_value=mock_client,
+        ):
+            await gw.send_turn("hello")
+
+        assert len(events_received) == 1
+        assert events_received[0]["type"] == "ResultMessage"
+        assert events_received[0]["session_id"] == "sess-plain"
+
+    @pytest.mark.asyncio
+    async def test_send_turn_keeps_prior_session_id_when_outcome_has_none(self) -> None:
+        """outcome.session_id falsy -> the gateway's existing _session_id
+        (e.g. from a prior turn) must not be clobbered with None."""
+        from claude_agent_sdk import ResultMessage
+
+        gw = _make_gateway(session_id="preexisting")
+        gw._resume = None
+        gw._continue_conversation = False
+
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        mock_client = AsyncMock()
+
+        async def fake_receive():
+            yield result_msg
+
+        mock_client.receive_response = fake_receive
+        mock_client.query = AsyncMock()
+        mock_client.connect = AsyncMock()
+
+        with patch(
+            "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
+            return_value=mock_client,
+        ):
+            await gw.send_turn("hello")
+
+        assert gw._session_id == "preexisting"
+
+    @pytest.mark.asyncio
+    async def test_send_turn_drains_approval_events_mid_turn(self) -> None:
+        """A tool.approval_needed event raised by can_use_tool() while a turn
+        is streaming must reach the listener before the next message is fed,
+        not just at connect time."""
+        from claude_agent_sdk import ResultMessage
+
+        gw = _make_gateway()
+        events_received: list[dict[str, object]] = []
+        gw._on_event = lambda e: events_received.append(e)
+        gw._client = AsyncMock()  # already connected, so _ensure_connected does not
+        # queue this event via its own (separate) drain at connect time.
+
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="sess-mid",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        async def fake_receive():
+            # Emulate can_use_tool() queuing an approval-needed event only
+            # once the turn is already streaming — _ensure_connected's own
+            # drain (called before this generator starts) must not be the
+            # one that picks this up.
+            gw._approval._events.append(
+                {
+                    "type": "tool.approval_needed",
+                    "request_id": "req-mid",
+                    "tool_name": "Bash",
+                    "input_summary": "{}",
+                    "timeout_seconds": 30.0,
+                }
+            )
+            yield result_msg
+
+        gw._client.receive_response = fake_receive
+        gw._client.query = AsyncMock()
+
+        await gw.send_turn("hello")
+
+        approval_events = [e for e in events_received if e.get("type") == "tool.approval_needed"]
+        assert len(approval_events) == 1
+        assert approval_events[0]["request_id"] == "req-mid"
+
 
 class TestEnsureConnected:
     @pytest.mark.asyncio
@@ -327,6 +509,132 @@ class TestEnsureConnected:
         gw._client = mock_client
         result = await gw._ensure_connected()
         assert result is mock_client
+
+    @pytest.mark.asyncio
+    async def test_flushes_pending_approval_needed_events_to_listener(self) -> None:
+        """A tool.approval_needed event queued by can_use_tool (unlike
+        resolve(), which never queues anything) must reach the listener the
+        first time the gateway connects."""
+        gw = _make_gateway()
+        events_received: list[dict[str, object]] = []
+        gw._on_event = lambda e: events_received.append(e)
+        # Simulate a pending approval-needed event already queued in the gate,
+        # as can_use_tool() would leave behind.
+        gw._approval._events.append(
+            {
+                "type": "tool.approval_needed",
+                "request_id": "req-1",
+                "tool_name": "Bash",
+                "input_summary": "{}",
+                "timeout_seconds": 30.0,
+            }
+        )
+
+        mock_client = AsyncMock()
+        mock_client.connect = AsyncMock()
+        with patch(
+            "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
+            return_value=mock_client,
+        ):
+            await gw._ensure_connected()
+
+        assert len(events_received) == 1
+        assert events_received[0]["type"] == "tool.approval_needed"
+        # Drained, not re-delivered on a later connect.
+        assert gw._approval.drain_events() == []
+
+
+class TestGatewayOnEventNonePartialBranches:
+    """Cover partial branches where self._on_event is None."""
+
+    @pytest.mark.asyncio
+    async def test_ensure_connected_drains_without_listener(self) -> None:
+        """Approval events drained in _ensure_connected with no listener (199->198)."""
+        gw = _make_gateway()
+        assert gw._on_event is None
+        gw._approval._events.append({"type": "tool.approval_needed", "request_id": "r1"})
+        mock_client = AsyncMock()
+        mock_client.connect = AsyncMock()
+        with patch(
+            "claudeloop.infrastructure.agent.gateway.ClaudeSDKClient",
+            return_value=mock_client,
+        ):
+            await gw._ensure_connected()
+        assert gw._approval.drain_events() == []
+
+    @pytest.mark.asyncio
+    async def test_send_turn_no_listener_with_delta(self) -> None:
+        """StreamEvent with delta_text but no listener → skip callback (237->239).
+        Mid-turn approval drain also skipped (247->246)."""
+        from claude_agent_sdk import ResultMessage, StreamEvent
+
+        gw = _make_gateway()
+        assert gw._on_event is None
+        gw._client = AsyncMock()
+
+        stream_msg = StreamEvent(
+            uuid="u1",
+            session_id="sess",
+            event={"type": "content_block_delta", "delta": {"text": "hi"}},
+        )
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="sess",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        async def fake_receive():
+            gw._approval._events.append({"type": "tool.approval_needed", "request_id": "mid"})
+            yield stream_msg
+            yield result_msg
+
+        gw._client.receive_response = fake_receive
+        gw._client.query = AsyncMock()
+
+        await gw.send_turn("hello")
+        assert gw._delta_seq == 1
+
+    @pytest.mark.asyncio
+    async def test_send_turn_stream_event_no_delta_text(self) -> None:
+        """StreamEvent without delta_text falls through to outer dispatch (230->240)."""
+        from claude_agent_sdk import ResultMessage, StreamEvent
+
+        gw = _make_gateway()
+        events_received: list[dict[str, object]] = []
+        gw._on_event = lambda e: events_received.append(e)
+        gw._client = AsyncMock()
+
+        stream_msg = StreamEvent(
+            uuid="u1",
+            session_id="sess",
+            event={"type": "message_start"},
+        )
+        result_msg = ResultMessage(
+            subtype="success",
+            duration_ms=1,
+            duration_api_ms=1,
+            is_error=False,
+            num_turns=1,
+            session_id="sess",
+            total_cost_usd=0.0,
+            result="done",
+        )
+
+        async def fake_receive():
+            yield stream_msg
+            yield result_msg
+
+        gw._client.receive_response = fake_receive
+        gw._client.query = AsyncMock()
+
+        await gw.send_turn("hello")
+        stream_events = [e for e in events_received if e.get("type") == "StreamEvent"]
+        assert len(stream_events) >= 1
 
 
 class TestClaudeCapacityProbe:

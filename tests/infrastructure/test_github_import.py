@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 import pytest
 
@@ -189,3 +191,133 @@ class TestImportGithubIssue:
             issue = import_github_issue("o/r#1")
             assert issue.title == "T"
             mock_fetch.assert_called_once()
+
+
+class TestFetchIssueApi:
+    def test_success_without_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(
+            {"title": "T", "body": "B", "html_url": "https://github.com/o/r/issues/1"}
+        ).encode("utf-8")
+        mock_cm = MagicMock()
+        mock_cm.__enter__.return_value = mock_resp
+        mock_cm.__exit__.return_value = False
+
+        with patch(
+            "claudeloop.infrastructure.github_import.urlopen", return_value=mock_cm
+        ) as mock_urlopen:
+            data = _fetch_issue_api("o", "r", 1)
+            assert data["title"] == "T"
+            request = mock_urlopen.call_args[0][0]
+            assert "Authorization" not in request.headers
+
+    def test_success_with_github_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        monkeypatch.setenv("GITHUB_TOKEN", "ghp_abc123")
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({"title": "T"}).encode("utf-8")
+        mock_cm = MagicMock()
+        mock_cm.__enter__.return_value = mock_resp
+        mock_cm.__exit__.return_value = False
+
+        with patch(
+            "claudeloop.infrastructure.github_import.urlopen", return_value=mock_cm
+        ) as mock_urlopen:
+            _fetch_issue_api("o", "r", 1)
+            request = mock_urlopen.call_args[0][0]
+            assert request.headers["Authorization"] == "Bearer ghp_abc123"
+
+    def test_success_falls_back_to_gh_token(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.setenv("GH_TOKEN", "gh_token_xyz")
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps({"title": "T"}).encode("utf-8")
+        mock_cm = MagicMock()
+        mock_cm.__enter__.return_value = mock_resp
+        mock_cm.__exit__.return_value = False
+
+        with patch(
+            "claudeloop.infrastructure.github_import.urlopen", return_value=mock_cm
+        ) as mock_urlopen:
+            _fetch_issue_api("o", "r", 1)
+            request = mock_urlopen.call_args[0][0]
+            assert request.headers["Authorization"] == "Bearer gh_token_xyz"
+
+    def test_http_error_raises_runtime_error(self) -> None:
+        from unittest.mock import patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=HTTPError("url", 404, "Not Found", {}, None),  # type: ignore[arg-type]
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
+        ):
+            _fetch_issue_api("o", "r", 1)
+
+    def test_url_error_raises_runtime_error(self) -> None:
+        from unittest.mock import patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=URLError("connection refused"),
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
+        ):
+            _fetch_issue_api("o", "r", 1)
+
+    def test_timeout_error_raises_runtime_error(self) -> None:
+        from unittest.mock import patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                side_effect=TimeoutError("timed out"),
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
+        ):
+            _fetch_issue_api("o", "r", 1)
+
+    def test_json_decode_error_raises_runtime_error(self) -> None:
+        from unittest.mock import MagicMock, patch
+
+        from claudeloop.infrastructure.github_import import _fetch_issue_api
+
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = b"not json"
+        mock_cm = MagicMock()
+        mock_cm.__enter__.return_value = mock_resp
+        mock_cm.__exit__.return_value = False
+
+        with (
+            patch(
+                "claudeloop.infrastructure.github_import.urlopen",
+                return_value=mock_cm,
+            ),
+            pytest.raises(RuntimeError, match="failed to import o/r#1"),
+        ):
+            _fetch_issue_api("o", "r", 1)

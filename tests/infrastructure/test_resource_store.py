@@ -10,6 +10,8 @@ import pytest
 from claudeloop.infrastructure.resources.store import (
     ResourceSnapshot,
     RunResourceStore,
+    _read_json_dict,
+    _read_json_list,
     _safe_name,
 )
 
@@ -322,6 +324,43 @@ class TestRunResourceStore:
         assert (result / "file2.txt").exists()
         assert not (result / "file1.txt").exists()
 
+    def test_memory_prompt_append_skips_blank_names(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+        store.set_memory("real", "content")
+        # Inject a blank-name entry directly -- list_memories() would return
+        # it as-is, and memory_prompt_append() must skip it via `continue`
+        # rather than rendering an empty "### Memory: " header.
+        index = json.loads(store.memories_index.read_text(encoding="utf-8"))
+        index["items"].insert(0, {"name": "", "path": ""})
+        store.memories_index.write_text(json.dumps(index), encoding="utf-8")
+
+        append = store.memory_prompt_append()
+        assert "### Memory: \n" not in append
+        assert "real" in append
+
+    def test_memory_prompt_append_skips_missing_memory_file(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+        store.set_memory("real", "content")
+        # Reference a memory name in the index whose .md file was never
+        # written (or was deleted out from under the index) -- get_memory()
+        # raises FileNotFoundError, which memory_prompt_append() must
+        # swallow and skip rather than propagate.
+        index = json.loads(store.memories_index.read_text(encoding="utf-8"))
+        index["items"].append({"name": "ghost", "path": "ghost.md"})
+        store.memories_index.write_text(json.dumps(index), encoding="utf-8")
+
+        append = store.memory_prompt_append()
+        assert "ghost" not in append
+        assert "real" in append
+
     def test_unattach_directory(self, tmp_path: Path) -> None:
         root = tmp_path / "run" / "resources"
         (tmp_path / "run" / "artifacts").mkdir(parents=True)
@@ -338,3 +377,55 @@ class TestRunResourceStore:
         # Unattach the directory
         store.unattach("my_dir")
         assert not (store.attachments_dir / "my_dir").exists()
+
+    def test_add_duplicate_folder_is_idempotent(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+        store.add_folder("/tmp/dup")
+        store.add_folder("/tmp/dup")
+        snap = store.snapshot()
+        count = sum(1 for f in snap.folders if f.endswith("/dup"))
+        assert count == 1
+
+    def test_remove_memory_with_missing_file(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+        store.set_memory("ephemeral", "content")
+        mem_file = store.memories_dir / "ephemeral.md"
+        mem_file.unlink()
+        store.remove_memory("ephemeral")
+        assert store.list_memories() == []
+
+    def test_research_status_with_empty_jsonl(self, tmp_path: Path) -> None:
+        root = tmp_path / "run" / "resources"
+        (tmp_path / "run" / "artifacts").mkdir(parents=True)
+        (tmp_path / "run" / "memories").mkdir(parents=True)
+        store = RunResourceStore(root)
+        store.ensure()
+        (store.research_dir / "empty.jsonl").write_text("", encoding="utf-8")
+        rows = store.research_status()
+        assert rows == []
+
+
+class TestReadJsonHelpers:
+    def test_read_json_list_missing_file_returns_empty(self, tmp_path: Path) -> None:
+        assert _read_json_list(tmp_path / "nope.json") == []
+
+    def test_read_json_list_non_list_json_returns_empty(self, tmp_path: Path) -> None:
+        path = tmp_path / "weird.json"
+        path.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+        assert _read_json_list(path) == []
+
+    def test_read_json_dict_missing_file_returns_empty(self, tmp_path: Path) -> None:
+        assert _read_json_dict(tmp_path / "nope.json") == {}
+
+    def test_read_json_dict_non_dict_json_returns_empty(self, tmp_path: Path) -> None:
+        path = tmp_path / "weird.json"
+        path.write_text(json.dumps(["not", "a", "dict"]), encoding="utf-8")
+        assert _read_json_dict(path) == {}

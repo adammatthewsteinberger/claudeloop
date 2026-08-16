@@ -131,6 +131,16 @@ class TestSlashCommand:
         assert result.exit_code == 0
         assert "slash" in result.output.lower()
 
+    def test_slash_no_run_found(self, tmp_path: Path, monkeypatch) -> None:
+        """No matching run directory raises FileNotFoundError -> exit 1."""
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["slash", "/help", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
 
 class TestWindDownCommand:
     def test_wind_down_success(self, tmp_path: Path, monkeypatch) -> None:
@@ -212,6 +222,17 @@ class TestSessionsCommand:
         result = runner.invoke(app, ["sessions"], env=_ENV)
         assert result.exit_code == 0
 
+    def test_sessions_returns_early_when_subcommand_invoked(self) -> None:
+        """The callback exits before touching the catalog when a subcommand
+        is already dispatching (invoke_without_command guard)."""
+        import click
+
+        from claudeloop.cli.commands.sessions import sessions
+
+        ctx = click.Context(click.Command("sessions"))
+        ctx.invoked_subcommand = "something"
+        assert sessions(ctx, cwd=None) is None
+
 
 class TestSavepointsCommand:
     def test_savepoints_no_run(self, tmp_path: Path, monkeypatch) -> None:
@@ -227,6 +248,31 @@ class TestSavepointsCommand:
         assert result.exit_code == 0
         assert "No save points" in result.output
 
+    def test_savepoints_prints_each_point(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.savepoints as savepoints_mod
+
+        monkeypatch.setattr(
+            savepoints_mod.bootstrap_ops,
+            "list_savepoints",
+            lambda cwd, run_id=None: [
+                {
+                    "n": 1,
+                    "sha": "abcdef1234567890",
+                    "label": "checkpoint",
+                    "at": "2024-01-01T00:00:00",
+                    "ref": "refs/claudeloop/savepoints/1",
+                }
+            ],
+        )
+        result = runner.invoke(app, ["savepoints", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 0
+        assert "#1" in result.output
+        assert "checkpoint" in result.output
+        assert "abcdef123456" in result.output
+
 
 class TestUnwindCommand:
     def test_unwind_no_run(self, tmp_path: Path, monkeypatch) -> None:
@@ -237,6 +283,54 @@ class TestUnwindCommand:
             env=_ENV,
         )
         assert result.exit_code == 1
+
+    def test_unwind_success_with_backup(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        directory.update_meta(status="finished")
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.unwind as unwind_mod
+
+        monkeypatch.setattr(
+            unwind_mod.bootstrap_ops,
+            "unwind_savepoint",
+            lambda cwd, to, *, backup=True, run_id=None: {
+                "to_n": 1,
+                "to_sha": "abc123456789",
+                "backup_ref": "refs/claudeloop/backups/1",
+                "restored_sha": "abc123456789",
+            },
+        )
+        result = runner.invoke(app, ["unwind", "--to", "1", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 0
+        assert "Restored save point #1" in result.output
+        assert "Backup ref:" in result.output
+
+    def test_unwind_success_without_backup(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        directory.update_meta(status="finished")
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.unwind as unwind_mod
+
+        monkeypatch.setattr(
+            unwind_mod.bootstrap_ops,
+            "unwind_savepoint",
+            lambda cwd, to, *, backup=True, run_id=None: {
+                "to_n": 1,
+                "to_sha": "abc123456789",
+                "backup_ref": None,
+                "restored_sha": "abc123456789",
+            },
+        )
+        result = runner.invoke(
+            app,
+            ["unwind", "--to", "1", "--run-id", run_id, "--no-backup"],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "Restored save point #1" in result.output
+        assert "Backup ref:" not in result.output
 
 
 class TestChatCommands:
@@ -375,6 +469,38 @@ class TestVoiceCommands:
         monkeypatch.setattr(_shutil, "which", lambda _: None)
         result = runner.invoke(app, ["speak", "hello"], env=_ENV)
         assert result.exit_code == 1
+
+    def test_speak_macos_say(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        import claudeloop.cli.commands.voice_cmd as voice_mod
+
+        monkeypatch.setattr(voice_mod.sys, "platform", "darwin")
+        monkeypatch.setattr(
+            voice_mod.shutil, "which", lambda cmd: "/usr/bin/say" if cmd == "say" else None
+        )
+        calls: list[object] = []
+        monkeypatch.setattr(voice_mod.subprocess, "run", lambda *a, **kw: calls.append((a, kw)))
+        result = runner.invoke(app, ["speak", "hello"], env=_ENV)
+        assert result.exit_code == 0
+        assert calls
+        assert calls[0][0][0] == ["say", "hello"]
+
+    def test_speak_espeak_fallback(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        import claudeloop.cli.commands.voice_cmd as voice_mod
+
+        monkeypatch.setattr(voice_mod.sys, "platform", "linux")
+        monkeypatch.setattr(
+            voice_mod.shutil,
+            "which",
+            lambda cmd: "/usr/bin/espeak" if cmd == "espeak" else None,
+        )
+        calls: list[object] = []
+        monkeypatch.setattr(voice_mod.subprocess, "run", lambda *a, **kw: calls.append((a, kw)))
+        result = runner.invoke(app, ["speak", "hello"], env=_ENV)
+        assert result.exit_code == 0
+        assert calls
+        assert calls[0][0][0] == ["espeak", "hello"]
 
 
 class TestAttachCommand:
@@ -625,6 +751,43 @@ class TestDoctorCommand:
         assert result.exit_code == 0
         assert "Pre-flight" in result.output or "Usage" in result.output
 
+    def test_doctor_returns_early_when_subcommand_invoked(self) -> None:
+        import click
+
+        from claudeloop.cli.commands.doctor import doctor
+
+        ctx = click.Context(click.Command("doctor"))
+        ctx.invoked_subcommand = "something"
+        assert doctor(ctx) is None
+
+    def test_doctor_all_checks_pass(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        import claudeloop.cli.commands.doctor as doctor_mod
+        from claudeloop.application.usecases.doctor import DoctorCheck
+
+        monkeypatch.setattr(doctor_mod.bootstrap, "build_doctor_environment", lambda: object())
+        monkeypatch.setattr(
+            doctor_mod,
+            "run_doctor",
+            lambda env, cwd: [DoctorCheck(name="claude-cli", passed=True, detail="ok")],
+        )
+        result = runner.invoke(app, ["doctor"], env=_ENV)
+        assert result.exit_code == 0
+
+    def test_doctor_failing_check_exits_nonzero(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        import claudeloop.cli.commands.doctor as doctor_mod
+        from claudeloop.application.usecases.doctor import DoctorCheck
+
+        monkeypatch.setattr(doctor_mod.bootstrap, "build_doctor_environment", lambda: object())
+        monkeypatch.setattr(
+            doctor_mod,
+            "run_doctor",
+            lambda env, cwd: [DoctorCheck(name="claude-cli", passed=False, detail="missing")],
+        )
+        result = runner.invoke(app, ["doctor"], env=_ENV)
+        assert result.exit_code == 1
+
 
 class TestResumeCommand:
     def test_resume_help(self) -> None:
@@ -773,6 +936,73 @@ class TestWatchCommand:
         result = runner.invoke(app, ["watch", "--help"], env=_ENV)
         assert result.exit_code == 0
         assert "follow" in result.output.lower()
+
+    def test_watch_stream_invokes_textual_app(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.watch as watch_mod
+
+        calls: dict[str, object] = {}
+
+        def fake_run_textual_app(*, events_path, follow, replay, speed):
+            calls["events_path"] = events_path
+            calls["follow"] = follow
+            calls["replay"] = replay
+            calls["speed"] = speed
+
+        monkeypatch.setattr(watch_mod, "run_textual_app", fake_run_textual_app)
+        result = runner.invoke(app, ["watch", "--stream", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 0, result.output
+        assert calls["replay"] is False
+
+    def test_watch_replay_tty_invokes_textual_app(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.watch as watch_mod
+
+        monkeypatch.setattr(watch_mod, "sys_stdout_isatty", lambda: True)
+        calls: dict[str, object] = {}
+
+        def fake_run_textual_app(*, events_path, follow, replay, speed):
+            calls["replay"] = replay
+
+        monkeypatch.setattr(watch_mod, "run_textual_app", fake_run_textual_app)
+        result = runner.invoke(app, ["watch", "--replay", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 0, result.output
+        assert calls["replay"] is True
+
+    def test_watch_replay_non_tty_dumps_transcript(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.watch as watch_mod
+
+        monkeypatch.setattr(watch_mod, "sys_stdout_isatty", lambda: False)
+        dumped: dict[str, object] = {}
+
+        def fake_dump_transcript(events_path):
+            dumped["events_path"] = events_path
+
+        monkeypatch.setattr(watch_mod, "dump_transcript", fake_dump_transcript)
+        result = runner.invoke(app, ["watch", "--replay", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 0, result.output
+        assert "events_path" in dumped
+
+    def test_watch_bus_runtime_error(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.watch as watch_mod
+
+        def raise_runtime(*a, **kw):
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(watch_mod.bootstrap_ops, "watch_bus", raise_runtime)
+        result = runner.invoke(app, ["watch", "--no-follow", "--run-id", run_id], env=_ENV)
+        assert result.exit_code == 1
+        assert "boom" in result.output
 
 
 class TestToolCommandsSuccess:
@@ -1085,3 +1315,460 @@ class TestSavepointsSuccess:
             env=_ENV,
         )
         assert result.exit_code == 0
+
+
+class TestEffortError:
+    def test_effort_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["effort", "max", "--run-id", "nope"], env=_ENV)
+        assert result.exit_code == 1
+
+
+class TestPresetError:
+    def test_preset_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["preset", "high", "--run-id", "nope"], env=_ENV)
+        assert result.exit_code == 1
+
+
+class TestPromptError:
+    def test_prompt_now_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["prompt", "hello", "--now", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+
+class TestMemoryListEmpty:
+    def test_memory_list_empty(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        result = runner.invoke(
+            app,
+            ["memory", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "No memories" in result.output
+
+
+class TestGithubImportIssueSuccess:
+    def test_github_import_issue_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        result = runner.invoke(
+            app,
+            ["github", "import-issue", "owner/repo#1", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "import-issue" in result.output
+
+
+class TestArtifactFullCoverage:
+    def test_artifact_list_with_items(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        arts_dir = directory.root / "artifacts"
+        arts_dir.mkdir(parents=True, exist_ok=True)
+        (arts_dir / "file.txt").write_text("hi", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "file.txt" in result.output
+
+    def test_artifact_get_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        arts_dir = directory.root / "artifacts"
+        arts_dir.mkdir(parents=True, exist_ok=True)
+        (arts_dir / "note.txt").write_text("artifact content", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "get", "note.txt", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "artifact content" in result.output
+
+    def test_artifact_put_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        source = tmp_path / "src.txt"
+        source.write_text("put content", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "put", "dest.txt", str(source), "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "Stored" in result.output
+
+    def test_artifact_put_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        source = tmp_path / "src.txt"
+        source.write_text("content", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "put", "dest.txt", str(source), "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+    def test_artifact_rm_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        arts_dir = directory.root / "artifacts"
+        arts_dir.mkdir(parents=True, exist_ok=True)
+        (arts_dir / "torm.txt").write_text("x", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "rm", "torm.txt", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "Removed" in result.output
+
+
+class TestChatFlagsCoverage:
+    def test_chat_list_with_pinned_and_unread(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        runner.invoke(app, ["chat", "pin", "s1"], env=_ENV)
+        runner.invoke(app, ["chat", "unread", "s1"], env=_ENV)
+        result = runner.invoke(app, ["chat", "list"], env=_ENV)
+        assert result.exit_code == 0
+        assert "pinned" in result.output
+        assert "unread" in result.output
+
+    def test_chat_delete_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        runner.invoke(app, ["chat", "pin", "s-to-delete"], env=_ENV)
+        result = runner.invoke(app, ["chat", "delete", "s-to-delete"], env=_ENV)
+        assert result.exit_code == 0
+        assert "Deleted" in result.output
+
+
+class TestConnectorErrorPaths:
+    def test_connector_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["connector", "add", "myconn", "http://x", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+    def test_connector_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["connector", "rm", "myconn", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+    def test_connector_list_with_connectors(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.connector_cmd as conn_mod
+
+        class _FakeStore:
+            def list_connectors(self):
+                return {"myconn": {"url": "http://x"}}
+
+        monkeypatch.setattr(
+            conn_mod.bootstrap_ops,
+            "get_resource_store",
+            lambda cwd, run_id=None: _FakeStore(),
+        )
+        result = runner.invoke(
+            app,
+            ["connector", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "myconn" in result.output
+
+
+class TestResearchStatusWithItems:
+    def test_research_status_with_rows(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.research_cmd as research_mod
+
+        monkeypatch.setattr(
+            research_mod.bootstrap_ops,
+            "research_status",
+            lambda cwd, run_id=None: [{"query": "test", "status": "pending"}],
+        )
+        result = runner.invoke(
+            app,
+            ["research", "status", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "test" in result.output
+
+
+class TestResponseCopy:
+    def test_response_copy_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.response_cmd as resp_mod
+
+        monkeypatch.setattr(
+            resp_mod.bootstrap_ops,
+            "copy_response",
+            lambda cwd, run_id=None: "assistant response text",
+        )
+        result = runner.invoke(
+            app,
+            ["response", "copy", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "assistant response text" in result.output
+
+    def test_response_copy_empty(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        import claudeloop.cli.commands.response_cmd as resp_mod
+
+        monkeypatch.setattr(
+            resp_mod.bootstrap_ops,
+            "copy_response",
+            lambda cwd, run_id=None: "",
+        )
+        result = runner.invoke(
+            app,
+            ["response", "copy", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+        assert "No assistant response" in result.output
+
+
+class TestArtifactPutGetRmSuccess:
+    """Covers artifact_cmd.py's `put` command and the success paths of
+    `list` (iterating names), `get` (echoing content), and `rm`."""
+
+    def test_artifact_put_list_get_rm(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        source = tmp_path / "source.txt"
+        source.write_text("artifact body", encoding="utf-8")
+
+        put_result = runner.invoke(
+            app,
+            ["artifact", "put", "myartifact.txt", str(source), "--run-id", run_id],
+            env=_ENV,
+        )
+        assert put_result.exit_code == 0
+        assert "Stored artifact" in put_result.output
+
+        list_result = runner.invoke(
+            app,
+            ["artifact", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert list_result.exit_code == 0
+        assert "myartifact.txt" in list_result.output
+
+        get_result = runner.invoke(
+            app,
+            ["artifact", "get", "myartifact.txt", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert get_result.exit_code == 0
+        assert "artifact body" in get_result.output
+
+        rm_result = runner.invoke(
+            app,
+            ["artifact", "rm", "myartifact.txt", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert rm_result.exit_code == 0
+        assert "Removed artifact" in rm_result.output
+
+    def test_artifact_put_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        source = tmp_path / "source.txt"
+        source.write_text("body", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["artifact", "put", "thing.txt", str(source), "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+
+class TestChatCoverageExtra:
+    """chat_cmd.py: the pinned=False/unread=True branch in `list`, and a
+    successful `delete` of metadata that actually exists."""
+
+    def test_chat_list_unread_only_hits_pinned_false_branch(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        runner.invoke(app, ["chat", "unread", "s2"], env=_ENV)
+        result = runner.invoke(app, ["chat", "list"], env=_ENV)
+        assert result.exit_code == 0
+        assert "unread" in result.output
+
+    def test_chat_delete_success(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        runner.invoke(app, ["chat", "pin", "s3"], env=_ENV)
+        result = runner.invoke(app, ["chat", "delete", "s3"], env=_ENV)
+        assert result.exit_code == 0
+        assert "Deleted chat metadata" in result.output
+
+
+class TestConnectorCoverageExtra:
+    """connector_cmd.py: the error branches of `add`/`rm` when the run
+    can't be resolved, and `list` with actual connectors present."""
+
+    def test_connector_add_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["connector", "add", "myconn", "http://x", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+    def test_connector_rm_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["connector", "rm", "myconn", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+    def test_connector_list_with_items(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        from claudeloop import bootstrap_ops
+
+        bootstrap_ops.get_resource_store(tmp_path, run_id).set_connector(
+            "myconn", {"url": "http://x"}
+        )
+        result = runner.invoke(
+            app,
+            ["connector", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "myconn" in result.output
+
+
+class TestEffortPresetNoRun:
+    """effort_cmd.py / preset_cmd.py: the (FileNotFoundError, ValueError)
+    except branch when the run can't be resolved."""
+
+    def test_effort_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["effort", "high", "--run-id", "nope"], env=_ENV)
+        assert result.exit_code == 1
+
+    def test_preset_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(app, ["preset", "high", "--run-id", "nope"], env=_ENV)
+        assert result.exit_code == 1
+
+
+class TestMemoryListEmptySuccess:
+    def test_memory_list_empty_with_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        result = runner.invoke(
+            app,
+            ["memory", "list", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "No memories" in result.output
+
+
+class TestPromptNoRun:
+    def test_prompt_now_no_run(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        result = runner.invoke(
+            app,
+            ["prompt", "hello", "--now", "--run-id", "nope"],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+
+
+class TestResearchStatusWithRows:
+    def test_research_status_with_rows(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        from claudeloop import bootstrap_ops
+
+        bootstrap_ops.get_resource_store(tmp_path, run_id).start_research("my query")
+        result = runner.invoke(
+            app,
+            ["research", "status", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "my query" in result.output
+
+
+class TestResponseCopyCoverageExtra:
+    """response_cmd.py's `copy`: the empty-text branch and the successful
+    echo-of-text branch, neither reached by the existing no-run test."""
+
+    def test_response_copy_empty(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        result = runner.invoke(
+            app,
+            ["response", "copy", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 1
+        assert "No assistant response found" in result.output
+
+    def test_response_copy_success(self, tmp_path: Path, monkeypatch) -> None:
+        import json
+
+        monkeypatch.chdir(tmp_path)
+        directory = _run_dir(tmp_path)
+        run_id = directory.read_meta().run_id
+        record = {
+            "event_type": "chatter.assistant",
+            "payload": {"text": "hello from claude"},
+        }
+        with directory.events_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record) + "\n")
+        result = runner.invoke(
+            app,
+            ["response", "copy", "--run-id", run_id],
+            env=_ENV,
+        )
+        assert result.exit_code == 0
+        assert "hello from claude" in result.output

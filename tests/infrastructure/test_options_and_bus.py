@@ -120,3 +120,44 @@ def test_build_turn_options_with_retry_watchdog() -> None:
         retry_watchdog=True,
     )
     assert "CLAUDE_CODE_RETRY_WATCHDOG" in opts.env
+
+
+def test_system_prompt_append_is_merged_after_autonomy_fragment() -> None:
+    """A non-blank system_prompt_append is joined onto the autonomy fragment,
+    not silently dropped."""
+    options = build_turn_options(cwd="/tmp", system_prompt_append="extra house rules")
+    append = options.system_prompt["append"]
+    assert AUTONOMY_SYSTEM_PROMPT_FRAGMENT in append
+    assert "extra house rules" in append
+
+
+def test_blank_system_prompt_append_is_not_merged() -> None:
+    """Whitespace-only append leaves the base fragment untouched (the
+    ``.strip()`` guard on the truthiness check)."""
+    options = build_turn_options(cwd="/tmp", system_prompt_append="   ")
+    assert options.system_prompt["append"] == AUTONOMY_SYSTEM_PROMPT_FRAGMENT
+
+
+def test_marketplace_style_plugin_name_becomes_local_config() -> None:
+    """A plugin name with no path markers (no leading '/', '.', or an
+    embedded '/') still resolves to a local SdkPluginConfig — same shape as
+    a path-like plugin, just reached via the other branch."""
+    options = build_turn_options(cwd="/tmp", plugins=["marketplace-plugin"])
+    assert options.plugins == [{"type": "local", "path": "marketplace-plugin"}]
+
+
+def test_allowed_tools_are_wired_into_options() -> None:
+    options = build_turn_options(cwd="/tmp", allowed_tools=["Bash", "Read"])
+    assert options.allowed_tools == ["Bash", "Read"]
+
+
+def test_empty_allowed_tools_are_not_wired_into_options() -> None:
+    options = build_turn_options(cwd="/tmp", allowed_tools=[])
+    assert options.allowed_tools == []
+
+
+def test_probe_options_without_model_omits_model_kwarg() -> None:
+    from claudeloop.infrastructure.agent.options import build_probe_options
+
+    options = build_probe_options(cwd="/tmp")
+    assert options.model is None

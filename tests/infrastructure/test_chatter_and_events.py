@@ -79,6 +79,17 @@ def test_summarize_tool_non_serializable() -> None:
     assert result["name"] == "Custom"
 
 
+def test_summarize_tool_raises_type_error_falls_back_to_repr() -> None:
+    """json.dumps(default=str) still raises TypeError for a dict with a
+    non-str-coercible key (e.g. a tuple) -- summarize_tool must fall back to
+    repr() rather than propagate."""
+    raw = {(1, 2): "value"}
+    result = summarize_tool("Odd", raw, mode="summary")
+    assert result is not None
+    assert result["name"] == "Odd"
+    assert repr(raw) in result["text"]
+
+
 def test_dump_transcript(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     path = tmp_path / "events.jsonl"
     path.write_text(

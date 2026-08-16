@@ -214,6 +214,25 @@ class TestHelpers:
         assert marker_path.parent == rd.root
         assert marker_path.name == "handoff.json"
 
+    def test_write_handoff_marker(self, tmp_path: Path) -> None:
+        from datetime import datetime, timezone
+
+        from claudeloop.domain.handoff_marker import HandoffMarker
+
+        runs = runs_root_for(tmp_path)
+        rd = RunDirectory.create(runs, cwd=tmp_path)
+        marker = HandoffMarker(
+            run_id=rd.read_meta().run_id,
+            reason="rate_limit_window",
+            produced_at=datetime.now(timezone.utc),
+        )
+        written = rd.write_handoff_marker(marker)
+        assert written == rd.handoff_marker_path
+        assert written.is_file()
+        # Atomic tmp-then-replace: no leftover .json.tmp file.
+        assert not written.with_suffix(".json.tmp").exists()
+        assert marker.run_id in written.read_text(encoding="utf-8")
+
 
 class TestPidAlive:
     def test_negative_pid_returns_false(self) -> None:
