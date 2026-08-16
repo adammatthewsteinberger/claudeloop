@@ -194,9 +194,7 @@ class TestResourcePortAdapter:
         "kind",
         ["attachment", "folder", "skill", "plugin", "connector", "github", "memory"],
     )
-    def test_mutate_unsupported_action_for_known_kind(
-        self, tmp_path: Path, kind: str
-    ) -> None:
+    def test_mutate_unsupported_action_for_known_kind(self, tmp_path: Path, kind: str) -> None:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)
         with pytest.raises(ValueError, match="unsupported"):

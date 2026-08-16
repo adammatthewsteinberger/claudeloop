@@ -352,8 +352,15 @@ class TestStreamAppTickReplay:
         events = [{"event_type": "chatter.delta", "payload": {"text": f"t{i}"}} for i in range(30)]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False, speed=0)
+        # _playing defaults True, and mounting schedules a real 0.05s interval
+        # calling _tick_replay -- keep it False across mount (see
+        # test_tick_replay_not_playing_skips for why), then flip it back to
+        # True immediately before the manual call with no `await` in between
+        # so the background timer can't sneak in an extra tick first.
+        app._playing = False
         async with app.run_test(size=(120, 40)):
             app._load_all()
+            app._playing = True
             app._tick_replay()
             assert app._replay_index == 20
 
@@ -365,8 +372,10 @@ class TestStreamAppTickReplay:
         events = [{"event_type": "chatter.delta", "payload": {"text": f"t{i}"}} for i in range(5)]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False, speed=-1)
+        app._playing = False
         async with app.run_test(size=(120, 40)):
             app._load_all()
+            app._playing = True
             app._tick_replay()
             assert app._replay_index == 5
 

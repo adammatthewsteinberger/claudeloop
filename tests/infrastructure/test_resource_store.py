@@ -378,7 +378,6 @@ class TestRunResourceStore:
         store.unattach("my_dir")
         assert not (store.attachments_dir / "my_dir").exists()
 
-
     def test_add_duplicate_folder_is_idempotent(self, tmp_path: Path) -> None:
         root = tmp_path / "run" / "resources"
         (tmp_path / "run" / "artifacts").mkdir(parents=True)

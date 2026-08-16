@@ -552,9 +552,7 @@ class TestGatewayOnEventNonePartialBranches:
         """Approval events drained in _ensure_connected with no listener (199->198)."""
         gw = _make_gateway()
         assert gw._on_event is None
-        gw._approval._events.append(
-            {"type": "tool.approval_needed", "request_id": "r1"}
-        )
+        gw._approval._events.append({"type": "tool.approval_needed", "request_id": "r1"})
         mock_client = AsyncMock()
         mock_client.connect = AsyncMock()
         with patch(

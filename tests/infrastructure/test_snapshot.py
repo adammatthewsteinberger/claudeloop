@@ -213,9 +213,7 @@ def test_copy_transcript_oserror(tmp_path: Path) -> None:
     with patch("shutil.copy2", side_effect=OSError("disk full")):
         ref = builder.emit("finished", context={"session_id": "sess1", "cwd": cwd})
     assert ref is not None
-    payload = json.loads(
-        (run_dir.snapshots_root / "latest.json").read_text(encoding="utf-8")
-    )
+    payload = json.loads((run_dir.snapshots_root / "latest.json").read_text(encoding="utf-8"))
     assert "transcript_copied" not in payload["claude_session"]
 
 
