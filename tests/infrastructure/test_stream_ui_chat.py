@@ -339,3 +339,151 @@ class TestRunTextualApp:
             pytest.raises(RuntimeError, match="stream UI requires a TTY"),
         ):
             run_textual_app(events_path=tmp_path / "events.jsonl")
+
+    def test_launches_stream_app_when_tty(self, tmp_path: Path) -> None:
+        """When stdout is a TTY, run_textual_app builds a StreamApp with the
+        given options and calls .run() on it -- the deferred import of
+        StreamApp happens inside the function, so it's patched at its own
+        module path."""
+        from unittest.mock import MagicMock
+
+        mock_app_instance = MagicMock()
+        mock_app_cls = MagicMock(return_value=mock_app_instance)
+
+        with (
+            patch.object(sys.stdout, "isatty", return_value=True),
+            patch("claudeloop.infrastructure.stream_ui.app.StreamApp", mock_app_cls),
+        ):
+            run_textual_app(
+                events_path=tmp_path / "events.jsonl",
+                follow=False,
+                replay=True,
+                speed=2.0,
+            )
+
+        mock_app_cls.assert_called_once()
+        _, kwargs = mock_app_cls.call_args
+        assert kwargs["events_path"] == tmp_path / "events.jsonl"
+        assert kwargs["follow"] is False
+        assert kwargs["replay"] is True
+        assert kwargs["speed"] == 2.0
+        mock_app_instance.run.assert_called_once_with()
+
+
+class TestBufferingStreamUiPartialBranches:
+    def test_on_assistant_empty_text(self) -> None:
+        """on_assistant with empty text when no delta seen (branch 79->exit)."""
+        ui = BufferingStreamUi()
+        ui.on_assistant("")
+        assert ui.assistants == []
+        assert ui.state.assistant == ""
+
+    def test_on_status_empty_dict(self) -> None:
+        """on_status({}) skips all key branches (88->90..98->exit)."""
+        ui = BufferingStreamUi()
+        old_model = ui.state.model
+        ui.on_status({})
+        assert ui.state.model == old_model
+
+
+class TestDumpTranscriptPartialBranches:
+    def test_non_chatter_event_type(self, tmp_path: Path) -> None:
+        """Event types not matching delta/prompt/assistant loop back (129->122)."""
+        f = tmp_path / "events.jsonl"
+        f.write_text(
+            '{"event_type":"turn.starting","payload":{}}\n'
+            '{"event_type":"chatter.delta","payload":{"text":"ok"}}\n',
+            encoding="utf-8",
+        )
+        buf = io.StringIO()
+        dump_transcript(f, file=buf)
+        output = buf.getvalue()
+        assert "ok" in output
+        assert "turn.starting" not in output
+
+
+class TestFollowEventsPlainPartialBranches:
+    def test_existing_file_no_new_data(self, tmp_path: Path) -> None:
+        """File exists but all data already read → chunk is empty (172->188)."""
+        f = tmp_path / "events.jsonl"
+        f.write_text(
+            '{"event_type":"chatter.delta","payload":{"text":"hi"}}\n',
+            encoding="utf-8",
+        )
+        buf = io.StringIO()
+        with patch.object(sys, "stdout", buf):
+            follow_events_plain(f, follow=False)
+        buf2 = io.StringIO()
+        with patch.object(sys, "stdout", buf2):
+            follow_events_plain(f, follow=False)
+        assert "hi" in buf.getvalue()
+
+    def test_non_chatter_event_in_follow(self, tmp_path: Path) -> None:
+        """Event type not starting with 'chatter.' loops back (183->173)."""
+        f = tmp_path / "events.jsonl"
+        f.write_text(
+            '{"event_type":"model.profile_changed","payload":{"model":"opus"}}\n'
+            '{"event_type":"chatter.delta","payload":{"text":"ok"}}\n',
+            encoding="utf-8",
+        )
+        buf = io.StringIO()
+        with patch.object(sys, "stdout", buf):
+            follow_events_plain(f, follow=False)
+        output = buf.getvalue()
+        assert "ok" in output
+        assert "model.profile_changed" not in output
+
+
+class TestFollowEventsPlainChunkEmpty:
+    def test_file_exists_but_chunk_empty_on_second_pass(self, tmp_path: Path) -> None:
+        """File exists, first pass reads all data, second pass chunk is empty
+        (172->188). follow=True lets the while loop iterate twice; raise on
+        the second sleep so the empty-chunk path is reached."""
+        f = tmp_path / "events.jsonl"
+        f.write_text(
+            '{"event_type":"chatter.delta","payload":{"text":"hi"}}\n',
+            encoding="utf-8",
+        )
+        calls: list[float] = []
+
+        class _StopLoop(Exception):
+            pass
+
+        def fake_sleep(seconds: float) -> None:
+            calls.append(seconds)
+            if len(calls) >= 2:
+                raise _StopLoop
+
+        buf = io.StringIO()
+        with (
+            patch.object(sys, "stdout", buf),
+            patch("claudeloop.infrastructure.stream_ui.time.sleep", side_effect=fake_sleep),
+            pytest.raises(_StopLoop),
+        ):
+            follow_events_plain(f, follow=True, poll_seconds=0.1)
+        assert "hi" in buf.getvalue()
+        assert len(calls) == 2
+
+
+class TestFollowEventsPlainSleeps:
+    def test_sleeps_between_polls_when_following(self, tmp_path: Path) -> None:
+        """follow=True must actually sleep between polls rather than
+        busy-looping -- verified by breaking out of the infinite loop via the
+        mocked time.sleep's side effect."""
+
+        class _StopLoop(Exception):
+            pass
+
+        calls: list[float] = []
+
+        def fake_sleep(seconds: float) -> None:
+            calls.append(seconds)
+            raise _StopLoop
+
+        with (
+            patch("claudeloop.infrastructure.stream_ui.time.sleep", side_effect=fake_sleep),
+            pytest.raises(_StopLoop),
+        ):
+            follow_events_plain(tmp_path / "nope.jsonl", follow=True, poll_seconds=0.05)
+
+        assert calls == [0.05]

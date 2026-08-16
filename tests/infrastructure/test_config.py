@@ -64,6 +64,14 @@ def test_env_float_coercion(tmp_path: Path, monkeypatch) -> None:  # type: ignor
     assert config.max_dollars == 12.5
 
 
+def test_env_str_coercion_passes_through_unchanged(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A field whose type hint is plain `str` (neither bool/float/int) hits
+    _coerce's final fallback branch: the raw env string is returned as-is."""
+    monkeypatch.setenv("CLAUDELOOP_LOG_LEVEL", "DEBUG")
+    config = load_config(cwd=tmp_path, home=tmp_path)
+    assert config.log_level == "DEBUG"
+
+
 def test_unknown_keys_in_file_are_ignored(tmp_path: Path) -> None:
     (tmp_path / "claudeloop.toml").write_text('not_a_real_field = "x"\nmax_turns = 3\n')
     config = load_config(cwd=tmp_path, home=tmp_path)

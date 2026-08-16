@@ -190,6 +190,18 @@ class TestResourcePortAdapter:
         with pytest.raises(ValueError, match="unsupported"):
             adapter.apply_mutate(action="add", kind="unknown", value="x")
 
+    @pytest.mark.parametrize(
+        "kind",
+        ["attachment", "folder", "skill", "plugin", "connector", "github", "memory"],
+    )
+    def test_mutate_unsupported_action_for_known_kind(
+        self, tmp_path: Path, kind: str
+    ) -> None:
+        store = _make_store(tmp_path)
+        adapter = ResourcePortAdapter(store)
+        with pytest.raises(ValueError, match="unsupported"):
+            adapter.apply_mutate(action="get", kind=kind, value="x")
+
     def test_gateway_payload_with_web_search(self, tmp_path: Path) -> None:
         store = _make_store(tmp_path)
         adapter = ResourcePortAdapter(store)

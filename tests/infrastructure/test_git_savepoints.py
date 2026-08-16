@@ -145,6 +145,22 @@ class TestGitSavePointStore:
         result = store.changes_since(sha)
         assert "second" in result
 
+    def test_changes_since_head_sha_falls_through(self, tmp_path: Path) -> None:
+        """When since_sha is HEAD itself, git log returns empty → falls
+        through to git status (branch 135->137)."""
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        result = store.changes_since(sha)
+        assert isinstance(result, str)
+
     def test_changes_since_none_sha(self, tmp_path: Path) -> None:
         repo = _init_repo(tmp_path / "repo")
         index = tmp_path / "index.jsonl"
@@ -243,3 +259,22 @@ class TestGitSavePointStore:
         p1 = store.create(run_id="r1", label="first")
         point = store._resolve_target(store.list_points("r1"), p1.ref)
         assert point.ref == p1.ref
+
+    def test_list_points_missing_index_file_returns_empty(self, tmp_path: Path) -> None:
+        """The constructor always touches the index file into existence, so
+        to exercise the "not a file" branch of list_points() the file has to
+        be removed again afterward."""
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        index.unlink()
+        assert store.list_points("r1") == []
+
+    def test_resolve_target_no_match_raises(self, tmp_path: Path) -> None:
+        repo = _init_repo(tmp_path / "repo")
+        index = tmp_path / "index.jsonl"
+        store = GitSavePointStore(cwd=repo, index_path=index)
+        (repo / "a.txt").write_text("a", encoding="utf-8")
+        store.create(run_id="r1", label="first")
+        with pytest.raises(ValueError, match="no save point matching"):
+            store._resolve_target(store.list_points("r1"), "nonexistent-label")

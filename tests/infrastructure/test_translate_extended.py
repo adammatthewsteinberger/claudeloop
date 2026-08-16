@@ -428,3 +428,26 @@ def test_build_with_none_remaining_work() -> None:
     msg = _make_result_message("s1", structured_output={"complete": False, "remaining_work": None})
     acc.feed(msg)
     assert acc.build().verdict.remaining_work == ()
+
+
+def test_unrecognized_block_type_falls_through() -> None:
+    """ServerToolUseBlock is not handled by if/elif chain → loop continues (105->91)."""
+    from claude_agent_sdk import ServerToolUseBlock
+
+    acc = TurnAccumulator()
+    server_block = ServerToolUseBlock(id="st1", name="web_search", input={})
+    text_block = TextBlock(text="after server tool")
+    msg = AssistantMessage(
+        session_id="s1",
+        model="claude-sonnet",
+        content=[server_block, text_block],
+    )
+    acc.feed(msg)
+    outcome = acc.build()
+    assert "after server tool" in outcome.output_text
+
+
+def test_stream_delta_text_with_non_dict_delta() -> None:
+    """content_block_delta where delta is not a dict → returns None (222->229)."""
+    result = _stream_delta_text({"type": "content_block_delta", "delta": "not-a-dict"})
+    assert result is None

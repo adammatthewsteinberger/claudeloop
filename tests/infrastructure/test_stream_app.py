@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from claudeloop.infrastructure.stream_ui import BufferingStreamUi, StreamUiState
-from claudeloop.infrastructure.stream_ui.app import StreamApp
+from claudeloop.infrastructure.stream_ui.app import ChatUpdate, StreamApp, chat_update_for_record
 
 
 def _write_events(path: Path, events: list[dict]) -> Path:
@@ -219,6 +219,23 @@ class TestStreamAppTickFollow:
             app._tick_follow()
             assert app.state.model == "opus"
 
+    @pytest.mark.asyncio
+    async def test_tick_follow_skips_bad_json_lines(self, tmp_path: Path) -> None:
+        f = tmp_path / "events.jsonl"
+        f.write_text(
+            '{"event_type":"chatter.delta","payload":{"text":"ok"}}\n'
+            "{not valid json}\n"
+            '{"event_type":"chatter.delta","payload":{"text":"fine"}}\n',
+            encoding="utf-8",
+        )
+        app = _make_app(f, follow=True)
+        async with app.run_test(size=(120, 40)):
+            app._tick_follow()
+            # Both valid lines applied; the malformed middle line was
+            # skipped via the JSONDecodeError `continue`, not raised.
+            assert app._offset > 0
+            assert app._saw_delta is True
+
 
 class TestStreamAppTickLive:
     @pytest.mark.asyncio
@@ -252,6 +269,21 @@ class TestStreamAppTickLive:
         app = _make_app(f, follow=True)
         async with app.run_test(size=(120, 40)):
             app._tick_live()
+
+    @pytest.mark.asyncio
+    async def test_tick_live_drains_assistants_without_prior_delta(self, tmp_path: Path) -> None:
+        """BufferingStreamUi.on_assistant() only appends to .assistants when
+        no delta streamed yet this turn -- so to actually exercise the
+        assistants-draining loop in _tick_live, call on_assistant() with no
+        preceding on_delta()."""
+        f = _write_events(tmp_path, [])
+        live = BufferingStreamUi()
+        app = _make_app(f, follow=True, live_source=live)
+        async with app.run_test(size=(120, 40)):
+            live.on_assistant("final answer")
+            assert live.assistants == ["final answer"]
+            app._tick_live()
+            assert live.assistants == []
 
 
 class TestStreamAppTickReplay:
@@ -324,6 +356,19 @@ class TestStreamAppTickReplay:
             app._load_all()
             app._tick_replay()
             assert app._replay_index == 20
+
+    @pytest.mark.asyncio
+    async def test_tick_replay_fast_forward_stops_at_end_of_records(self, tmp_path: Path) -> None:
+        """speed<=0 processes up to 20 records per tick; with fewer than 20
+        records left, the inner loop must `break` on exhaustion rather than
+        index past the end of _records."""
+        events = [{"event_type": "chatter.delta", "payload": {"text": f"t{i}"}} for i in range(5)]
+        f = _write_events(tmp_path, events)
+        app = _make_app(f, replay=True, follow=False, speed=-1)
+        async with app.run_test(size=(120, 40)):
+            app._load_all()
+            app._tick_replay()
+            assert app._replay_index == 5
 
 
 class TestStreamAppActions:
@@ -416,6 +461,79 @@ class TestStreamAppActions:
             app._replay_index = 2
             app.action_next_turn()
             assert app._replay_index == 2
+
+
+class TestStreamAppPartialBranches:
+    @pytest.mark.asyncio
+    async def test_chat_update_assistant_empty_body(self, tmp_path: Path) -> None:
+        """chatter.assistant with empty text+preview → body is empty (74->78)."""
+        update = chat_update_for_record(
+            {"event_type": "chatter.assistant", "payload": {}},
+            saw_delta=False,
+        )
+        assert update.saw_delta is True
+        assert all(line == "\n" or line == "" for line in update.assistant_lines) or update.assistant_lines == []
+
+    @pytest.mark.asyncio
+    async def test_append_assistant_empty_text(self, tmp_path: Path) -> None:
+        """_append_assistant with empty text is no-op (187->exit)."""
+        f = _write_events(tmp_path, [])
+        app = _make_app(f, follow=False)
+        async with app.run_test(size=(120, 40)):
+            app._append_assistant("")
+
+    @pytest.mark.asyncio
+    async def test_apply_chat_update_header_not_dirty(self, tmp_path: Path) -> None:
+        """ChatUpdate with header_dirty=False skips _refresh_header (207->exit)."""
+        f = _write_events(tmp_path, [])
+        app = _make_app(f, follow=False)
+        async with app.run_test(size=(120, 40)):
+            update = ChatUpdate(
+                assistant_lines=["text"],
+                saw_delta=True,
+                header_dirty=False,
+            )
+            app._apply_chat_update(update)
+
+    @pytest.mark.asyncio
+    async def test_apply_record_turn_starting_no_attempt(self, tmp_path: Path) -> None:
+        """turn.starting without int attempt skips assignment (242->244)."""
+        f = _write_events(tmp_path, [])
+        app = _make_app(f, follow=False)
+        async with app.run_test(size=(120, 40)):
+            app._apply_record({"event_type": "turn.starting"})
+            assert app.state.attempt == 0
+
+    @pytest.mark.asyncio
+    async def test_tick_live_second_delta_skips_thinking(self, tmp_path: Path) -> None:
+        """Second delta in same turn: _saw_delta is True (283->285)."""
+        f = _write_events(tmp_path, [])
+        live = BufferingStreamUi()
+        app = _make_app(f, follow=True, live_source=live)
+        async with app.run_test(size=(120, 40)):
+            live.on_delta("first", turn_id="t1", seq=1)
+            app._tick_live()
+            assert app._saw_delta is True
+            live.on_delta("second", turn_id="t1", seq=2)
+            app._tick_live()
+            assert app._saw_delta is True
+
+    @pytest.mark.asyncio
+    async def test_prev_turn_all_starts_before_current(self, tmp_path: Path) -> None:
+        """All turn_starts < current-1 → for loop exhausts without break (325->330)."""
+        events = [
+            {"event_type": "chatter.prompt", "payload": {"text": "first"}},
+            {"event_type": "chatter.delta", "payload": {"text": "a"}},
+            {"event_type": "chatter.prompt", "payload": {"text": "second"}},
+            {"event_type": "chatter.delta", "payload": {"text": "b"}},
+        ]
+        f = _write_events(tmp_path, events)
+        app = _make_app(f, replay=True, follow=False)
+        async with app.run_test(size=(120, 40)):
+            app._load_all()
+            app._replay_index = 5
+            app.action_prev_turn()
+            assert app._replay_index == 3  # prev(2) + 1 per line 335
 
 
 class TestStreamAppThinking:

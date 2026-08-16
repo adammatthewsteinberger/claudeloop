@@ -151,3 +151,51 @@ def test_build_call_kwargs_skips_already_present_kwargs() -> None:
     )
     # max_tokens from json_payload should be preserved, not overridden by default
     assert kwargs["max_tokens"] == 200
+
+
+def test_build_call_kwargs_skips_self_parameter() -> None:
+    """A bound-method-shaped signature (with `self`) must not surface `self`
+    in the merged kwargs -- it's in SKIP_PARAMETERS."""
+
+    def sample(self: object, model: str, max_tokens: int = 100) -> None:
+        raise NotImplementedError
+
+    kwargs = build_call_kwargs(
+        inspect.signature(sample),
+        json_payload={"model": "claude-opus"},
+        scalar_values={},
+    )
+    assert "self" not in kwargs
+    assert kwargs == {"model": "claude-opus", "max_tokens": 100}
+
+
+def test_unwrap_optional_delegates_to_normalize_annotation() -> None:
+    """_unwrap_optional is a thin alias over _normalize_annotation."""
+    from typing import Optional
+
+    from claudeloop.infrastructure.api.params import _unwrap_optional
+
+    result = _unwrap_optional(Optional[int])  # noqa: UP045
+    assert result is int
+
+
+def test_is_scalar_annotation_false_for_non_string_non_type_annotation() -> None:
+    """After normalization, an annotation that is neither bool/int/float/str,
+    has no typing origin, and isn't a string forward-ref falls through to the
+    final `return False` (distinct from the `ann in _SCALAR_BY_NAME` string
+    branch covered by the "unknown forward ref" case)."""
+    assert is_scalar_annotation(None) is False
+
+    class NotAScalar:
+        pass
+
+    assert is_scalar_annotation(NotAScalar) is False
+
+
+def test_normalize_annotation_multi_arg_union_returns_original() -> None:
+    """Union with 2+ non-None filtered args is returned as-is (86->88)."""
+    from claudeloop.infrastructure.api.params import _normalize_annotation
+
+    result = _normalize_annotation(str | int)
+    assert result is not str
+    assert result is not int

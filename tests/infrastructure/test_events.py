@@ -20,6 +20,16 @@ def test_creates_file_if_not_exists(tmp_path: Path) -> None:
     assert path.is_file()
 
 
+def test_does_not_touch_already_existing_file(tmp_path: Path) -> None:
+    """The `if not self._path.exists(): touch()` guard must skip touch()
+    (and so leave prior content alone) when the events file already exists
+    -- as happens when a sink is re-created for a resumed run."""
+    path = tmp_path / "events.jsonl"
+    path.write_text('{"pre-existing": true}\n', encoding="utf-8")
+    JsonlRunEventSink(path, run_id="r1")
+    assert path.read_text(encoding="utf-8") == '{"pre-existing": true}\n'
+
+
 def test_emit_writes_jsonl_line(tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
     sink = JsonlRunEventSink(path, run_id="r1")
