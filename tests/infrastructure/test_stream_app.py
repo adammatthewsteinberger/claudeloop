@@ -435,9 +435,11 @@ class TestStreamAppActions:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 3
+            app._playing = False  # Pause ticker to prevent race
+            await pilot.pause()
             app.action_prev_turn()
             assert app._replay_index == 1
 
@@ -451,9 +453,11 @@ class TestStreamAppActions:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 0
+            app._playing = False  # Pause ticker to prevent race
+            await pilot.pause()
             app.action_next_turn()
             assert app._replay_index == 1
 
@@ -541,9 +545,11 @@ class TestStreamAppPartialBranches:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 5
+            app._playing = False  # Pause ticker to prevent race
+            await pilot.pause()
             app.action_prev_turn()
             assert app._replay_index == 3  # prev(2) + 1 per line 335
 

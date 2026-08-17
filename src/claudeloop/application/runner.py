@@ -276,6 +276,7 @@ class AutonomousRunner:
         stop_summary_writer: Any | None = None,
         handoff_marker_writer: Any | None = None,
         wind_down_policy: WindDownPolicy | None = None,
+        wind_down_at: datetime | None = None,
         meta_updater: Any | None = None,
         events_path: str = "",
         state_bus: StateBus | None = None,
@@ -312,6 +313,7 @@ class AutonomousRunner:
         self._stop_summary_writer = stop_summary_writer
         self._handoff_marker_writer = handoff_marker_writer
         self._wind_down_policy = wind_down_policy or WindDownPolicy()
+        self._wind_down_at = wind_down_at
         self._last_resets_at: datetime | None = None
         self._wind_down_requested: str | None = None
         self._meta_updater = meta_updater
@@ -566,6 +568,22 @@ class AutonomousRunner:
                         if projection is not None
                         else None
                     )
+                    if (
+                        wind_down is None
+                        and self._wind_down_at is not None
+                        and now >= self._wind_down_at
+                    ):
+                        # Deadline-driven wind-down.
+                        wind_down = WindDown(
+                            reason="deadline",
+                            forecast=projection
+                            or CapacityForecast(
+                                binding=Headroom(None, "unknown"),
+                                dimensions=(Headroom(None, "unknown"),),
+                                turns_until_exhaustion=None,
+                                seconds_until_reset=None,
+                            ),
+                        )
                     if wind_down is None and self._wind_down_requested is not None:
                         # An operator asking for a handoff does not need the
                         # policy enabled, and does not need any headroom to be

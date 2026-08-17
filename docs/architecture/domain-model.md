@@ -28,8 +28,8 @@ free-text instructions — just with an empty `items` tuple.
 
 ```python
 plan = WorkPlan.parse(markdown_text)
-plan.remaining_items       # tuple[PlanItem, ...] — the ones not yet done
-plan.is_fully_done         # True only if it HAS items and all are done
+plan.remaining_items  # tuple[PlanItem, ...] — the ones not yet done
+plan.is_fully_done  # True only if it HAS items and all are done
 plan.with_items_marked_done(frozenset({"item text", ...}))  # new WorkPlan
 ```
 
@@ -159,7 +159,11 @@ credit top-up or an overage lift before a fixed deadline arrives.
 
 ```python
 def next_probe_instant(
-    state: CapacityState, *, now, started_waiting_at, probe_count,
+    state: CapacityState,
+    *,
+    now,
+    started_waiting_at,
+    probe_count,
     config: WaitPolicyConfig = ...,
 ) -> datetime: ...
 ```
