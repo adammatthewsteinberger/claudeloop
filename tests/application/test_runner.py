@@ -689,3 +689,44 @@ async def test_stop_still_beats_a_wind_down_arriving_together() -> None:
     assert "stopped" in result.reason
     assert "wind-down" not in result.reason
     assert gateway.closed is True
+
+
+@pytest.mark.asyncio
+async def test_wind_down_at_deadline_triggers_wind_down() -> None:
+    """A run with --wind-down-at deadline triggers wind-down when the time arrives."""
+    clock = FakeClock(start=NOW)
+    deadline = clock.now() + timedelta(seconds=5)
+    sleeper = FakeSleeper(clock)
+    gateway = FakeAgentGateway(
+        [
+            ScriptedTurn(signals=available_signals(), verdict=CONTINUE_VERDICT),
+        ]
+    )
+    probe = FakeCapacityProbe([available_signals()])
+
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=probe,
+        clock=clock,
+        sleeper=sleeper,
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        budget=_DEFAULT_BUDGET,
+        wait_policy=_DEFAULT_WAIT_POLICY,
+        done_marker="TEST_DONE_MARKER",
+        run_id="test-run",
+        notifier=FakeNotifier(),
+        run_control=FakeRunControl(),
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=FakeSessionLock(),
+        save_points=FakeSavePointStore(),
+        wind_down_at=deadline,
+    )
+
+    # Simulate time passing beyond the deadline
+    clock.advance_to(deadline + timedelta(seconds=5))
+
+    result = await runner.run(initial_prompt="start", continue_prompt="continue")
+
+    assert "deadline" in result.reason.lower()

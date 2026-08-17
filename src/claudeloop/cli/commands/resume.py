@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -11,6 +12,7 @@ from claudeloop.application.usecases.resume_session import (
 )
 from claudeloop.cli.asyncio import async_command
 from claudeloop.cli.render import render_session_warning
+from claudeloop.cli.time_parse import parse_wind_down_at
 from claudeloop.domain.errors import InvalidSessionSelectorError
 from claudeloop.infrastructure.config import load_config
 from claudeloop.infrastructure.logging import configure_logging
@@ -20,6 +22,13 @@ from claudeloop.infrastructure.stream_ui import BufferingStreamUi, run_textual_a
 def resume(
     session_id: str | None = typer.Option(
         None, "--session-id", help="Resume this specific session id"
+    ),
+    cwd_dir: Path | None = typer.Option(
+        None,
+        "--cwd",
+        exists=True,
+        file_okay=False,
+        help="Effective working directory for bootstrap (default: current directory)",
     ),
     max_turns: int | None = typer.Option(None, "--max-turns"),
     max_dollars: float | None = typer.Option(None, "--max-dollars"),
@@ -36,6 +45,11 @@ def resume(
     log_chatter: str | None = typer.Option(None, "--log-chatter"),
     auto_model: bool = typer.Option(True, "--auto-model/--no-auto-model"),
     stream_ui: bool = typer.Option(False, "--stream-ui"),
+    wind_down_at_spec: str | None = typer.Option(
+        None,
+        "--wind-down-at",
+        help="Wind down at this deadline (ISO8601 timestamp or +duration like +2h, +90m)",
+    ),
 ) -> None:
     """Resume a Claude Code session and run it autonomously to completion.
     With --session-id, resumes that specific session. Without it, auto-selects
@@ -43,6 +57,7 @@ def resume(
     warning banner naming exactly which one before doing anything."""
     _resume(
         session_id=session_id,
+        cwd_dir=cwd_dir,
         max_turns=max_turns,
         max_dollars=max_dollars,
         max_wait_seconds=max_wait_seconds,
@@ -56,6 +71,7 @@ def resume(
         log_chatter=log_chatter,
         auto_model=auto_model,
         stream_ui=stream_ui,
+        wind_down_at_spec=wind_down_at_spec,
     )
 
 
@@ -63,6 +79,7 @@ def resume(
 async def _resume(
     *,
     session_id: str | None,
+    cwd_dir: Path | None,
     max_turns: int | None,
     max_dollars: float | None,
     max_wait_seconds: float | None,
@@ -76,8 +93,16 @@ async def _resume(
     log_chatter: str | None,
     auto_model: bool,
     stream_ui: bool,
+    wind_down_at_spec: str | None,
 ) -> None:
-    cwd = Path.cwd()
+    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
+    wind_down_at: datetime | None = None
+    if wind_down_at_spec is not None:
+        try:
+            wind_down_at = parse_wind_down_at(wind_down_at_spec, now=datetime.now())
+        except ValueError as exc:
+            typer.echo(f"Invalid --wind-down-at: {exc}", err=True)
+            raise typer.Exit(code=2) from exc
     config = load_config(
         cwd=cwd,
         cli_overrides={
@@ -121,6 +146,7 @@ async def _resume(
         resume=resolved_id,
         log_file=structlog_path,
         stream_ui=live_ui,
+        wind_down_at=wind_down_at,
     )
     typer.echo(f"Run id: {context.run_id}", err=True)
     typer.echo(f"Trace id: {context.trace_id}", err=True)

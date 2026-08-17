@@ -23,13 +23,20 @@ def watch(
     speed: float = typer.Option(
         1.0, "--speed", help="Replay speed (1.0=realtime pacing ticks; 0=as fast as possible)"
     ),
+    cwd_dir: Path | None = typer.Option(
+        None,
+        "--cwd",
+        exists=True,
+        file_okay=False,
+        help="Effective working directory (default: current directory)",
+    ),
 ) -> None:
     """Subscribe to run state-change publications, or attach a stream UI.
 
     Other systems can also poll ``status.json`` or follow ``bus.jsonl`` directly
     without this CLI — this command is the human-friendly subscriber.
     """
-    cwd = Path.cwd()
+    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
     try:
         if stream or replay:
             directory = resolve_run_directory(cwd, run_id)

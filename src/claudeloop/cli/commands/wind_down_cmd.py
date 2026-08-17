@@ -10,6 +10,13 @@ from claudeloop import bootstrap_ops
 def wind_down(
     run_id: str | None = typer.Option(None, "--run-id", help="Target run id"),
     reason: str = typer.Option("operator", "--reason", help="Recorded in handoff.json"),
+    cwd_dir: Path | None = typer.Option(
+        None,
+        "--cwd",
+        exists=True,
+        file_okay=False,
+        help="Effective working directory (default: current directory)",
+    ),
 ) -> None:
     """Ask the active (or specified) run to hand off at its next natural break.
 
@@ -20,7 +27,7 @@ def wind_down(
 
     Use `stop` instead when you want it to end now.
     """
-    cwd = Path.cwd()
+    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
     try:
         result = bootstrap_ops.enqueue_wind_down(cwd, run_id, reason=reason)
     except FileNotFoundError as exc:

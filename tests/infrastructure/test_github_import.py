@@ -98,7 +98,7 @@ class TestImportedIssue:
         assert "o/r#1" in fragment
         assert "Fix bug" in fragment
         assert "The fix" in fragment
-        assert "https://example.com" in fragment
+        assert fragment.endswith("Source: https://example.com")
 
 
 class TestMaterializeIssueAttachment:
