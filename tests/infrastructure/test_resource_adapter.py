@@ -242,3 +242,39 @@ class TestResourcePortAdapter:
         assert "attachment" in result
         assert "prompt_fragment" in result
         assert adapter._dirty is True
+
+    def test_cli_append_system_prompt_in_gateway_payload(self, tmp_path: Path) -> None:
+        """CLI-provided system_prompt_append appears in gateway_payload."""
+        store = _make_store(tmp_path)
+        store.set_flag(cli_system_prompt_append="Never write outside /tmp/test.")
+        adapter = ResourcePortAdapter(store)
+        payload = adapter.gateway_payload()
+        assert "Never write outside /tmp/test." in payload["system_prompt_append"]
+
+    def test_cli_append_composes_with_memories(self, tmp_path: Path) -> None:
+        """CLI append and memories are both present in gateway_payload."""
+        store = _make_store(tmp_path)
+        store.set_memory("note1", "This is a memory note.")
+        store.set_flag(cli_system_prompt_append="This is a CLI append.")
+        adapter = ResourcePortAdapter(store)
+        payload = adapter.gateway_payload()
+        assert "This is a CLI append." in payload["system_prompt_append"]
+        assert "This is a memory note." in payload["system_prompt_append"]
+
+    def test_empty_cli_append_does_not_add_blank_line(self, tmp_path: Path) -> None:
+        """Empty CLI append does not add trailing blank lines."""
+        store = _make_store(tmp_path)
+        store.set_flag(cli_system_prompt_append="")
+        adapter = ResourcePortAdapter(store)
+        payload = adapter.gateway_payload()
+        # Should be empty since no memories and empty CLI append
+        assert payload["system_prompt_append"] == ""
+
+    def test_only_memories_no_cli_append(self, tmp_path: Path) -> None:
+        """Memories work when no CLI append is set."""
+        store = _make_store(tmp_path)
+        store.set_memory("note1", "Memory content")
+        adapter = ResourcePortAdapter(store)
+        payload = adapter.gateway_payload()
+        assert "Memory content" in payload["system_prompt_append"]
+        assert payload["system_prompt_append"].strip() != ""

@@ -62,6 +62,9 @@ def run(
     connector: list[str] = typer.Option(
         None, "--connector", help="Connector NAME=JSON or NAME=url (repeatable)"
     ),
+    append_system_prompt: list[str] = typer.Option(
+        None, "--append-system-prompt", help="Append text to the system prompt (repeatable)"
+    ),
     import_issue: str | None = typer.Option(
         None, "--import-issue", help="GitHub issue OWNER/REPO#N"
     ),
@@ -135,6 +138,7 @@ def run(
         skills=skill,
         plugins=plugin,
         connectors=connector,
+        append_system_prompts=append_system_prompt,
         import_issue=import_issue,
         web_search=web_search,
         deep_research=deep_research,
@@ -169,6 +173,7 @@ async def _run(
     skills: list[str] | None,
     plugins: list[str] | None,
     connectors: list[str] | None,
+    append_system_prompts: list[str] | None,
     import_issue: str | None,
     web_search: bool,
     deep_research: bool,
@@ -236,6 +241,9 @@ async def _run(
         typer.echo(f"Invalid plan file: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
+    # Combine multiple --append-system-prompt values with blank lines
+    combined_append = "\n\n".join(append_system_prompts) if append_system_prompts else None
+
     live_ui = BufferingStreamUi() if stream_ui else None
     try:
         context = bootstrap.build_runner(
@@ -254,6 +262,7 @@ async def _run(
             import_issue=import_issue,
             slash=slash,
             run_id=run_id,
+            append_system_prompt=combined_append,
         )
     except ValueError as exc:
         typer.echo(f"{exc}", err=True)
