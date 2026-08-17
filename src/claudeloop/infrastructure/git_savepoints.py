@@ -178,12 +178,15 @@ class GitSavePointStore:
             f.write(json.dumps(entry) + "\n")
 
     def _resolve_target(self, points: list[SavePointRef], to: str) -> SavePointRef:
+        # A SHA prefix can itself be all-digit (no a-f characters), so digits
+        # alone don't prove `to` is a savepoint number -- only try the number
+        # lookup, and fall through to ref/sha/label matching either way, so
+        # a numeric-looking SHA prefix still resolves correctly.
         if to.isdigit():
             n = int(to)
             for point in points:
                 if point.n == n:
                     return point
-            raise ValueError(f"no save point numbered {n}")
         for point in points:
             if point.ref == to or point.sha.startswith(to) or point.label == to:
                 return point

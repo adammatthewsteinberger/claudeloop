@@ -32,6 +32,17 @@ def _logger() -> BoundLogger:
     return get_logger(component="ops")
 
 
+def enqueue_wind_down(
+    cwd: Path, run_id: str | None = None, *, reason: str = "operator"
+) -> run_control_uc.EnqueueResult:
+    directory = resolve_run_directory(cwd, run_id)
+    inbox = FileRunControl(directory.inbox)
+    meta = directory.read_meta()
+    result = run_control_uc.request_wind_down(inbox, reason=reason, run_id=meta.run_id)
+    _logger().info("ops.wind_down_enqueued", run_id=result.run_id, reason=reason)
+    return result
+
+
 def enqueue_stop(cwd: Path, run_id: str | None = None) -> run_control_uc.EnqueueResult:
     directory = resolve_run_directory(cwd, run_id)
     inbox = FileRunControl(directory.inbox)

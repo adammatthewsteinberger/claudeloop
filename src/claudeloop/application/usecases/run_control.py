@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
 
+from claudeloop.application.interfaces import ControlInbox
 from claudeloop.domain.control import (
     ApproveToolCommand,
     ControlCommand,
@@ -21,17 +21,21 @@ from claudeloop.domain.control import (
     SetPresetCommand,
     SlashCommand,
     StopCommand,
+    WindDownCommand,
 )
-
-
-class ControlInbox(Protocol):
-    def enqueue(self, command: ControlCommand) -> object: ...
 
 
 @dataclass(frozen=True, slots=True)
 class EnqueueResult:
     run_id: str
     command_type: str
+
+
+def request_wind_down(
+    inbox: ControlInbox, *, reason: str = "operator", run_id: str
+) -> EnqueueResult:
+    inbox.enqueue(WindDownCommand(reason=reason))
+    return EnqueueResult(run_id=run_id, command_type="wind_down")
 
 
 def request_stop(inbox: ControlInbox, *, run_id: str) -> EnqueueResult:

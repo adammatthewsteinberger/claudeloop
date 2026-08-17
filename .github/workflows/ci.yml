@@ -78,13 +78,34 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
-      - name: Run domain + application tests at the 100% coverage floor
+      - name: Domain layer - 100% coverage required
         run: |
-          pytest tests/domain tests/application \
-            --cov=claudeloop.domain --cov=claudeloop.application \
-            --cov-report=term-missing --cov-fail-under=100
-      - name: Run the full suite (lower floor — infrastructure/cli are still being built)
-        run: pytest --cov-report=term-missing --cov-fail-under=0
+          pytest tests/domain \
+            --cov=claudeloop.domain \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      - name: Application layer - 100% coverage required
+        run: |
+          pytest tests/application \
+            --cov=claudeloop.application \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      - name: Infrastructure layer - 100% coverage required
+        run: |
+          pytest tests/infrastructure \
+            --cov=claudeloop.infrastructure \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      - name: CLI layer - 100% coverage required
+        run: |
+          pytest tests/cli \
+            --cov=claudeloop.cli \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
 
   skills:
     name: Claude skill frontmatter
@@ -97,6 +118,16 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install pyyaml
       - run: python scripts/check_skill_frontmatter.py
+
+  uv-lock:
+    name: uv.lock is in sync with pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv lock --check
 
   build:
     name: Package builds and is installable

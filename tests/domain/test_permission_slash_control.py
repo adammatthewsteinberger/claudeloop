@@ -51,6 +51,21 @@ def test_slash_unknown_rejected() -> None:
         parse_slash("/rm -rf /")
 
 
+def test_slash_requires_leading_slash() -> None:
+    with pytest.raises(ValueError, match="must start with '/'"):
+        parse_slash("help")
+
+
+def test_slash_rejects_blank_body() -> None:
+    with pytest.raises(ValueError, match="name must not be blank"):
+        parse_slash("/   ")
+
+
+def test_slash_to_prompt_includes_arguments() -> None:
+    parsed = parse_slash("/model claude-opus")
+    assert slash_to_prompt(parsed) == ("Execute the /model command with arguments: claude-opus")
+
+
 def test_stop_outranks_new_commands() -> None:
     result = stop_outranks(
         [

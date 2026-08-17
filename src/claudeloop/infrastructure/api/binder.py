@@ -59,7 +59,8 @@ def _make_click_command(
             )
         )
 
-    def callback(ctx: click.Context, **kwargs: Any) -> None:
+    @click.pass_context
+    def callback(ctx: click.Context, /, **kwargs: Any) -> None:
         root = ctx
         while root.parent is not None:
             root = root.parent

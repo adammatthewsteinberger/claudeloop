@@ -64,6 +64,14 @@ def test_env_float_coercion(tmp_path: Path, monkeypatch) -> None:  # type: ignor
     assert config.max_dollars == 12.5
 
 
+def test_env_str_coercion_passes_through_unchanged(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A field whose type hint is plain `str` (neither bool/float/int) hits
+    _coerce's final fallback branch: the raw env string is returned as-is."""
+    monkeypatch.setenv("CLAUDELOOP_LOG_LEVEL", "DEBUG")
+    config = load_config(cwd=tmp_path, home=tmp_path)
+    assert config.log_level == "DEBUG"
+
+
 def test_unknown_keys_in_file_are_ignored(tmp_path: Path) -> None:
     (tmp_path / "claudeloop.toml").write_text('not_a_real_field = "x"\nmax_turns = 3\n')
     config = load_config(cwd=tmp_path, home=tmp_path)
@@ -73,3 +81,56 @@ def test_unknown_keys_in_file_are_ignored(tmp_path: Path) -> None:
 def test_missing_file_is_not_an_error(tmp_path: Path) -> None:
     config = load_config(cwd=tmp_path / "does-not-exist", home=tmp_path)
     assert config == RunnerConfig()
+
+
+def test_aliases_returns_model_aliases() -> None:
+    config = RunnerConfig(model_low="low-model", model_medium="mid-model", model_high="high-model")
+    aliases = config.aliases()
+    assert aliases.low == "low-model"
+    assert aliases.medium == "mid-model"
+    assert aliases.high == "high-model"
+
+
+def test_resolved_profile_calls_resolve() -> None:
+    config = RunnerConfig(model="claude-opus", effort="high")
+    profile = config.resolved_profile()
+    assert profile.model == "claude-opus"
+    assert profile.effort == "high"
+
+
+def test_effective_log_chatter_from_config() -> None:
+    config = RunnerConfig(log_chatter="full")
+    assert config.effective_log_chatter() == "full"
+
+
+def test_effective_log_chatter_invalid_raises() -> None:
+    import pytest
+
+    config = RunnerConfig(log_chatter="invalid")
+    with pytest.raises(ValueError, match="invalid log_chatter"):
+        config.effective_log_chatter()
+
+
+def test_effective_log_chatter_debug_level_returns_full() -> None:
+    config = RunnerConfig(log_level="DEBUG")
+    assert config.effective_log_chatter() == "full"
+
+
+def test_effective_log_chatter_default_is_summary() -> None:
+    config = RunnerConfig()
+    assert config.effective_log_chatter() == "summary"
+
+
+def test_effective_partial_messages_explicit_true() -> None:
+    config = RunnerConfig(include_partial_messages=True)
+    assert config.effective_partial_messages() is True
+
+
+def test_effective_partial_messages_explicit_false() -> None:
+    config = RunnerConfig(include_partial_messages=False)
+    assert config.effective_partial_messages() is False
+
+
+def test_effective_partial_messages_defaults_to_stream_ui() -> None:
+    config = RunnerConfig(stream_ui=True)
+    assert config.effective_partial_messages() is True

@@ -157,8 +157,6 @@ def resolve_test_agent_from_env(
         )
     if not script_path:
         return None
-    if allow not in {"1", "true", "TRUE", "yes", "YES"}:
-        return None
     _logger().warning(
         "test_agent.loading",
         script=script_path,

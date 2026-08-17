@@ -10,9 +10,9 @@ from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Any
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: no cover - exactly one branch runs per interpreter
     import tomllib
-else:  # pragma: no cover - exercised only on Python 3.10, outside the CI matrix's tested code path here  # noqa: E501
+else:  # pragma: no cover - exactly one branch runs per interpreter
     import tomli as tomllib
 
 from claudeloop.domain.model_profile import (

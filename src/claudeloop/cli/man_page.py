@@ -24,7 +24,8 @@ NAME
        claudeloop - autonomous Claude Code session runner and Anthropic SDK CLI
 
 SYNOPSIS
-       claudeloop [--help | -h] [--version | --man]
+       claudeloop [--help | -h] [--version | --man] [-v...|-q]
+                  [--log-level LEVEL] [--log-file PATH]
        claudeloop run [OPTIONS] PLAN_FILE
        claudeloop resume [OPTIONS]
        claudeloop stop [--run-id ID]
@@ -259,6 +260,11 @@ OPTIONS (common run / resume)
        Global flags
               --help / -h / --man   this manual page
               --version            print version and exit
+              -v / --verbose       repeatable: -v debug, -vv also third-party
+                                   libraries, -vvv full payloads
+              -q / --quiet         warnings and errors only
+              --log-level LEVEL    DEBUG|INFO|WARNING|ERROR|CRITICAL; overrides -v
+              --log-file PATH      also write redacted JSON lines to PATH
 
 LOGGING
        After configure_logging (run/resume), stderr receives JSON console
@@ -275,6 +281,10 @@ EXIT STATUS
               check failed, or other error).
 
        2      Usage error (e.g. prompt without exactly one of --now/--at-break).
+
+       75     Wound down on purpose (claudeloop wind-down); the current turn
+              finished, runs/<id>/handoff.json names every artifact produced,
+              and a supervisor can resume elsewhere.
 
        130    Soft-stopped by claudeloop stop (or equivalent interrupt path).
 
