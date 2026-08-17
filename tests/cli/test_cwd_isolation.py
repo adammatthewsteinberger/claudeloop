@@ -46,7 +46,7 @@ def test_resume_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary_mtime = canary.stat().st_mtime
 
     # Act: resume with explicit --cwd (should fail quickly due to no session, but that's fine)
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["resume", "--session-id", run_id, "--cwd", str(worktree), "--max-turns", "0"],
         env=_ENV,
@@ -73,7 +73,7 @@ def test_stop_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary_mtime = canary.stat().st_mtime
 
     # Act: stop with explicit --cwd
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["stop", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,
@@ -99,7 +99,7 @@ def test_wind_down_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary.write_text("untouched", encoding="utf-8")
     canary_mtime = canary.stat().st_mtime
 
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["wind-down", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,
@@ -123,7 +123,7 @@ def test_status_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary.write_text("untouched", encoding="utf-8")
     canary_mtime = canary.stat().st_mtime
 
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["status", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,
@@ -148,7 +148,7 @@ def test_logs_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary_mtime = canary.stat().st_mtime
 
     # logs will try to read but should not create anything in process_cwd
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["logs", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,
@@ -173,7 +173,7 @@ def test_unwind_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary_mtime = canary.stat().st_mtime
 
     # unwind will fail (no savepoints), but should not touch process_cwd
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["unwind", "--to", "1", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,
@@ -198,7 +198,7 @@ def test_watch_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary_mtime = canary.stat().st_mtime
 
     # watch with --no-follow exits quickly
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["watch", "--run-id", run_id, "--cwd", str(worktree), "--no-follow"],
         env=_ENV,
@@ -222,7 +222,7 @@ def test_prompt_cwd_isolation(tmp_path: Path, monkeypatch) -> None:
     canary.write_text("untouched", encoding="utf-8")
     canary_mtime = canary.stat().st_mtime
 
-    result = runner.invoke(
+    runner.invoke(
         app,
         ["prompt", "test prompt", "--now", "--run-id", run_id, "--cwd", str(worktree)],
         env=_ENV,

@@ -58,10 +58,13 @@ def _parse_duration(spec: str) -> timedelta:
         ValueError: If the spec is invalid.
     """
     # Pattern: optional digits followed by h/m/s, repeatable
-    pattern = r"(\d+)([hms])"
-    matches = re.findall(pattern, spec.lower())
-    if not matches:
+    # Anchored to ensure the entire string matches the expected format
+    pattern = r"^(\d+[hms])+$"
+    if not re.match(pattern, spec.lower()):
         raise ValueError(f"invalid duration format {spec!r}, expected e.g. 2h, 90m, 1h30m")
+
+    # Extract all (value, unit) pairs
+    matches = re.findall(r"(\d+)([hms])", spec.lower())
 
     total = timedelta()
     for value_str, unit in matches:

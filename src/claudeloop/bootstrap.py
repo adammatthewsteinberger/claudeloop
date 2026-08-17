@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -80,7 +80,7 @@ def build_runner(
     import_issue: str | None = None,
     slash: str | None = None,
     run_id: str | None = None,
-    wind_down_at: Any | None = None,  # datetime, but avoiding the import for bootstrap purity
+    wind_down_at: datetime | None = None,
 ) -> RunnerContext:
     run_dir = RunDirectory.create(runs_root_for(cwd), cwd=cwd, plan_path=plan_path, run_id=run_id)
     run_id = run_dir.read_meta().run_id

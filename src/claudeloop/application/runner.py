@@ -568,9 +568,12 @@ class AutonomousRunner:
                         if projection is not None
                         else None
                     )
-                    if wind_down is None and self._wind_down_at is not None and now >= self._wind_down_at:
-                        # Deadline-driven wind-down: the run has reached its
-                        # configured --wind-down-at deadline.
+                    if (
+                        wind_down is None
+                        and self._wind_down_at is not None
+                        and now >= self._wind_down_at
+                    ):
+                        # Deadline-driven wind-down.
                         wind_down = WindDown(
                             reason="deadline",
                             forecast=projection
