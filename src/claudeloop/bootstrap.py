@@ -80,6 +80,7 @@ def build_runner(
     import_issue: str | None = None,
     slash: str | None = None,
     run_id: str | None = None,
+    append_system_prompt: str | None = None,
     wind_down_at: datetime | None = None,
 ) -> RunnerContext:
     run_dir = RunDirectory.create(runs_root_for(cwd), cwd=cwd, plan_path=plan_path, run_id=run_id)
@@ -97,6 +98,7 @@ def build_runner(
         cwd=str(cwd.resolve()),
         web_search=config.web_search,
         deep_research=config.deep_research,
+        cli_system_prompt_append=append_system_prompt or "",
     )
     for path in attach or []:
         resource_store.attach(path)
