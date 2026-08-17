@@ -435,10 +435,11 @@ class TestStreamAppActions:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 3
             app.action_prev_turn()
+            await pilot.pause()
             assert app._replay_index == 1
 
     @pytest.mark.asyncio
@@ -451,10 +452,11 @@ class TestStreamAppActions:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 0
             app.action_next_turn()
+            await pilot.pause()
             assert app._replay_index == 1
 
     @pytest.mark.asyncio
@@ -541,10 +543,11 @@ class TestStreamAppPartialBranches:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 5
             app.action_prev_turn()
+            await pilot.pause()
             assert app._replay_index == 3  # prev(2) + 1 per line 335
 
 

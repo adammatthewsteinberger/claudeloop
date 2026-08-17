@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ import typer
 from claudeloop import bootstrap
 from claudeloop.application.usecases.run_plan import parse_plan_file, run_from_plan_file
 from claudeloop.cli.asyncio import async_command
+from claudeloop.cli.time_parse import parse_wind_down_at
 from claudeloop.domain.errors import InvalidPlanError
 from claudeloop.domain.handoff_marker import (
     EXIT_WIND_DOWN,
@@ -120,6 +122,11 @@ def run(
             "Raise if you see 'JSON message exceeded maximum buffer size of 1048576'."
         ),
     ),
+    wind_down_at_spec: str | None = typer.Option(
+        None,
+        "--wind-down-at",
+        help="Wind down at this deadline (ISO8601 timestamp or +duration like +2h, +90m)",
+    ),
 ) -> None:
     """Seed a brand-new Claude Code session from PLAN_FILE and run it
     autonomously to completion — across turns, across rate-limit windows,
@@ -154,6 +161,7 @@ def run(
         auto_model=auto_model,
         stream_ui=stream_ui,
         max_buffer_size=max_buffer_size,
+        wind_down_at_spec=wind_down_at_spec,
     )
 
 
@@ -188,8 +196,16 @@ async def _run(
     auto_model: bool,
     stream_ui: bool,
     max_buffer_size: int | None,
+    wind_down_at_spec: str | None,
 ) -> None:
     cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
+    wind_down_at: datetime | None = None
+    if wind_down_at_spec is not None:
+        try:
+            wind_down_at = parse_wind_down_at(wind_down_at_spec, now=datetime.now())
+        except ValueError as exc:
+            typer.echo(f"Invalid --wind-down-at: {exc}", err=True)
+            raise typer.Exit(code=2) from exc
     connector_map: dict[str, Any] = {}
     if connectors:
         for spec in connectors:
@@ -254,6 +270,7 @@ async def _run(
             import_issue=import_issue,
             slash=slash,
             run_id=run_id,
+            wind_down_at=wind_down_at,
         )
     except ValueError as exc:
         typer.echo(f"{exc}", err=True)
