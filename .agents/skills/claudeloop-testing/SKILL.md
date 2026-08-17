@@ -57,7 +57,7 @@ tests never call real `time.sleep()`. Pattern (tests/application/fakes.py):
 
 ```python
 clock = FakeClock(start=NOW)
-sleeper = FakeSleeper(clock)   # sleep_until(instant) jumps clock straight there, no real delay
+sleeper = FakeSleeper(clock)  # sleep_until(instant) jumps clock straight there, no real delay
 ```
 
 This is what lets a test simulate a **seven-day rate-limit wait** or the

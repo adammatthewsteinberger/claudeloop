@@ -73,7 +73,7 @@ def _parse_duration(spec: str) -> timedelta:
             total += timedelta(hours=value)
         elif unit == "m":
             total += timedelta(minutes=value)
-        elif unit == "s":
+        else:  # unit == "s" (regex ensures only h/m/s)
             total += timedelta(seconds=value)
 
     if total <= timedelta(0):

@@ -74,6 +74,17 @@ class TestRunCommandErrors:
         assert result.exit_code == 2
         assert "Invalid --connector" in result.output
 
+    def test_run_invalid_wind_down_at(self, tmp_path: Path) -> None:
+        plan = tmp_path / "plan.md"
+        plan.write_text("# Plan\nDo something", encoding="utf-8")
+        result = runner.invoke(
+            app,
+            ["run", str(plan), "--wind-down-at", "not-a-valid-time"],
+            env=_ENV,
+        )
+        assert result.exit_code == 2
+        assert "Invalid --wind-down-at" in result.output
+
 
 class TestRunSuccess:
     def test_run_success_path(self, tmp_path: Path) -> None:

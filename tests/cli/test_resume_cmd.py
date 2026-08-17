@@ -243,3 +243,14 @@ class TestResumeStreamUi:
             )
             assert result.exit_code == 0
             assert "no tty available" in result.output
+
+
+class TestResumeErrors:
+    def test_resume_invalid_wind_down_at(self) -> None:
+        result = runner.invoke(
+            app,
+            ["resume", "--session-id", "sess-123", "--wind-down-at", "not-a-valid-time"],
+            env=_ENV,
+        )
+        assert result.exit_code == 2
+        assert "Invalid --wind-down-at" in result.output
