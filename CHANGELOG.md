@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.5...claudeloop-v0.6.0) (2026-08-20)
+
+
+### Features
+
+* add `claudeloop wind-down`, the soft stop ([c2c2952](https://github.com/adammatthewsteinberger/claudeloop/commit/c2c2952d2db79f974aa6ef513c9d6c0511da5236))
+* add a -v/-q verbosity ladder and third-party log control ([8d11fc6](https://github.com/adammatthewsteinberger/claudeloop/commit/8d11fc668a7f709b24c21312ee7af42a2928a453))
+* add capacity forecasting (measurement only, disabled by default) ([d6e4fea](https://github.com/adammatthewsteinberger/claudeloop/commit/d6e4feadb7a4656ebaca913f45342ab9ca400d7a))
+* add the WindDownAndFinish decision and the handoff marker ([de0978a](https://github.com/adammatthewsteinberger/claudeloop/commit/de0978a39a7372e3b6a415f5ad6002881818e1e0))
+* let the caller name a run with --run-id ([ae11738](https://github.com/adammatthewsteinberger/claudeloop/commit/ae117384abbf78813f56ebe84b4f084615051968))
+* wire the wind-down path through the runner ([93de25d](https://github.com/adammatthewsteinberger/claudeloop/commit/93de25d79870f53f66a0a62cbff97503d9ecb08e))
+
+
+### Bug Fixes
+
+* **test:** use timezone.utc, not datetime.UTC, on the 3.10 floor ([caece3d](https://github.com/adammatthewsteinberger/claudeloop/commit/caece3ddb9501c43a300fc5b77d43cee193d80c3))
+
+
+### Documentation
+
+* add GEMINI.md and .agent/rules/ Antigravity surface ([#33](https://github.com/adammatthewsteinberger/claudeloop/issues/33)) ([6a14cd5](https://github.com/adammatthewsteinberger/claudeloop/commit/6a14cd58a3dc9481fa0503defd3a59ed08f41979))
+* complete the public FOSS surface ([#22](https://github.com/adammatthewsteinberger/claudeloop/issues/22)) ([5344210](https://github.com/adammatthewsteinberger/claudeloop/commit/53442108da13a6e70c759404eaa72b941007eef7))
+* engagement refresh — README, community files, metadata ([#34](https://github.com/adammatthewsteinberger/claudeloop/issues/34)) ([8a4a110](https://github.com/adammatthewsteinberger/claudeloop/commit/8a4a110b890ef7fb8b7238264b5758cfbe858f71))
+* **readme:** engagement refresh — matched-set layout, live badges, related projects, author footer ([8a4a110](https://github.com/adammatthewsteinberger/claudeloop/commit/8a4a110b890ef7fb8b7238264b5758cfbe858f71))
+* update links for renamed repos ([#35](https://github.com/adammatthewsteinberger/claudeloop/issues/35)) ([8ca82c8](https://github.com/adammatthewsteinberger/claudeloop/commit/8ca82c8238a9f376fbe3db66e6a3a3b3c1bbafe4))
+* update links for renamed repos (vibey-bootstrap, vibey-skills, engineering-influence-skills) ([8ca82c8](https://github.com/adammatthewsteinberger/claudeloop/commit/8ca82c8238a9f376fbe3db66e6a3a3b3c1bbafe4))
+
 ## [0.5.5](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.4...claudeloop-v0.5.5) (2026-08-13)
 
 
