@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -207,7 +207,7 @@ async def _run(
     wind_down_at: datetime | None = None
     if wind_down_at_spec is not None:
         try:
-            wind_down_at = parse_wind_down_at(wind_down_at_spec, now=datetime.now())
+            wind_down_at = parse_wind_down_at(wind_down_at_spec, now=datetime.now(timezone.utc))
         except ValueError as exc:
             typer.echo(f"Invalid --wind-down-at: {exc}", err=True)
             raise typer.Exit(code=2) from exc
