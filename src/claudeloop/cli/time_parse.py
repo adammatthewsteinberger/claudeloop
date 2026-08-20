@@ -3,23 +3,28 @@
 Supports:
 - ISO8601 absolute timestamps: 2026-08-17T15:30:00
 - Relative durations: +2h, +90m, +30s, +1h30m
+
+All returned deadlines are timezone-aware UTC so they compare safely against
+``SystemClock.now()`` (also UTC-aware). Naive absolute timestamps are treated
+as UTC.
 """
 
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def parse_wind_down_at(spec: str, *, now: datetime) -> datetime:
-    """Parse a --wind-down-at value into an absolute deadline.
+    """Parse a --wind-down-at value into an absolute UTC deadline.
 
     Args:
         spec: Either an ISO8601 timestamp or a +duration (e.g. +2h, +90m).
-        now: Current time for resolving relative durations.
+        now: Current time for resolving relative durations. Naive ``now`` is
+            treated as UTC.
 
     Returns:
-        Absolute datetime deadline.
+        Absolute timezone-aware UTC datetime deadline.
 
     Raises:
         ValueError: If the spec is invalid.
@@ -28,21 +33,31 @@ def parse_wind_down_at(spec: str, *, now: datetime) -> datetime:
     if not spec:
         raise ValueError("--wind-down-at must not be blank")
 
+    now_utc = _as_utc(now)
+
     # Relative duration: +2h, +90m, +30s, +1h30m
     if spec.startswith("+"):
         duration_str = spec[1:].strip()
         if not duration_str:
             raise ValueError("duration after '+' must not be blank")
         delta = _parse_duration(duration_str)
-        return now + delta
+        return now_utc + delta
 
     # Absolute ISO8601 timestamp
     try:
-        return datetime.fromisoformat(spec)
+        parsed = datetime.fromisoformat(spec)
     except ValueError as exc:
         raise ValueError(
             f"--wind-down-at must be ISO8601 timestamp or +duration, got {spec!r}"
         ) from exc
+    return _as_utc(parsed)
+
+
+def _as_utc(value: datetime) -> datetime:
+    """Normalize to timezone-aware UTC (naive values are assumed UTC)."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _parse_duration(spec: str) -> timedelta:
