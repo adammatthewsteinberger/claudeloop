@@ -13,9 +13,16 @@ def logs(
     chatter: bool = typer.Option(
         False, "--chatter", help="Only show chatter.* events (includes trace_id/turn_id)"
     ),
+    cwd_dir: Path | None = typer.Option(
+        None,
+        "--cwd",
+        exists=True,
+        file_okay=False,
+        help="Effective working directory (default: current directory)",
+    ),
 ) -> None:
     """Tail the per-run events.jsonl stream (redacted, realtime)."""
-    cwd = Path.cwd()
+    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
     try:
         bootstrap_ops.tail_events(cwd, run_id=run_id, follow=follow, chatter_only=chatter)
     except FileNotFoundError as exc:

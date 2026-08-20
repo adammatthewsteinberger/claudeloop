@@ -21,6 +21,7 @@ class ResourceSnapshot:
     deep_research: bool = False
     permission_mode: str = "bypass"
     cwd: str | None = None
+    cli_system_prompt_append: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -34,6 +35,7 @@ class ResourceSnapshot:
             "deep_research": self.deep_research,
             "permission_mode": self.permission_mode,
             "cwd": self.cwd,
+            "cli_system_prompt_append": self.cli_system_prompt_append,
         }
 
     @classmethod
@@ -49,6 +51,7 @@ class ResourceSnapshot:
             deep_research=bool(data.get("deep_research", False)),
             permission_mode=str(data.get("permission_mode") or "bypass"),
             cwd=data.get("cwd"),
+            cli_system_prompt_append=str(data.get("cli_system_prompt_append") or ""),
         )
 
 
@@ -88,6 +91,7 @@ class RunResourceStore:
 
     def snapshot(self) -> ResourceSnapshot:
         self.ensure()
+        flags = _read_json_dict(self.root / "flags.json")
         return ResourceSnapshot(
             attachments=sorted(p.name for p in self.attachments_dir.iterdir() if p.is_file()),
             folders=_read_json_list(self.folders_path),
@@ -95,12 +99,11 @@ class RunResourceStore:
             plugins=_read_json_list(self.plugins_path),
             connectors=_read_json_dict(self.connectors_path),
             github=_read_json_dict(self.github_path),
-            web_search=bool(_read_json_dict(self.root / "flags.json").get("web_search")),
-            deep_research=bool(_read_json_dict(self.root / "flags.json").get("deep_research")),
-            permission_mode=str(
-                _read_json_dict(self.root / "flags.json").get("permission_mode") or "bypass"
-            ),
-            cwd=_read_json_dict(self.root / "flags.json").get("cwd"),
+            web_search=bool(flags.get("web_search")),
+            deep_research=bool(flags.get("deep_research")),
+            permission_mode=str(flags.get("permission_mode") or "bypass"),
+            cwd=flags.get("cwd"),
+            cli_system_prompt_append=str(flags.get("cli_system_prompt_append") or ""),
         )
 
     def write_manifest(self) -> None:

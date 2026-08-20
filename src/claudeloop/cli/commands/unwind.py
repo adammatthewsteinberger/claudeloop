@@ -13,9 +13,16 @@ def unwind(
     backup: bool = typer.Option(
         True, "--backup/--no-backup", help="Create a backup ref before resetting"
     ),
+    cwd_dir: Path | None = typer.Option(
+        None,
+        "--cwd",
+        exists=True,
+        file_okay=False,
+        help="Effective working directory (default: current directory)",
+    ),
 ) -> None:
     """Unwind the worktree to a prior save point (refuses while a run is active)."""
-    cwd = Path.cwd()
+    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
     try:
         result = bootstrap_ops.unwind_savepoint(cwd, to, backup=backup, run_id=run_id)
     except (FileNotFoundError, ValueError, RuntimeError) as exc:

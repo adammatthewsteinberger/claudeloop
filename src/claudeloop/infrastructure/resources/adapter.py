@@ -123,12 +123,22 @@ class ResourcePortAdapter:
         if snap.web_search:
             # Enable web search when the SDK/tool surface exposes it.
             allowed.append("WebSearch")
+
+        # Combine CLI-provided system prompt append with memory-derived content
+        chunks: list[str] = []
+        if snap.cli_system_prompt_append.strip():
+            chunks.append(snap.cli_system_prompt_append.strip())
+        memory_append = self._store.memory_prompt_append()
+        if memory_append.strip():
+            chunks.append(memory_append.strip())
+        system_prompt_append = "\n\n".join(chunks)
+
         payload: dict[str, Any] = {
             "add_dirs": list(snap.folders),
             "skills": list(snap.skills) or None,
             "plugins": list(snap.plugins),
             "mcp_servers": dict(snap.connectors) or None,
-            "system_prompt_append": self._store.memory_prompt_append(),
+            "system_prompt_append": system_prompt_append,
             "allowed_tools": allowed or None,
         }
         self._dirty = False

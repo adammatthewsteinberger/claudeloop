@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -80,6 +80,8 @@ def build_runner(
     import_issue: str | None = None,
     slash: str | None = None,
     run_id: str | None = None,
+    append_system_prompt: str | None = None,
+    wind_down_at: datetime | None = None,
 ) -> RunnerContext:
     run_dir = RunDirectory.create(runs_root_for(cwd), cwd=cwd, plan_path=plan_path, run_id=run_id)
     run_id = run_dir.read_meta().run_id
@@ -96,6 +98,7 @@ def build_runner(
         cwd=str(cwd.resolve()),
         web_search=config.web_search,
         deep_research=config.deep_research,
+        cli_system_prompt_append=append_system_prompt or "",
     )
     for path in attach or []:
         resource_store.attach(path)
@@ -271,6 +274,7 @@ def build_runner(
         plan=plan,
         stop_summary_writer=run_dir.write_stop_summary,
         handoff_marker_writer=run_dir.write_handoff_marker,
+        wind_down_at=wind_down_at,
         meta_updater=_meta_updater,
         events_path=str(run_dir.events_path),
         state_bus=state_bus,
