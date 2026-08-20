@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.6.0...claudeloop-v0.6.1) (2026-08-20)
+
+
+### Miscellaneous Chores
+
+* cut 0.6.1 -- the tz-aware wind-down fix must ship ([8a90aea](https://github.com/adammatthewsteinberger/claudeloop/commit/8a90aead5671ece34bc8e05cd3869322ef9f4682))
+
 ## [0.6.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.5.5...claudeloop-v0.6.0) (2026-08-20)
 
 
