@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Adapter: RunResourceStore → application RunResources port."""
 
 from __future__ import annotations

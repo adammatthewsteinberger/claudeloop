@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/doctor_env.py — RealDoctorEnvironment adapter."""
 
 from __future__ import annotations

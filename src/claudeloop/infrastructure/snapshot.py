@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Run handoff snapshot builder — JSON + optional bundle + Claude transcript."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for cli/commands/run.py — _parse_connector and run command logic."""
 
 from __future__ import annotations

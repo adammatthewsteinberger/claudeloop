@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Bootstrap helpers for operator CLI commands (stop/prompt/logs/unwind/runs)."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Builds ClaudeAgentOptions for real turns and for the throwaway capacity probe.
 
 Key choices, each tied to an ADR:

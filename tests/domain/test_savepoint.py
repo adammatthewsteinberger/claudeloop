@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for domain/savepoint.py — SavePointRef and UnwindResult.
 
 These value objects are already exercised indirectly by tests/application/

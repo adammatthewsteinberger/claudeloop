@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """CLI tests for the generated ``claudeloop api`` namespace."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Unit tests for ``--json`` / ``--json-file`` payload parsing."""
 
 from __future__ import annotations

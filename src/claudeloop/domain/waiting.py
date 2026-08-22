@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Adaptive wait policy — decides the next probe instant, never a blind sleep.
 
 This replaces the `time.sleep(wait_seconds)` calls in the legacy script

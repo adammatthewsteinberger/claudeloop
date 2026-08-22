@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for progress-wait helpers and savepoint Conventional Commits messages."""
 
 from __future__ import annotations

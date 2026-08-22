@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Stream UI chat panel: continuous log, full prompts, no per-turn wipe."""
 
 from __future__ import annotations

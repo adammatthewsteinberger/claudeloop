@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Git-backed save points under refs/claudeloop/<run_id>/<n>."""
 
 from __future__ import annotations

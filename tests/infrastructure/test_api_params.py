@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Unit tests for generated-API parameter classification and kwargs merge."""
 
 from __future__ import annotations

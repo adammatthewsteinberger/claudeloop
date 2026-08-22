@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Capacity state — whether the account can currently spend a real turn, and why not
 if it can't. This is the typed replacement for regex-scraping stream-json for limit
 language."""

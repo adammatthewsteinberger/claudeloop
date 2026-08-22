@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """ClaudeSDKClient-backed AgentGateway and CapacityProbe.
 
 Deliberately uses ClaudeSDKClient (streaming-input mode), never query() —

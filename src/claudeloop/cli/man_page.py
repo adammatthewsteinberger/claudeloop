@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Manual-page style help for the root ``claudeloop`` command.
 
 PyPI users and packagers often expect ``--help`` to read like ``man 1`` output.

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for cli/time_parse.py --wind-down-at parser.
 
 Covers both absolute ISO-8601 timestamps and relative durations (+2h, +90m).

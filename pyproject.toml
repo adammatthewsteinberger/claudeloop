@@ -58,6 +58,14 @@ Changelog = "https://github.com/adammatthewsteinberger/claudeloop/blob/main/CHAN
 
 [project.optional-dependencies]
 dev = [
+    # Release automation and provenance guardrails, shared by every repo in
+    # the family. Stdlib-only, so adopting it in five places multiplies
+    # nobody's dependency tree.
+    # Marked, not unconditional: vibey-gh needs 3.11+ and this package still
+    # advertises 3.10. The guardrail does not weaken -- the pre-push hook and
+    # CI both refuse a push without it -- so a 3.10 developer is told to install
+    # it rather than silently exempted.
+    "vibey-gh>=1.2; python_version >= '3.11'",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-xdist>=3.5",

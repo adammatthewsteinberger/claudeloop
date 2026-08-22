@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Use case: list known Claude Code sessions for the current (or a given)
 working directory."""
 

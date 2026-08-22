@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Fixtures shared by the live test suite. See docs/guides/live-testing.md.
 
 Isolation and cost control:

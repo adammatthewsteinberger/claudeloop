@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Alternate Anthropic SDK client selection for ``claudeloop api --provider``."""
 
 from __future__ import annotations

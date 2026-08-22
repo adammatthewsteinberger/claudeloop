@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/api/providers.py — provider factories and surface roots."""
 
 from __future__ import annotations

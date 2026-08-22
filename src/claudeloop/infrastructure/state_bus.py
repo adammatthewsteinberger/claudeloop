@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """File-backed state bus — pub/sub for run state changes.
 
 Subscribers can:

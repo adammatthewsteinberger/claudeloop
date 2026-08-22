@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/stream_ui/app.py — StreamApp Textual TUI."""
 
 from __future__ import annotations

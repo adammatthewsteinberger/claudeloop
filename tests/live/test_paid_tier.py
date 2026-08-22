@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Paid-tier live tests: drive a real Claude Code session end to end. Spends
 real tokens/turns against your account. Opt in with:
 
