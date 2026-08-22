@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable run state: the state store, the session lock, git save points, and
 the snapshot sink."""
 

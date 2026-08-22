@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """SessionCatalog over claude_agent_sdk.list_sessions() / get_session_info().
 
 Never parses ~/.claude/projects/*.jsonl directly — that format is explicitly

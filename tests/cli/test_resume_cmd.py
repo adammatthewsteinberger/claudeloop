@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for cli/commands/resume.py — resume command error and success paths."""
 
 from __future__ import annotations

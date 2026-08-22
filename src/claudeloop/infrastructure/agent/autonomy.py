@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The never-block-on-a-human guarantees. See
 docs/architecture/decisions/0007-ask-user-question-denied-with-guidance.md and
 docs/guides/never-blocking.md for the full mitigation table this implements."""

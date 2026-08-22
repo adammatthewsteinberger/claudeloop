@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Textual StreamApp — multi-pane live / follow / replay UI.
 
 Left pane is a continuous realtime AI chat log (prompts + streamed tokens).

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/agent/autonomy.py — never-block-on-human hooks."""
 
 from __future__ import annotations

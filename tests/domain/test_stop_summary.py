@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for domain/stop_summary.py — render_stop_summary.
 
 Exercised indirectly by tests/infrastructure/test_control_and_savepoints.py,

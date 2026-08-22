@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """RunStateStore — persists run state to disk so a killed run can be
 resumed. One JSON file per run_id under a state directory."""
 

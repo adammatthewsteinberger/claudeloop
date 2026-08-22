@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Wind-down precedence: what a *predicted* stop must never beat.
 
 The whole safety argument for adding a predictive branch to a mature state

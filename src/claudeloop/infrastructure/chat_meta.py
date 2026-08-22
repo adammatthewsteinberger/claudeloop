@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Native chat/session metadata under `.claudeloop/chats/`."""
 
 from __future__ import annotations

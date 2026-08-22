@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Coverage-focused tests for infrastructure/agent/scripted.py.
 
 Complements test_scripted_agent.py by exercising the setter methods,

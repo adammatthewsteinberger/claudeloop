@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Real DoctorEnvironment — the only infrastructure adapter for the `doctor`
 use case. Shells out to `claude` itself for version/MCP info rather than
 re-implementing config-file parsing, since that surface is exactly the kind

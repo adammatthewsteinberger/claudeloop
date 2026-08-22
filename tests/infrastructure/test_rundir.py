@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/rundir.py — RunDirectory, RunMeta, and helpers."""
 
 from __future__ import annotations

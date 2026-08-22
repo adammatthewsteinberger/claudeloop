@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Events sink trace/turn binding and chatter helpers."""
 
 from __future__ import annotations
