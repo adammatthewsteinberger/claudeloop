@@ -15,7 +15,6 @@ import anthropic
 from anthropic._compat import cached_property
 from anthropic._resource import SyncAPIResource
 from anthropic.resources.beta.beta import Beta
-from anthropic.resources.completions import Completions
 from anthropic.resources.messages.messages import Messages
 from anthropic.resources.models import Models
 
@@ -41,10 +40,9 @@ ROOT_RESOURCES: tuple[tuple[str, type[SyncAPIResource]], ...] = (
     ("messages", Messages),
     ("models", Models),
     ("beta", Beta),
-    ("completions", Completions),
 )
 
-LIMITED_PROVIDER_ROOTS: frozenset[str] = frozenset({"messages", "beta", "completions"})
+LIMITED_PROVIDER_ROOTS: frozenset[str] = frozenset({"messages", "beta"})
 
 
 @dataclass(frozen=True, slots=True)

@@ -44,8 +44,8 @@ def build_client(provider: str) -> Any:
 
 def surface_roots_for_provider(provider: str) -> tuple[str, ...]:
     if provider in FULL_TREE_PROVIDERS:
-        return ("messages", "models", "beta", "completions")
+        return ("messages", "models", "beta")
     if provider in LIMITED_TREE_PROVIDERS:
-        return ("messages", "beta", "completions")
+        return ("messages", "beta")
     msg = f"unknown provider {provider!r}"
     raise ValueError(msg)
