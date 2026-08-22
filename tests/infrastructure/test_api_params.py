@@ -36,8 +36,12 @@ def test_is_scalar_annotation_accepts_stringified_omit_unions() -> None:
     assert is_scalar_annotation("int | Omit") is True
     assert is_scalar_annotation("str | Omit") is True
     assert is_scalar_annotation("Optional[str] | Omit") is True
+    assert is_scalar_annotation("None | int") is True
+    assert is_scalar_annotation("Omit | float") is True
+    assert is_scalar_annotation("NotGiven | str") is True
     assert is_scalar_annotation(int | Omit) is True
     assert click_type_for_annotation("int | Omit") is int
+    assert click_type_for_annotation("Omit | float") is float
     assert click_type_for_annotation("str | Omit") is str
 
 
