@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import pytest
+from textual.css.query import NoMatches
 
 from claudeloop.infrastructure.stream_ui import BufferingStreamUi, StreamUiState
 from claudeloop.infrastructure.stream_ui.app import ChatUpdate, StreamApp, chat_update_for_record
@@ -247,6 +248,37 @@ class TestStreamAppTickLive:
         live = BufferingStreamUi()
         live.on_assistant("final answer")
         app = _make_app(f, follow=True, live_source=live)
+
+        app._tick_live()
+
+        assert live.assistants == ["final answer"]
+
+    def test_tick_live_mount_started_before_screen_is_inert(self, tmp_path: Path) -> None:
+        """A mount timer must wait until Textual creates the screen stack."""
+        f = _write_events(tmp_path, [])
+        live = BufferingStreamUi()
+        live.on_assistant("final answer")
+        app = _make_app(f, follow=True, live_source=live)
+        app._ui_mounted = True
+
+        app._tick_live()
+
+        assert live.assistants == ["final answer"]
+
+    def test_tick_live_mount_started_before_children_is_inert(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A mount timer must wait until every live-tick widget is attached."""
+        f = _write_events(tmp_path, [])
+        live = BufferingStreamUi()
+        live.on_assistant("final answer")
+        app = _make_app(f, follow=True, live_source=live)
+        app._ui_mounted = True
+
+        def missing_widget(*_args: object, **_kwargs: object) -> None:
+            raise NoMatches("#header-bar")
+
+        monkeypatch.setattr(app, "query_one", missing_widget)
 
         app._tick_live()
 
