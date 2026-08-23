@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/logging.py — loggers, configure_logging, and adapters."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The vendor session seam: sending turns, probing capacity, and the
 run-scoped resources attached to a session."""
 

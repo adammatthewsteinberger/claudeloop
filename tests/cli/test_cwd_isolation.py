@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Regression tests for --cwd isolation across all subcommands.
 
 These tests verify that commands respect --cwd and never write to Path.cwd()

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Unit tests for AnthropicApiGateway helpers and invoke edge cases."""
 
 from __future__ import annotations

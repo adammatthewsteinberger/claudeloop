@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/stream_ui/app.py — StreamApp Textual TUI."""
 
 from __future__ import annotations
@@ -193,8 +194,10 @@ class TestStreamAppTickFollow:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, follow=True)
+        # Pause before mount so the real interval scheduled by on_mount cannot
+        # consume the file while run_test is still starting the application.
+        app.paused = True
         async with app.run_test(size=(120, 40)):
-            app.paused = True
             app._tick_follow()
             assert app._offset == 0
 
@@ -238,6 +241,17 @@ class TestStreamAppTickFollow:
 
 
 class TestStreamAppTickLive:
+    def test_tick_live_before_mount_is_inert(self, tmp_path: Path) -> None:
+        """A timer racing with teardown must not query removed widgets."""
+        f = _write_events(tmp_path, [])
+        live = BufferingStreamUi()
+        live.on_assistant("final answer")
+        app = _make_app(f, follow=True, live_source=live)
+
+        app._tick_live()
+
+        assert live.assistants == ["final answer"]
+
     @pytest.mark.asyncio
     async def test_tick_live_processes_prompts_deltas_assistants(self, tmp_path: Path) -> None:
         f = _write_events(tmp_path, [])
@@ -545,10 +559,12 @@ class TestStreamAppPartialBranches:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
+        # Pause before mount; setting this after run_test yields leaves a race
+        # with the 0.05-second replay interval on slower CI runners.
+        app._playing = False
         async with app.run_test(size=(120, 40)) as pilot:
             app._load_all()
             app._replay_index = 5
-            app._playing = False  # Pause ticker to prevent race
             await pilot.pause()
             app.action_prev_turn()
             assert app._replay_index == 3  # prev(2) + 1 per line 335

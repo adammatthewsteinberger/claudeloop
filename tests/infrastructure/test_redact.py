@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/redact.py — recursive redaction of secrets."""
 
 from __future__ import annotations

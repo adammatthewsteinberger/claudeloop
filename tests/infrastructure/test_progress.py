@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/progress.py — ConsoleProgressReporter adapter."""
 
 from __future__ import annotations

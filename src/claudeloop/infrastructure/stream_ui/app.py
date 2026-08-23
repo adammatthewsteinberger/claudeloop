@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Textual StreamApp — multi-pane live / follow / replay UI.
 
 Left pane is a continuous realtime AI chat log (prompts + streamed tokens).
@@ -133,6 +134,7 @@ class StreamApp(App[None]):
         self._saw_delta = False
         self._thinking = False
         self._thinking_frame = 0
+        self._ui_mounted = False
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -145,6 +147,7 @@ class StreamApp(App[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        self._ui_mounted = True
         if self.replay:
             self._load_all()
             self.set_interval(0.05, self._tick_replay)
@@ -153,6 +156,10 @@ class StreamApp(App[None]):
             if self.live_source is not None:
                 self.set_interval(0.1, self._tick_live)
         self.set_interval(0.5, self._tick_thinking)
+
+    def on_unmount(self) -> None:
+        """Prevent periodic callbacks from touching widgets during teardown."""
+        self._ui_mounted = False
 
     def _set_thinking(self, active: bool) -> None:
         self._thinking = active
@@ -271,7 +278,7 @@ class StreamApp(App[None]):
             self._apply_record(record)
 
     def _tick_live(self) -> None:
-        if self.live_source is None or self.paused:
+        if not self._ui_mounted or self.live_source is None or self.paused:
             return
         while self.live_source.prompts:
             prompt = self.live_source.prompts.pop(0)

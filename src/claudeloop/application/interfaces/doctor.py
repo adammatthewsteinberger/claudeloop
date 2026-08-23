@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """What `doctor` needs from the outside world.
 
 Kept separate from the larger AgentGateway/SessionCatalog seams so `doctor`

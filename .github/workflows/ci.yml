@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 name: CI
 
 on:
@@ -92,16 +93,21 @@ jobs:
             --cov-branch \
             --cov-report=term-missing \
             --cov-fail-under=100
+      # -n auto only on the two large layers. Measured on a 10-core box:
+      # infrastructure 10.5s -> 7.2s and cli 4.9s -> 3.9s, but domain
+      # 0.9s -> 2.1s and application 0.5s -> 2.0s, where worker startup
+      # costs more than the parallelism saves. A blanket addopts setting
+      # would therefore make two of the four gates slower.
       - name: Infrastructure layer - 100% coverage required
         run: |
-          pytest tests/infrastructure \
+          pytest tests/infrastructure -n auto --maxprocesses=8 \
             --cov=claudeloop.infrastructure \
             --cov-branch \
             --cov-report=term-missing \
             --cov-fail-under=100
       - name: CLI layer - 100% coverage required
         run: |
-          pytest tests/cli \
+          pytest tests/cli -n auto --maxprocesses=8 \
             --cov=claudeloop.cli \
             --cov-branch \
             --cov-report=term-missing \

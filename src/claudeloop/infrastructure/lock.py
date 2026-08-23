@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """SessionLock — advisory file lock preventing two claudeloop runners from
 driving the same Claude Code session concurrently. Advisory only (an exclusive
 create on a marker file): it protects against two claudeloop invocations racing,

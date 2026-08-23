@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/agent/gateway.py — ClaudeAgentGateway + ClaudeCapacityProbe.
 
 Uses mocked ClaudeSDKClient to test gateway logic without a live SDK connection.

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tool approval gate for Manual permission mode — never blocks on stdin."""
 
 from __future__ import annotations
