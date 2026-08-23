@@ -13,8 +13,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, ScreenStackError
 from textual.containers import Horizontal
+from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.widgets import Footer, Header, RichLog, Static
 
@@ -279,6 +280,17 @@ class StreamApp(App[None]):
 
     def _tick_live(self) -> None:
         if not self._ui_mounted or self.live_source is None or self.paused:
+            return
+        # Textual may dispatch an interval after ``on_mount`` has begun but
+        # before every composed child is attached (and likewise while a screen
+        # is being replaced). Do not consume buffered model output until all
+        # widgets touched by this tick are available; the next interval can
+        # safely retry it.
+        try:
+            self.query_one("#header-bar", Static)
+            self.query_one("#thinking-bar", Static)
+            self.query_one("#assistant", RichLog)
+        except (NoMatches, ScreenStackError):
             return
         while self.live_source.prompts:
             prompt = self.live_source.prompts.pop(0)
