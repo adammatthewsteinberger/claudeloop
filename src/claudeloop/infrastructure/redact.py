@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Recursive redaction of secret-shaped keys and credential-looking strings.
 
 Used by structlog, the JSONL audit log, and the per-run events.jsonl sink so

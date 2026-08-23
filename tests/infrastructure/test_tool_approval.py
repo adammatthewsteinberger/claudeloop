@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/tool_approval.py — ToolApprovalGate."""
 
 from __future__ import annotations

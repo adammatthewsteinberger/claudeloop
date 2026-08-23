@@ -1,6 +1,6 @@
 {
   "anthropic_version": "0.121.0",
-  "method_count": 137,
+  "method_count": 136,
   "local_helpers": [
     "beta.messages.parse",
     "beta.messages.stream",
@@ -134,7 +134,6 @@
     "beta.vaults.retrieve",
     "beta.vaults.update",
     "beta.webhooks.unwrap",
-    "completions.create",
     "messages.batches.cancel",
     "messages.batches.create",
     "messages.batches.delete",

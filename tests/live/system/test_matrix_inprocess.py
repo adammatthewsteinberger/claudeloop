@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Exhaustive in-process system-live matrix: real adapters + scripted agent."""
 
 from __future__ import annotations

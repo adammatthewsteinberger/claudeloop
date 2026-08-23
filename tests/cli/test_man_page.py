@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for cli/man_page.py — manual page rendering."""
 
 from __future__ import annotations

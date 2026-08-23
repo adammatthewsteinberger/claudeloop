@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for CLI command modules — operator control commands.
 
 Tests the thin Typer wrappers around bootstrap_ops, ensuring correct argument

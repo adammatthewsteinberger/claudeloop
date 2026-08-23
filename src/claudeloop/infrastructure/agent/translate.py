@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Translates raw claude_agent_sdk messages into the typed TurnSignals /
 StructuredVerdict / TurnOutcome shapes domain/ and application/ operate on.
 
