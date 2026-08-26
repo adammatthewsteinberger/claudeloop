@@ -731,3 +731,106 @@ async def test_wind_down_at_deadline_triggers_wind_down() -> None:
     result = await runner.run(initial_prompt="start", continue_prompt="continue")
 
     assert "deadline" in result.reason.lower()
+
+
+async def test_known_session_id_acquires_lock_before_first_turn() -> None:
+    """Resume must lock the known session id before send_turn, not after."""
+    clock = FakeClock(start=NOW)
+    lock = FakeSessionLock()
+    gateway = FakeAgentGateway(
+        [ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT, session_id="sess-a")]
+    )
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=FakeCapacityProbe([available_signals()]),
+        clock=clock,
+        sleeper=FakeSleeper(clock),
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        budget=_DEFAULT_BUDGET,
+        wait_policy=_DEFAULT_WAIT_POLICY,
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=lock,
+        save_points=FakeSavePointStore(),
+        known_session_id="sess-a",
+        run_id="test-run",
+    )
+    result = await runner.run(initial_prompt="resume", continue_prompt="continue")
+    assert result.success is True
+    assert runner._lock_token is None  # released on finish
+    assert gateway.sent_prompts == ["resume"]
+    # Lock was held during the run and released cleanly.
+    assert "sess-a" not in lock.held
+    # A subsequent acquire succeeds only if we released — proves we took it.
+    assert lock.acquire("sess-a") is True
+    lock.release("sess-a")
+
+
+async def test_known_session_id_fails_closed_when_lock_held() -> None:
+    """A second resume against a locked session must abort without sending a turn."""
+    clock = FakeClock(start=NOW)
+    lock = FakeSessionLock()
+    assert lock.acquire("sess-busy") is True
+    gateway = FakeAgentGateway(
+        [ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT, session_id="sess-busy")]
+    )
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=FakeCapacityProbe([available_signals()]),
+        clock=clock,
+        sleeper=FakeSleeper(clock),
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        budget=_DEFAULT_BUDGET,
+        wait_policy=_DEFAULT_WAIT_POLICY,
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=lock,
+        save_points=FakeSavePointStore(),
+        known_session_id="sess-busy",
+        run_id="test-run",
+    )
+    result = await runner.run(initial_prompt="resume", continue_prompt="continue")
+    assert result.success is False
+    assert "already locked" in result.reason
+    assert gateway.sent_prompts == []
+    assert gateway.closed is True
+
+
+async def test_late_lock_contention_after_first_turn_fails_closed() -> None:
+    """Fresh runs learn the session id from the first turn; if another runner
+    already holds that lock, refuse further turns instead of fail-open."""
+    clock = FakeClock(start=NOW)
+    lock = FakeSessionLock()
+    assert lock.acquire("sess-race") is True
+    gateway = FakeAgentGateway(
+        [
+            ScriptedTurn(
+                signals=available_signals(),
+                verdict=CONTINUE_VERDICT,
+                session_id="sess-race",
+            ),
+            ScriptedTurn(signals=available_signals(), verdict=DONE_VERDICT),
+        ]
+    )
+    runner = AutonomousRunner(
+        agent_gateway=gateway,
+        capacity_probe=FakeCapacityProbe([available_signals()]),
+        clock=clock,
+        sleeper=FakeSleeper(clock),
+        audit_log=FakeAuditLog(),
+        progress=FakeProgressReporter(),
+        budget=_DEFAULT_BUDGET,
+        wait_policy=_DEFAULT_WAIT_POLICY,
+        event_sink=FakeEventSink(),
+        state_store=FakeStateStore(),
+        session_lock=lock,
+        save_points=FakeSavePointStore(),
+        run_id="test-run",
+    )
+    result = await runner.run(initial_prompt="start", continue_prompt="continue")
+    assert result.success is False
+    assert "already locked" in result.reason
+    assert gateway.sent_prompts == ["start"]
+    assert gateway.closed is True
