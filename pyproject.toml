@@ -44,7 +44,12 @@ dependencies = [
     "typer>=0.12",
     "structlog>=24.1",
     "claude-agent-sdk>=0.2.134",
-    "anthropic>=0.40",
+    # Pinned, not floating. The API drift gate asserts the discovered SDK surface against a
+    # committed baseline, so an unpinned SDK makes that gate fail on the SDK's release
+    # schedule rather than on a change to this repository. It broke twice in two days:
+    # 0.121.0 -> 1.1.0 (136 -> 192 methods), then 1.1.0 -> 1.2.0 (192 -> 193) hours later.
+    # Bumping this pin and regenerating the baseline is now one reviewed change.
+    "anthropic==1.2.0",
     "textual>=1.0",
     "tomli>=2.0; python_version < '3.11'",
 ]
@@ -65,7 +70,7 @@ dev = [
     # advertises 3.10. The guardrail does not weaken -- the pre-push hook and
     # CI both refuse a push without it -- so a 3.10 developer is told to install
     # it rather than silently exempted.
-    "vibey-gh>=1.2; python_version >= '3.11'",
+    "vibey-gh==1.38.0; python_version >= '3.11'",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "pytest-xdist>=3.5",
