@@ -11,3 +11,6 @@
 # language statistics and out of PR diffs by default.
 docs/reference/* linguist-generated=true
 legacy/* linguist-vendored=true
+
+# vibey-gh: append-only files merge instead of conflicting
+CHANGELOG.md merge=union
