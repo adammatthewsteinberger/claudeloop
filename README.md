@@ -177,4 +177,4 @@ MIT — see [LICENSE](https://github.com/adammatthewsteinberger/claudeloop/blob/
 
 ---
 
-Built by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com) · [more open source](https://hire.adam.matthewsteinberger.com/open-source)
+Built by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com) · [more open source](https://vibewithadam.matthewsteinberger.com/open-source)
