@@ -149,6 +149,17 @@ class StreamApp(App[None]):
 
     def on_mount(self) -> None:
         self._ui_mounted = True
+
+    def on_ready(self) -> None:
+        """Start the periodic ticks only once the DOM is fully composed.
+
+        on_mount fires before child widgets finish mounting, and a 50ms replay
+        tick could beat #assistant into existence — query_one then raised
+        NoMatches, seen as intermittent failures across Python versions in
+        tests and as a crash risk on any slow terminal. on_ready is Textual's
+        guarantee that every composed widget exists and the first frame has
+        painted, which is exactly the precondition every tick relies on.
+        """
         if self.replay:
             self._load_all()
             self.set_interval(0.05, self._tick_replay)
@@ -314,6 +325,14 @@ class StreamApp(App[None]):
         if not self._playing or self.paused:
             return
         if self._replay_index >= len(self._records):
+            return
+        # Same readiness probe as _tick_live: an interval (or a test driving
+        # this tick directly) can run before every composed child is attached.
+        # Consume nothing until the widgets a record paints exist; the next
+        # tick retries safely.
+        try:
+            self.query_one("#assistant", RichLog)
+        except (NoMatches, ScreenStackError):
             return
         n = 1 if self.speed > 0 else 20
         for _ in range(n):
