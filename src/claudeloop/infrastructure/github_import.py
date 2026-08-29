@@ -5,11 +5,21 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess  # nosec B404 - fixed argv to `gh api`, no shell
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9._-]+$")
+
+
+def _validate_identifier(kind: str, value: str, ref: str) -> str:
+    """Reject owner/repo values that aren't safe GitHub identifiers or filename segments."""
+    if not _IDENTIFIER_RE.fullmatch(value) or value in {".", ".."}:
+        raise ValueError(f"invalid {kind} {value!r} in {ref!r}")
+    return value
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +47,8 @@ def parse_issue_ref(ref: str) -> tuple[str, str, int]:
     owner, repo = repo_part.split("/", 1)
     if not owner or not repo or not num_part.isdigit():
         raise ValueError(f"expected OWNER/REPO#N, got {ref!r}")
+    _validate_identifier("owner", owner, ref)
+    _validate_identifier("repo", repo, ref)
     return owner, repo, int(num_part)
 
 
@@ -51,6 +63,8 @@ def parse_repo_ref(ref: str) -> tuple[str, str, str | None]:
     owner, repo = raw.split("/", 1)
     if not owner or not repo:
         raise ValueError(f"expected OWNER/REPO[@REF], got {ref!r}")
+    _validate_identifier("owner", owner, ref)
+    _validate_identifier("repo", repo, ref)
     return owner, repo, at_ref or None
 
 

@@ -220,7 +220,8 @@ class RunResourceStore:
         return list(index.get("items") or [])
 
     def get_memory(self, name: str) -> str:
-        path = self.memories_dir / f"{name}.md"
+        safe = _safe_name(name)
+        path = self.memories_dir / f"{safe}.md"
         if not path.is_file():
             raise FileNotFoundError(f"memory not found: {name}")
         return path.read_text(encoding="utf-8")
@@ -266,7 +267,7 @@ class RunResourceStore:
         return sorted(p.name for p in self.artifacts_dir.iterdir() if p.is_file())
 
     def get_artifact(self, name: str) -> Path:
-        path = self.artifacts_dir / name
+        path = self.artifacts_dir / _safe_name(name)
         if not path.is_file():
             raise FileNotFoundError(f"artifact not found: {name}")
         return path
@@ -278,7 +279,7 @@ class RunResourceStore:
         return dest
 
     def remove_artifact(self, name: str) -> None:
-        path = self.artifacts_dir / name
+        path = self.artifacts_dir / _safe_name(name)
         if path.is_file():
             path.unlink()
         else:
