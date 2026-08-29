@@ -343,7 +343,12 @@ class TestStreamAppTickReplay:
         app = _make_app(f, replay=True, follow=False)
         # Prevent auto-play timer from racing the manual tick below.
         app._playing = False
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()
@@ -358,7 +363,12 @@ class TestStreamAppTickReplay:
         app = _make_app(f, replay=True, follow=False)
         # Set paused before run_test() to prevent auto-play timer race.
         app.paused = True
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._tick_replay()
             assert app._replay_index == 0
@@ -375,7 +385,12 @@ class TestStreamAppTickReplay:
         # mounts the app, or that timer can race the assertion below under
         # load and advance _replay_index before this test's own manual call.
         app._playing = False
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._tick_replay()
             assert app._replay_index == 0
@@ -387,7 +402,12 @@ class TestStreamAppTickReplay:
         ]
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False)
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._replay_index = 1
             app._tick_replay()
@@ -404,7 +424,12 @@ class TestStreamAppTickReplay:
         # True immediately before the manual call with no `await` in between
         # so the background timer can't sneak in an extra tick first.
         app._playing = False
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()
@@ -419,7 +444,12 @@ class TestStreamAppTickReplay:
         f = _write_events(tmp_path, events)
         app = _make_app(f, replay=True, follow=False, speed=-1)
         app._playing = False
-        async with app.run_test(size=(120, 40)):
+        async with app.run_test(size=(120, 40)) as pilot:
+            # Wait for compose/mount to finish before driving: entering run_test
+            # does not guarantee #assistant is mounted yet, and _tick_replay
+            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
+            # exactly this race.
+            await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()
