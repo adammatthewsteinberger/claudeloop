@@ -348,6 +348,9 @@ class TestStreamAppTickReplay:
             app._playing = True
             app._tick_replay()
             assert app._replay_index == 1
+            # Stop the auto-play timer again so it can't race widget teardown
+            # by firing another _tick_replay() while run_test() is exiting.
+            app._playing = False
 
     @pytest.mark.asyncio
     async def test_tick_replay_paused_skips(self, tmp_path: Path) -> None:
