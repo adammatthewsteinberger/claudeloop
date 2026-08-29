@@ -85,6 +85,16 @@ class TestParseRepoRef:
         assert ref is None
 
 
+class TestValidateIdentifier:
+    def test_invalid_character_raises(self) -> None:
+        with pytest.raises(ValueError, match="invalid owner"):
+            parse_issue_ref("own er/repo#1")
+
+    def test_dot_dot_raises(self) -> None:
+        with pytest.raises(ValueError, match="invalid owner"):
+            parse_repo_ref("../repo")
+
+
 class TestImportedIssue:
     def test_as_prompt_fragment(self) -> None:
         issue = ImportedIssue(
