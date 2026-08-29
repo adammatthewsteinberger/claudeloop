@@ -292,6 +292,7 @@ class AutonomousRunner:
         run_resources: RunResources | None = None,
         permission_mode: str = DEFAULT_USER_PERMISSION_MODE,
         snapshot_sink: RunSnapshotSink | None = None,
+        known_session_id: str | None = None,
     ) -> None:
         self._gateway = agent_gateway
         self._probe = capacity_probe
@@ -330,6 +331,7 @@ class AutonomousRunner:
         self._resources = run_resources or _NullRunResources()
         self._permission_mode = parse_user_permission_mode(permission_mode)
         self._snapshots = snapshot_sink or _NullSnapshotSink()
+        self._known_session_id = known_session_id
         self._log = (logger or _NullLogger()).bind(
             run_id=run_id,
             component="runner",
@@ -368,7 +370,7 @@ class AutonomousRunner:
         `continue_prompt` on every subsequent SendTurn (unless an injected
         prompt is pending)."""
         state = start(BudgetLedger(budget=self._budget))
-        session_id: str | None = None
+        session_id: str | None = self._known_session_id
         first_turn = True
         attempt = 0
         self._log.info(
@@ -394,9 +396,17 @@ class AutonomousRunner:
             effort=self._profile.effort,
             preset=self._profile.preset,
         )
-        self._emit_snapshot("started", session_id=None, attempt=0, state=state)
+        self._emit_snapshot("started", session_id=session_id, attempt=0, state=state)
 
         try:
+            # Resume (and any other path that already knows the Claude session id)
+            # must take the advisory lock *before* the first send_turn. Acquiring
+            # after the first turn is too late: two `claudeloop resume` processes
+            # can both drive the same session and corrupt it. Fail closed when
+            # another runner already holds the lock.
+            if session_id is not None and not self._acquire_session_lock(session_id):
+                return await self._finish_lock_contention(state, session_id=session_id)
+
             preflight_outcome = await self._probe.probe()
             capacity = self._verdict_capacity(preflight_outcome)
             self._last_capacity_name = type(capacity).__name__
@@ -480,10 +490,9 @@ class AutonomousRunner:
                     if (
                         session_id
                         and self._lock_token is None
-                        and self._session_lock.acquire(session_id)
+                        and not self._acquire_session_lock(session_id)
                     ):
-                        self._lock_token = session_id
-                        self._log.info("session.lock_acquired", session_id=session_id)
+                        return await self._finish_lock_contention(state, session_id=session_id)
                     self._events.bind(session_id=session_id)
                     capacity = classify(outcome.signals)
                     self._last_capacity_name = type(capacity).__name__
@@ -1663,6 +1672,69 @@ class AutonomousRunner:
     def _update_meta(self, **kwargs: Any) -> None:
         if self._meta_updater is not None:
             self._meta_updater(**kwargs)
+
+    def _acquire_session_lock(self, session_id: str) -> bool:
+        """Take the advisory lock for ``session_id``. Returns False when another
+        runner already holds it — callers must fail closed rather than continue."""
+        if not self._session_lock.acquire(session_id):
+            self._log.warning("session.lock_busy", session_id=session_id)
+            return False
+        self._lock_token = session_id
+        self._log.info("session.lock_acquired", session_id=session_id)
+        return True
+
+    async def _finish_lock_contention(self, state: RunState, *, session_id: str) -> RunResult:
+        reason = (
+            f"session {session_id} is already locked by another claudeloop runner; "
+            "refusing to drive it concurrently"
+        )
+        with contextlib.suppress(Exception):
+            await self._gateway.close()
+        self._progress.finished(success=False, reason=reason)
+        self._audit.record(
+            "finished",
+            {
+                "success": False,
+                "reason": reason,
+                "run_id": self._run_id,
+                "session_id": session_id,
+            },
+        )
+        self._events.emit("finished", {"success": False, "reason": reason})
+        self._log.info(
+            "run.failed",
+            reason=reason,
+            turns_spent=state.ledger.turns_spent,
+            dollars_spent=state.ledger.dollars_spent,
+            session_id=session_id,
+        )
+        self._update_meta(
+            status="failed",
+            phase=Phase.FAILED.name,
+            session_id=session_id,
+            capacity=self._last_capacity_name,
+            model=self._profile.model,
+            effort=self._profile.effort,
+            preset=self._profile.preset,
+        )
+        self._persist(state, session_id=session_id, attempt=0)
+        self._emit_snapshot(
+            "failed",
+            session_id=session_id,
+            attempt=0,
+            state=state,
+            status="failed",
+            bundle=True,
+        )
+        self._release_lock()
+        self._stream_ui.close()
+        return RunResult(
+            success=False,
+            reason=reason,
+            session_id=session_id,
+            turns_spent=state.ledger.turns_spent,
+            dollars_spent=state.ledger.dollars_spent,
+        )
 
     def _release_lock(self) -> None:
         if self._lock_token is not None:
