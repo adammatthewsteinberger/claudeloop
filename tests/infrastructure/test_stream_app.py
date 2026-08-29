@@ -333,6 +333,17 @@ class TestStreamAppTickLive:
 
 
 class TestStreamAppTickReplay:
+    def test_tick_replay_before_dom_consumes_nothing(self, tmp_path: Path) -> None:
+        events = [{"event_type": "chatter.delta", "payload": {"text": "hi"}}]
+        f = _write_events(tmp_path, events)
+        app = _make_app(f, replay=True, follow=False)
+        app._load_all()
+        # No run_test: the DOM does not exist, exactly like an interval
+        # dispatched before compose finished. The readiness probe must swallow
+        # it and consume nothing, so the next tick replays the record instead.
+        app._tick_replay()
+        assert app._replay_index == 0
+
     @pytest.mark.asyncio
     async def test_tick_replay_advances(self, tmp_path: Path) -> None:
         events = [
@@ -345,10 +356,11 @@ class TestStreamAppTickReplay:
         app._playing = False
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()
@@ -365,10 +377,11 @@ class TestStreamAppTickReplay:
         app.paused = True
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._tick_replay()
             assert app._replay_index == 0
@@ -387,10 +400,11 @@ class TestStreamAppTickReplay:
         app._playing = False
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._tick_replay()
             assert app._replay_index == 0
@@ -404,10 +418,11 @@ class TestStreamAppTickReplay:
         app = _make_app(f, replay=True, follow=False)
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._replay_index = 1
             app._tick_replay()
@@ -426,10 +441,11 @@ class TestStreamAppTickReplay:
         app._playing = False
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()
@@ -446,10 +462,11 @@ class TestStreamAppTickReplay:
         app._playing = False
         async with app.run_test(size=(120, 40)) as pilot:
             # Wait for compose/mount to finish before driving: entering run_test
-            # does not guarantee #assistant is mounted yet, and _tick_replay
-            # queries it — the intermittent NoMatches failures on 3.10-3.13 were
-            # exactly this race.
-            await pilot.pause()
+            # does not guarantee #assistant is mounted yet, and a single
+            # pause() proved insufficient on slow CI runners. Poll the DOM
+            # itself — deterministic, since mount always completes.
+            while not app.query("#assistant"):
+                await pilot.pause()
             app._load_all()
             app._playing = True
             app._tick_replay()

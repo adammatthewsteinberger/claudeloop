@@ -326,6 +326,14 @@ class StreamApp(App[None]):
             return
         if self._replay_index >= len(self._records):
             return
+        # Same readiness probe as _tick_live: an interval (or a test driving
+        # this tick directly) can run before every composed child is attached.
+        # Consume nothing until the widgets a record paints exist; the next
+        # tick retries safely.
+        try:
+            self.query_one("#assistant", RichLog)
+        except (NoMatches, ScreenStackError):
+            return
         n = 1 if self.speed > 0 else 20
         for _ in range(n):
             if self._replay_index >= len(self._records):
