@@ -290,6 +290,7 @@ def build_runner(
         run_resources=resources,
         permission_mode=permission_mode,
         snapshot_sink=snapshot_sink,
+        known_session_id=resume or session_id,
     )
     if slash:
         run_control.enqueue(SlashCommand(text=slash))
