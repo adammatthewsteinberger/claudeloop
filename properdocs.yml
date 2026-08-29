@@ -68,3 +68,4 @@ nav:
   - Plans:
       - Architecture & roadmap: plans/architecture-and-roadmap.md
       - FOSS & documentation plan: plans/foss-and-documentation-plan.md
+  - Research paper: paper.md
