@@ -28,7 +28,7 @@ mkdocs serve
 
 Open `http://127.0.0.1:8000`. Live-reloads on save.
 
-## The strict build CI runs
+## Checking your docs changes locally
 
 ```bash
 mkdocs build --strict
@@ -36,9 +36,14 @@ mkdocs build --strict
 
 `--strict` turns every warning — most commonly a broken internal link, or a
 page referenced in `nav:` (in `mkdocs.yml`) that doesn't exist — into a
-build failure. Run this locally before opening a PR that touches `docs/`;
-it's exactly what `docs.yml` runs in CI, so a strict-build failure there
-means it would have failed for you too.
+build failure. Run this locally before opening a PR that touches `docs/`.
+There is no per-PR docs CI gate today: the published site is rebuilt with
+[ProperDocs](https://pypi.org/project/properdocs/)
+(`properdocs build --strict --config-file properdocs.yml`) by
+`release-surfaces.yml` after a release lands on `develop` or `main`.
+`properdocs.yml` mirrors `mkdocs.yml`'s `nav:`, so a local
+`mkdocs build --strict` failure is the closest available signal that the
+ProperDocs build would fail too.
 
 ## Writing style for this project's docs
 

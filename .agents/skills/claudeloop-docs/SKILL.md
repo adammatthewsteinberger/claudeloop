@@ -42,11 +42,15 @@ in the same PR. No codegen in v1 — manual mirror.
 ```bash
 pip install -e ".[docs]"
 mkdocs serve      # local preview at http://127.0.0.1:8000, live-reloads
-mkdocs build --strict   # what CI runs — fails on ANY warning, most commonly a broken link
+mkdocs build --strict   # fails on ANY warning, most commonly a broken link
 ```
 
-Run `mkdocs build --strict` before opening a PR that touches `docs/` — it's
-exactly what `docs.yml` runs in CI.
+Run `mkdocs build --strict` before opening a PR that touches `docs/`. There
+is no per-PR docs CI gate: the published site is rebuilt with ProperDocs
+(`properdocs build --strict --config-file properdocs.yml`, which mirrors
+`mkdocs.yml`'s `nav:`) by `release-surfaces.yml` after a release lands on
+`develop` or `main`, so a local strict-build failure is the closest
+available signal that the ProperDocs build would fail too.
 
 ## Writing conventions
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.6.1...claudeloop-v0.7.0) (2026-08-29)
+
+
+### Miscellaneous Chores
+
+* cut 0.7.0
+
 ## [0.6.1](https://github.com/adammatthewsteinberger/claudeloop/compare/claudeloop-v0.6.0...claudeloop-v0.6.1) (2026-08-20)
 
 

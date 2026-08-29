@@ -4,7 +4,7 @@
 [![PyPI downloads](https://img.shields.io/pypi/dm/claudeloop)](https://pypi.org/project/claudeloop/)
 [![Python versions](https://img.shields.io/pypi/pyversions/claudeloop)](https://pypi.org/project/claudeloop/)
 [![CI](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/ci.yml)
-[![Docs](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/docs.yml/badge.svg)](https://adammatthewsteinberger.github.io/claudeloop/)
+[![Docs](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/release-surfaces.yml/badge.svg)](https://adammatthewsteinberger.github.io/claudeloop/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/LICENSE)
 
 ## What problem this solves
