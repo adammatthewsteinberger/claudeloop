@@ -1,0 +1,292 @@
+%% claudeloop architecture map — source modules, CLI surface, run-loop state
+%% machine, generated REST surface, control-plane data flow, security
+%% boundaries, and the CI/release pipeline.
+%%
+%% Regenerate-by-hand rule: whenever a module moves layer, a command is
+%% added/removed, or a workflow is renamed, update this file in the same PR
+%% (see the claudeloop-docs skill / docs/contributing/documentation.md).
+
+flowchart TD
+
+    %% ===================================================================
+    %% Layers (see docs/architecture/overview.md) — arrows show the ONLY
+    %% import directions import-linter allows in CI.
+    %% ===================================================================
+    subgraph CLI["cli/  (Typer entry points — thin: parse, call a use case, format)"]
+        direction TB
+        cli_app["app.py (Typer root)"]
+        cli_man["man_page.py (--man)"]
+        cli_render["render.py"]
+        cli_time["time_parse.py (--wind-down-at)"]
+        subgraph CLI_run["Session lifecycle"]
+            cmd_run["commands/run.py"]
+            cmd_resume["commands/resume.py"]
+            cmd_stop["commands/stop.py"]
+            cmd_wind["commands/wind_down_cmd.py"]
+        end
+        subgraph CLI_midrun["Mid-run operator control (2nd terminal)"]
+            cmd_prompt["commands/prompt.py"]
+            cmd_model["commands/model_cmd.py"]
+            cmd_effort["commands/effort_cmd.py"]
+            cmd_preset["commands/preset_cmd.py"]
+            cmd_permmode["commands/permission_mode.py"]
+            cmd_cwd["commands/cwd_cmd.py"]
+            cmd_slash["commands/slash_cmd.py"]
+            cmd_tool["commands/tool_cmd.py"]
+            cmd_response["commands/response_cmd.py"]
+        end
+        subgraph CLI_resources["Run resources & chat ops"]
+            cmd_attach["commands/attach_cmd.py"]
+            cmd_folder["commands/folder_cmd.py"]
+            cmd_skill["commands/skill_cmd.py"]
+            cmd_plugin["commands/plugin_cmd.py"]
+            cmd_connector["commands/connector_cmd.py"]
+            cmd_github["commands/github_cmd.py"]
+            cmd_research["commands/research_cmd.py"]
+            cmd_websearch["commands/web_search_cmd.py"]
+            cmd_memory["commands/memory_cmd.py"]
+            cmd_artifact["commands/artifact_cmd.py"]
+            cmd_chat["commands/chat_cmd.py"]
+            cmd_voice["commands/voice_cmd.py"]
+        end
+        subgraph CLI_inspect["Inspection / control plane"]
+            cmd_logs["commands/logs.py"]
+            cmd_status["commands/status.py"]
+            cmd_snapshot["commands/snapshot_cmd.py"]
+            cmd_runs["commands/runs.py"]
+            cmd_savepoints["commands/savepoints.py"]
+            cmd_unwind["commands/unwind.py"]
+            cmd_reset["commands/reset.py"]
+            cmd_watch["commands/watch.py"]
+            cmd_sessions["commands/sessions.py"]
+            cmd_doctor["commands/doctor.py"]
+        end
+        cli_api["api ... (generated 1:1 Anthropic SDK sub-app)"]
+    end
+
+    Bootstrap["bootstrap.py + bootstrap_ops.py\n(composition root — the ONLY module allowed\nto see every layer and wire adapters into ports)"]
+
+    subgraph Application["application/  (Protocols + use cases; domain + stdlib only)"]
+        direction TB
+        app_ports["ports.py (Protocol definitions)"]
+        app_dto["dto.py"]
+        app_runner["runner.py (Runner — executes Decision against real ports)"]
+        subgraph app_interfaces["interfaces/"]
+            if_agent["agent.py"]
+            if_ui["ui.py"]
+            if_doctor["doctor.py"]
+            if_storage["storage.py"]
+            if_observability["observability.py"]
+            if_api["api.py"]
+            if_system["system.py"]
+            if_control["control.py"]
+        end
+        subgraph app_usecases["usecases/"]
+            uc_run_plan["run_plan.py"]
+            uc_resume["resume_session.py"]
+            uc_run_control["run_control.py (request_wind_down, …)"]
+            uc_list_sessions["list_sessions.py"]
+            uc_doctor["doctor.py"]
+        end
+    end
+
+    subgraph Domain["domain/  (pure — stdlib only, no I/O, no async, no 3rd-party)"]
+        direction TB
+        subgraph dom_policy["Decisions & policy (property-tested)"]
+            d_capacity["capacity.py (CapacityState: Available/WindowExhausted/\nCreditsExhausted/AuthenticationFailed)"]
+            d_classify["classify.py"]
+            d_completion["completion.py (CompletionVerdict: Done/Continue/Blocked)"]
+            d_waiting["waiting.py (WaitPolicyConfig, next_probe_instant)"]
+            d_budget["budget.py (Budget, BudgetLedger)"]
+            d_forecast["forecast.py (WindDownPolicy, should_wind_down — F1..F5)"]
+            d_loop["loop.py (the run-loop state machine — see below)"]
+            d_control["control.py (ControlCommand ADTs, stop_outranks)"]
+            d_handoff["handoff_marker.py (EXIT_WIND_DOWN = 75)"]
+        end
+        subgraph dom_values["Value objects"]
+            d_session["session.py"]
+            d_savepoint["savepoint.py"]
+            d_savepoint_msg["savepoint_message.py"]
+            d_snapshot["snapshot.py"]
+            d_plan["plan.py"]
+            d_model_profile["model_profile.py"]
+            d_model_policy["model_policy.py"]
+            d_permission["permission.py"]
+            d_slash["slash.py"]
+            d_chatter["chatter.py"]
+            d_stop_summary["stop_summary.py"]
+            d_verbosity["verbosity.py"]
+            d_errors["errors.py"]
+        end
+    end
+
+    subgraph Infrastructure["infrastructure/  (adapters — the ONLY layer allowed to\nimport claude_agent_sdk, anthropic, structlog, httpx, …)"]
+        direction TB
+        subgraph infra_agent["agent/  — ONLY place claude_agent_sdk is imported"]
+            ag_gateway["gateway.py (ClaudeSDKClient wiring)"]
+            ag_options["options.py (ClaudeAgentOptions builder)"]
+            ag_translate["translate.py (SDK messages → domain signals)"]
+            ag_catalog["catalog.py (list_sessions())"]
+            ag_autonomy["autonomy.py (AskUserQuestion → deny w/ guidance, never stdin)"]
+            ag_scripted["scripted.py (test-only scripted agent)"]
+        end
+        subgraph infra_api["api/  — ONLY place the anthropic SDK client is driven for REST"]
+            api_introspect["introspect.py (walk anthropic SDK resource tree)"]
+            api_binder["binder.py (bind SDK methods → Typer commands)"]
+            api_registry["registry.py (assembles the generated sub-app)"]
+            api_gateway["gateway.py (executes calls against anthropic client)"]
+            api_providers["providers.py"]
+            api_params["params.py"]
+            api_json["json_io.py"]
+        end
+        infra_config["config.py (RunnerConfig, load_config — CLI > env > file > default)"]
+        infra_control["control.py (inbox *.cmd.json read/write)"]
+        infra_events["events.py (events.jsonl writer)"]
+        infra_audit["audit.py (audit.jsonl writer)"]
+        infra_redact["redact.py (secret redaction before any log line)"]
+        infra_state_bus["state_bus.py (bus.jsonl publications)"]
+        infra_snapshot["snapshot.py (handoff snapshot + bundle)"]
+        infra_git["git_savepoints.py (refs/claudeloop/<run_id>/<n>)"]
+        infra_lock["lock.py (run.lock)"]
+        infra_rundir["rundir.py (.claudeloop/runs/<id>/ layout)"]
+        infra_chatmeta["chat_meta.py"]
+        infra_chatterlog["chatter_log.py"]
+        infra_progress["progress.py"]
+        infra_notify["notify.py"]
+        infra_clock["clock.py (SystemClock; FakeClock lives in tests)"]
+        infra_logging["logging.py (dual console + optional file structlog)"]
+        infra_github["github_import.py (--from-github / --import-issue)"]
+        infra_doctor_env["doctor_env.py (doctor checks)"]
+        infra_tool_approval["tool_approval.py (Manual-mode approvals, timeout — never stdin)"]
+        infra_state["state.py"]
+        subgraph infra_resources["resources/"]
+            res_store["store.py"]
+            res_adapter["adapter.py"]
+        end
+        subgraph infra_streamui["stream_ui/"]
+            su_app["app.py (Textual multi-pane token stream)"]
+        end
+    end
+
+    %% Layer dependency edges (enforced by import-linter; see
+    %% docs/architecture/decisions/0001-onion-architecture-with-import-linter.md)
+    CLI -->|"calls use cases via"| Bootstrap
+    Bootstrap -->|wires adapters into ports| Application
+    Bootstrap -->|constructs concrete adapters| Infrastructure
+    Application -->|"depends only on"| Domain
+    Infrastructure -->|"implements ports over"| Application
+    Infrastructure -->|"reads/writes"| Domain
+    cli_api -.->|generated from| api_registry
+
+    %% ===================================================================
+    %% Run-loop state machine (domain/loop.py) — see
+    %% docs/architecture/run-loop-state-machine.md
+    %% ===================================================================
+    subgraph StateMachine["Run-loop state machine (domain/loop.py — pure, no I/O)"]
+        direction LR
+        S_PREFLIGHT["PREFLIGHT\n(entered once)"]
+        S_RUNNING["RUNNING"]
+        S_WAITING["WAITING"]
+        S_COMPLETE["COMPLETE (terminal)"]
+        S_FAILED["FAILED (terminal)"]
+        S_WINDDOWN["exit 75\nWound down\n(terminal)"]
+        S_STOPPED["exit 130\nSoft-stopped\n(terminal)"]
+
+        S_PREFLIGHT -->|Available| S_RUNNING
+        S_PREFLIGHT -->|WindowExhausted / CreditsExhausted| S_WAITING
+        S_PREFLIGHT -->|AuthenticationFailed| S_FAILED
+        S_RUNNING -->|"capacity rejection\n(always outranks a completion claim)"| S_WAITING
+        S_RUNNING -->|Done and Available| S_COMPLETE
+        S_RUNNING -->|Blocked, budget exhausted| S_FAILED
+        S_WAITING -->|probe: Available| S_RUNNING
+        S_WAITING -->|max_wait exceeded| S_FAILED
+        S_RUNNING -->|"WindDownCommand, or should_wind_down()\nat a natural break (Continue+Available+not exhausted)"| S_WINDDOWN
+        S_WAITING -->|WindDownCommand breaks the wait| S_WINDDOWN
+        S_RUNNING -->|StopCommand| S_STOPPED
+        S_WAITING -->|StopCommand| S_STOPPED
+    end
+    app_runner -->|executes Decision: SendTurn/RunProbe/ScheduleProbe/Finish| StateMachine
+
+    %% ===================================================================
+    %% Generated REST surface (claudeloop api ...) — see
+    %% docs/guides/rest-api-surface.md and ADR 0006
+    %% ===================================================================
+    subgraph RestSurface["claudeloop api ... — generated 1:1 over the anthropic SDK"]
+        direction LR
+        RS_typer["Typer sub-app\n(one command per SDK resource method)"]
+        RS_anthropic[("anthropic Python SDK\n(real network client)")]
+        RS_drift["CI drift gate (ci.yml)\nre-runs introspect+binder,\nfails the build on any gap"]
+    end
+    api_introspect --> api_binder --> api_registry --> RS_typer
+    RS_typer --> api_gateway --> api_providers --> RS_anthropic
+    api_registry -.->|diffed against committed tree by| RS_drift
+
+    %% ===================================================================
+    %% Control-plane data flow — second terminal ↔ foreground run/resume
+    %% ===================================================================
+    subgraph ControlPlane[".claudeloop/runs/<run_id>/ — control plane on disk"]
+        direction LR
+        CP_inbox["inbox/*.cmd.json"]
+        CP_events["events.jsonl (redacted, real-time)"]
+        CP_audit["audit.jsonl (phase/turn audit trail)"]
+        CP_status["status.json (pollable snapshot)"]
+        CP_bus["bus.jsonl (append-only state publications)"]
+        CP_snapshots["snapshots/ (handoff JSON + optional bundle)"]
+        CP_savepoints["savepoints.jsonl (git save-point index)"]
+        CP_stopsummary["stop-summary.md"]
+        CP_handoff["handoff.json (written on exit 75)"]
+    end
+    CLI_midrun -->|writes| CP_inbox
+    cmd_wind -->|writes WindDownCommand| CP_inbox
+    cmd_stop -->|writes StopCommand| CP_inbox
+    CP_inbox -->|polled each turn boundary, normalized by| d_control
+    app_runner -->|writes| CP_events
+    app_runner -->|writes| CP_audit
+    app_runner -->|writes| CP_status
+    app_runner -->|writes| CP_bus
+    app_runner -->|writes on wind-down| CP_handoff
+    app_runner -->|writes on soft stop| CP_stopsummary
+    infra_git -->|writes| CP_savepoints
+    infra_snapshot -->|writes| CP_snapshots
+    cmd_logs -->|tails| CP_events
+    cmd_status -->|reads| CP_status
+    cmd_watch -->|follows| CP_bus
+    infra_redact -->|"strips secrets before any line reaches"| CP_events
+
+    %% ===================================================================
+    %% Security boundaries (see SECURITY.md and the claudeloop-agent-sdk skill)
+    %% ===================================================================
+    SEC1["Security boundary:\nonly infrastructure/agent/* may import claude_agent_sdk"]
+    SEC2["Security boundary:\nonly infrastructure/api/* drives the real anthropic client"]
+    SEC3["Security boundary:\ndomain/ has zero I/O and zero credentials, enforced by import-linter"]
+    SEC4["Security boundary:\nSessions always start permission_mode=bypassPermissions;\nManual mode uses control-plane approve/deny with a timeout — never stdin"]
+    SEC1 -.-> infra_agent
+    SEC2 -.-> infra_api
+    SEC3 -.-> Domain
+    SEC4 -.-> ag_autonomy
+    SEC4 -.-> infra_tool_approval
+
+    %% ===================================================================
+    %% CI / release pipeline — see docs/contributing/release-process.md
+    %% ===================================================================
+    subgraph Pipeline["CI & release pipeline (.github/workflows/)"]
+        direction TB
+        WF_feature["feature/* branch"]
+        WF_ci["ci.yml (CI)\nruff · mypy --strict · pytest\n(100% domain+application coverage) ·\nimport-linter · bandit · pip-audit ·\nREST drift gate"]
+        WF_provenance["provenance.yml (Provenance)\nserver-side half of commit provenance\n(pre-push hook is the local half)"]
+        WF_prauto["pr-automation.yml (PR automation)\nscans + this exact-head review gate"]
+        WF_mergetrain["merge-train.yml (Merge train)\nfills the develop integration branch"]
+        WF_promote["promote-to-main.yml (Promote)\nmoves develop → main"]
+        WF_release["release.yml (Release)\ndevelop → TestPyPI (dev build)\nmain → PyPI (release-please + OIDC Trusted Publishing)"]
+        WF_relsurfaces["release-surfaces.yml (Release surfaces)\nbranch ProperDocs + companion surfaces\nafter Release completes"]
+        WF_bootstrap["automation-bootstrap.yml (Automation bootstrap)\nadmin workflow_dispatch — loads privileged\nworkflows from the trusted base branch\n(a PR can't prove its own privileged-gate repair)"]
+
+        WF_feature -->|opens PR into develop| WF_ci
+        WF_feature --> WF_provenance
+        WF_ci --> WF_prauto
+        WF_prauto -->|gate passes| WF_mergetrain
+        WF_mergetrain -->|develop| WF_promote
+        WF_promote -->|main| WF_release
+        WF_release --> WF_relsurfaces
+        WF_bootstrap -.->|dispatched by an admin to repair| WF_prauto
+    end

@@ -30,6 +30,7 @@ SYNOPSIS
        claudeloop run [OPTIONS] PLAN_FILE
        claudeloop resume [OPTIONS]
        claudeloop stop [--run-id ID]
+       claudeloop wind-down [--run-id ID] [--reason TEXT] [--cwd DIR]
        claudeloop prompt (--now | --at-break) TEXT [--run-id ID]
        claudeloop permission-mode MODE [--run-id ID]
        claudeloop cwd DIR [--run-id ID]
@@ -92,6 +93,13 @@ COMMANDS
               current turn or aborts a wait, writes stop-summary.md, and exits
               130.  Prefer this over Ctrl-C when you want a resume-friendly
               summary of what changed and what remains.
+
+       wind-down [--run-id ID] [--reason TEXT] [--cwd DIR]
+              Ask the active (or specified) run to hand off at its next
+              natural break.  Softer than stop: the turn in flight finishes
+              first, then the run writes runs/<id>/handoff.json and exits 75.
+              Also breaks an in-progress capacity wait.  A stop arriving in
+              the same poll batch always outranks a wind-down.
 
        prompt (--now | --at-break) TEXT [--run-id ID]
               Inject operator text into the loop.  Exactly one of --now or
@@ -237,6 +245,11 @@ OPTIONS (common run / resume)
        --done-marker TEXT
               Fallback completion substring when structured verdicts are absent.
 
+       --wind-down-at DEADLINE
+              Automatically wind down at this deadline (ISO8601 timestamp or
+              +duration, e.g. +2h, +90m).  Same handoff and exit code (75) as
+              claudeloop wind-down.
+
        --max-buffer-size BYTES
               Claude Agent SDK JSON message buffer size.  Default is 50 MiB
               (52428800).  The SDK default of 1 MiB aborts on large tool
@@ -283,9 +296,10 @@ EXIT STATUS
 
        2      Usage error (e.g. prompt without exactly one of --now/--at-break).
 
-       75     Wound down on purpose (claudeloop wind-down); the current turn
-              finished, runs/<id>/handoff.json names every artifact produced,
-              and a supervisor can resume elsewhere.
+       75     Wound down on purpose (claudeloop wind-down, or a --wind-down-at
+              deadline); the current turn finished, runs/<id>/handoff.json
+              names every artifact produced, and a supervisor can resume
+              elsewhere.
 
        130    Soft-stopped by claudeloop stop (or equivalent interrupt path).
 
@@ -324,15 +338,18 @@ ENVIRONMENT
        ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN
               Credentials for the Anthropic API / Claude Code.
 
-       CLAUDELOOP_MAX_TURNS, CLAUDELOOP_MAX_DOLLARS, CLAUDELOOP_MAX_WAIT,
+       CLAUDELOOP_MAX_TURNS, CLAUDELOOP_MAX_DOLLARS, CLAUDELOOP_MAX_WAIT_SECONDS,
        CLAUDELOOP_MODEL, CLAUDELOOP_EFFORT, CLAUDELOOP_PRESET,
        CLAUDELOOP_MODEL_LOW, CLAUDELOOP_MODEL_MEDIUM, CLAUDELOOP_MODEL_HIGH,
        CLAUDELOOP_AUTO_MODEL, CLAUDELOOP_LOG_CHATTER, CLAUDELOOP_STREAM_UI,
-       CLAUDELOOP_DONE_MARKER, CLAUDELOOP_CONTINUE_PROMPT,
+       CLAUDELOOP_DONE_MARKER,
        CLAUDELOOP_MAX_BUFFER_SIZE, CLAUDELOOP_RETRY_WATCHDOG,
        CLAUDELOOP_PERMISSION_MODE, CLAUDELOOP_TOOL_APPROVAL_TIMEOUT_SECONDS,
        CLAUDELOOP_WEB_SEARCH, CLAUDELOOP_DEEP_RESEARCH, …
-              Override runner settings.  See the configuration guide.
+              Override runner settings.  See the configuration guide.  Every
+              name here is a RunnerConfig field, upper-cased with this
+              prefix; --continue-prompt and --wind-down-at have no env-var
+              equivalent (CLI flag only).
 
        CLAUDELOOP_ALLOW_TEST_AGENT, CLAUDELOOP_TEST_AGENT_SCRIPT
               Test-only.  Activate a JSON-scripted agent for the system-live

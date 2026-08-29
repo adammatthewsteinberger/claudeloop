@@ -2,8 +2,11 @@
 
 Configuration precedence, highest wins: **CLI flags > environment variables
 > config file > built-in defaults** — see `infrastructure/config.py`'s
-`load_config()`. Every field lives on `RunnerConfig`; not every field has a
-CLI flag yet (noted below).
+`load_config()`. Almost every setting lives on `RunnerConfig`, and not every
+field has a CLI flag yet (noted below); the two exceptions are
+`--continue-prompt` and `--wind-down-at`, which are CLI-only and bypass
+`RunnerConfig`/`load_config()` entirely (there is no config-file or env-var
+equivalent).
 
 | Setting | CLI flag | Env var | Default | Backed by |
 |---|---|---|---|---|
@@ -20,7 +23,11 @@ CLI flag yet (noted below).
 | Auto model policy | `--auto-model/--no-auto-model` | `CLAUDELOOP_AUTO_MODEL` | on | escalate stuck / downgrade on progress+budget |
 | Log chatter | `--log-chatter` | `CLAUDELOOP_LOG_CHATTER` | `summary` (or `full` at DEBUG) | `chatter.*` events |
 | Stream UI | `--stream-ui` | `CLAUDELOOP_STREAM_UI` | off | Textual multi-pane; disables human console |
-| Continue prompt | `--continue-prompt` (`run`, `resume`) | `CLAUDELOOP_CONTINUE_PROMPT` | short continue text | runner continue prompt |
+| Continue prompt | `--continue-prompt` (`run`, `resume`) | none — CLI flag only, not a `RunnerConfig` field | short continue text | passed directly into `usecases/run_plan.py` / `resume_session.py` |
+| Wind-down deadline | `--wind-down-at` (`run`, `resume`) | none — CLI flag only, not a `RunnerConfig` field | unset | ISO8601 timestamp or `+duration` (e.g. `+2h`); triggers the same handoff as `claudeloop wind-down` (exit 75) |
+| Progress-wait initial interval | config file/env only | `CLAUDELOOP_PROGRESS_WAIT_INITIAL_SECONDS` | 30s | `domain.waiting.ProgressWaitConfig.initial_seconds` — exponential backoff between wait-only `Continue` verdicts with an unchanged tree |
+| Progress-wait backoff factor | config file/env only | `CLAUDELOOP_PROGRESS_WAIT_FACTOR` | 2.0 | `domain.waiting.ProgressWaitConfig.factor` |
+| Progress-wait ceiling | config file/env only | `CLAUDELOOP_PROGRESS_WAIT_CEILING_SECONDS` | 300s | `domain.waiting.ProgressWaitConfig.ceiling_seconds` |
 | Credits probe interval | config file/env only | `CLAUDELOOP_CREDITS_PROBE_INTERVAL_SECONDS` | 120s | `WaitPolicyConfig.credits_probe_interval` |
 | Credits probe ceiling | config file/env only | `CLAUDELOOP_CREDITS_PROBE_CEILING_SECONDS` | 600s | `WaitPolicyConfig.credits_probe_ceiling` |
 | Window probe interval | config file/env only | `CLAUDELOOP_WINDOW_PROBE_INTERVAL_SECONDS` | 600s | `WaitPolicyConfig.window_probe_interval` |
@@ -41,10 +48,12 @@ are separate from `--log-file` / structlog. Console logging always emits
 **both** a human stderr stream and a JSON stderr stream (`transport=console_json`).
 
 Every numeric setting above corresponds directly to a field on
-`WaitPolicyConfig` or `Budget` in `src/claudeloop/domain/`, both of which
-validate their own values in `__post_init__` (e.g. a negative or zero
-interval raises `ValueError` immediately, rather than producing a wait
-policy that silently never probes). See `tests/domain/test_waiting.py` and
+`WaitPolicyConfig`, `ProgressWaitConfig`, or `Budget` in
+`src/claudeloop/domain/`, all of which validate their own values in
+`__post_init__` (e.g. a negative or zero interval raises `ValueError`
+immediately, rather than producing a wait policy that silently never
+probes). See `tests/domain/test_waiting.py`,
+`tests/domain/test_progress_and_savepoint_message.py`, and
 `tests/domain/test_budget.py` for the exact validated boundaries, and
 `tests/infrastructure/test_config.py` for the precedence order itself.
 

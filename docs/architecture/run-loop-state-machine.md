@@ -38,6 +38,18 @@ or real waiting.
 | (implicit, inside `WAITING`) | A scheduled probe fires | `RunProbe` — a cheap, throwaway turn purely to re-check capacity. |
 | `COMPLETE` | A real turn returned `Done` while capacity was `Available` | `Finish(success=True, reason=summary)` |
 | `FAILED` | Authentication failure, a `Blocked` verdict, budget exhaustion, or `max_wait` exceeded | `Finish(success=False, reason=...)` |
+| (operator exit) | A `StopCommand` arrives (`claudeloop stop`) | Finishes the current turn or aborts an in-progress wait, writes `stop-summary.md`, process exits **130** |
+| (operator exit) | A `WindDownCommand` arrives (`claudeloop wind-down`, or a `--wind-down-at` deadline), or `domain/forecast.py`'s `should_wind_down()` fires at a natural break | Lets the turn in flight finish first (softer than `stop`), writes `runs/<id>/handoff.json`, process exits **75** (`domain/handoff_marker.EXIT_WIND_DOWN`) |
+
+A `wind-down` can also break an in-progress capacity wait — a supervisor
+that decides to rotate away from a runner sitting on a multi-hour rate-limit
+window should not have to wait out the window to do it. Precedence when
+several signals land in the same poll batch (`domain/control.py`'s
+`stop_outranks()` and `tests/domain/test_wind_down_precedence.py`):
+**`stop` outranks `wind-down`**, which in turn outranks ordinary mid-run
+commands; an authentication failure, a `Done`/`Blocked` verdict, or an
+exhausted hard budget cap all outrank a pending `wind-down` too — a
+wind-down only fires on `Continue` + `Available` + budget not exhausted.
 
 ## The three decision functions
 

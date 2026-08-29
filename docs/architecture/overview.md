@@ -9,6 +9,11 @@ what makes near-100% test coverage an honest number instead of a mocking
 exercise. See [`../plans/architecture-and-roadmap.md`](../plans/architecture-and-roadmap.md)
 for the full design rationale this page distills.
 
+See [`../project.mmd`](../project.mmd) for the full Mermaid map: every source
+module by layer, the CLI command surface, the run-loop state machine, the
+generated REST surface, the on-disk control-plane data flow, the security
+boundaries, and the CI/release pipeline.
+
 ## The four layers
 
 ```

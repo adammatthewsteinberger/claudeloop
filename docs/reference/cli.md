@@ -17,14 +17,18 @@ claudeloop run <plan-file>           New session from a markdown plan → drive 
                                        --permission-mode --slash
                                        --max-turns --max-dollars --max-wait
                                        --model --effort --preset --auto-model/--no-auto-model
-                                       --continue-prompt --done-marker
+                                       --continue-prompt --done-marker --wind-down-at
                                        --max-buffer-size --log-level --log-file --log-chatter
                                        --stream-ui
 
 claudeloop resume [--session-id]     Resume a session (or auto-select most recent for cwd)
-                                       (same budget / model / effort / preset / log flags as run)
+                                       (same budget / model / effort / preset / log flags as
+                                       run, including --wind-down-at)
 
 claudeloop stop [--run-id]           Soft-stop → stop-summary.md, exit 130
+claudeloop wind-down [--run-id] [--reason] [--cwd]
+                                     Ask the run to hand off at its next natural break →
+                                       runs/<id>/handoff.json, exit 75
 
 claudeloop prompt (--now|--at-break) TEXT [--run-id]
                                      Inject a prompt (immediate next turn, or at Continue)
@@ -74,6 +78,7 @@ cwd (or an explicit `--run-id`):
 | Command | Effect |
 |---|---|
 | `stop` | Soft stop; writes `stop-summary.md` |
+| `wind-down` | Softer than `stop` — lets the turn in flight finish, then hands off; writes `handoff.json`, exits 75. Also breaks an in-progress capacity wait. A `stop` arriving in the same poll batch always outranks a `wind-down`. |
 | `prompt --now` | Next turn uses this text |
 | `prompt --at-break` | Applied after a Continue verdict |
 | `permission-mode` / `cwd` / `slash` | Session options + slash inject |
@@ -104,6 +109,7 @@ See [`../guides/autonomous-runs.md`](../guides/autonomous-runs.md) and
 | `0` | Done verdict (run/resume), or inspection/doctor success |
 | `1` | Failed run (blocked, budget, max-wait, auth, …) or doctor check failed |
 | `2` | Usage error (e.g. `prompt` without exactly one timing flag) |
+| `75` | Wound down on purpose (`claudeloop wind-down`, or `--wind-down-at` deadline); the current turn finished and `runs/<id>/handoff.json` names every artifact produced |
 | `130` | Soft-stopped by `claudeloop stop` |
 
 Full terminal-state semantics:

@@ -7,10 +7,6 @@
 [![Docs](https://github.com/adammatthewsteinberger/claudeloop/actions/workflows/docs.yml/badge.svg)](https://adammatthewsteinberger.github.io/claudeloop/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/LICENSE)
 
-**Onion-architected, autonomous Claude Code session runner and full Anthropic
-SDK CLI** — never blocks on a human, distinguishes an exhausted rate-limit
-window from exhausted credits, and resumes safely across usage windows.
-
 ## What problem this solves
 
 Claude Code sessions hit usage limits. A `claude -p` invocation ending
@@ -19,10 +15,12 @@ when a rate limit rejects you, you can't tell from the outside whether
 waiting will ever help — a five-hour window resets on its own; an exhausted
 credits balance never will, no matter how long you wait.
 
-`claudeloop` exists to get all three of those distinctions right,
-automatically, so you can hand it a plan and walk away — including handling
-the case where you top up your account's credits while it's mid-wait, which
-it notices on the next probe rather than at some fixed deadline.
+**`claudeloop`** — an onion-architected, autonomous Claude Code session
+runner and full Anthropic SDK CLI — exists to get all three of those
+distinctions right, automatically, so you can hand it a plan and walk away —
+including handling the case where you top up your account's credits while
+it's mid-wait, which it notices on the next probe rather than at some fixed
+deadline.
 
 This project began as [`legacy/claude_autoresume.py`](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/legacy/claude_autoresume.py),
 a single-file script that did this by shelling out to `claude -p` and
@@ -63,6 +61,7 @@ claudeloop permission-mode plan  # mid-run; default at start is always bypass
 claudeloop attach ./notes.md
 claudeloop response retry
 claudeloop watch --stream        # Textual live stream; --replay for history
+claudeloop wind-down             # ask it to hand off at the next natural break (exit 75)
 claudeloop stop                  # soft-stop → stop-summary.md (exit 130)
 claudeloop savepoints
 claudeloop unwind --to 1         # after stop; git save-point restore
@@ -95,7 +94,7 @@ is in the [`docs/`](https://github.com/adammatthewsteinberger/claudeloop/tree/de
 |---|---|
 | [Getting started](https://adammatthewsteinberger.github.io/claudeloop/getting-started/installation/) | Install, quickstart, configuration |
 | [Guides](https://adammatthewsteinberger.github.io/claudeloop/guides/autonomous-runs/) | How autonomous runs work, rate limits vs. credits, never blocking, completion detection, [logging](https://adammatthewsteinberger.github.io/claudeloop/guides/logging-and-observability/), [run resources and chat ops](https://adammatthewsteinberger.github.io/claudeloop/guides/run-resources-and-chat-ops/) |
-| [Architecture](https://adammatthewsteinberger.github.io/claudeloop/architecture/overview/) | The onion layers, the domain model, the run-loop state machine |
+| [Architecture](https://adammatthewsteinberger.github.io/claudeloop/architecture/overview/) | The onion layers, the domain model, the run-loop state machine — see also the full [architecture map](https://github.com/adammatthewsteinberger/claudeloop/blob/develop/docs/project.mmd) (Mermaid) |
 | [Decision records](https://adammatthewsteinberger.github.io/claudeloop/architecture/decisions/0001-onion-architecture-with-import-linter/) | Why each hard call was made |
 | [Contributing](https://adammatthewsteinberger.github.io/claudeloop/contributing/development/) | Development setup, testing philosophy, release process |
 | [Plans](https://adammatthewsteinberger.github.io/claudeloop/plans/architecture-and-roadmap/) | The original approved plans this project was built from |
