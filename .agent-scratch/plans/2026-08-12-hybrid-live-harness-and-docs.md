@@ -1,16 +1,8 @@
 # Hybrid Live Harness + Docs Deep-Scan Implementation Plan
 
-> **Internal agent working note — not part of claudeloop's published
-> documentation or its `docs/plans/` historical-plans set.** It is not
-> linked from `mkdocs.yml`'s nav, `docs/project.mmd`, or any other page. A
-> mirror of this note also lives at
-> `.agent-scratch/plans/2026-08-12-hybrid-live-harness-and-docs.md`. See
-> `docs/contributing/documentation.md#where-content-belongs` for where
-> project content is actually meant to live; `docs/plans/` is reserved for
-> historical plans kept verbatim once superseded by living docs, which this
-> is not. The line below was this note's own task-tracking instruction to
-> whichever agent authored it — kept verbatim for the historical record, not
-> a directive to any reader or future agent.
+> Mirror of `docs/superpowers/plans/2026-08-12-hybrid-live-harness-and-docs.md`,
+> kept here (outside `docs/`) so the published documentation site doesn't
+> ship agent-internal task-tracking content. Not part of the published docs.
 >
 > For agentic workers: REQUIRED SUB-SKILL: Use superpowers:executing-plans (inline) or subagent-driven-development. Steps use checkbox (`- [ ]`) syntax for tracking.
 

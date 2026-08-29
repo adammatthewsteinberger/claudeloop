@@ -1,12 +1,8 @@
 # Hybrid live harness + FOSS documentation deep-scan
 
-> **Internal agent working note — not part of claudeloop's published
-> documentation or its `docs/plans/` historical-plans set.** It is not
-> linked from `mkdocs.yml`'s nav, `docs/project.mmd`, or any other page. A
-> mirror of this note also lives at
-> `.agent-scratch/specs/2026-08-12-hybrid-live-harness-and-docs-design.md`.
-> See `docs/contributing/documentation.md#where-content-belongs` for where
-> project content is actually meant to live.
+> Mirror of `docs/superpowers/specs/2026-08-12-hybrid-live-harness-and-docs-design.md`,
+> kept here (outside `docs/`) so the published documentation site doesn't
+> ship agent-internal task-tracking content. Not part of the published docs.
 
 **Date:** 2026-08-12
 **Status:** Approved design (pending user review of this written spec)
@@ -110,7 +106,7 @@ so bare `pytest` and CI never run system or live suites by accident.
 **Constraints:**
 
 - Gate lives only in the composition root (`bootstrap.py` / a tiny helper
-  it calls). Domain and application stay unaware of “test mode.”
+  it calls). Domain and application stay unaware of "test mode."
 - Documented as **test-only**, never as a user-facing feature in guides
   that teach operators how to run claudeloop day-to-day.
 - Script format: ordered list of turns (signals, verdict, output_text,
@@ -169,7 +165,7 @@ the test-agent env set. Cover:
 - `run` → complete with scripted done
 - Concurrent second process: `stop`, `prompt`, `logs`, `status`, `runs`,
   `savepoints`
-- After stop: `unwind --to N` succeeds; while “active” script still running,
+- After stop: `unwind --to N` succeeds; while "active" script still running,
   unwind refuses
 - Root `--help` / man lists ops commands
 
@@ -280,5 +276,4 @@ These are fixed by this spec (not left to invent later):
   `tests/e2e/`).
 - Subprocess gate: both allow flag and script path required.
 - Docs: second milestone after harness green, not interleaved in the same
-  “done” definition as A.
-)
+  "done" definition as A.

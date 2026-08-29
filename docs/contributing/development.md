@@ -19,13 +19,13 @@ stage). You do not need `--hook-type commit-msg`.
 
 Requires Python 3.10+ on macOS or Linux. The GitHub default branch is
 **`develop`** — branch from it and open PRs into it. `main` is releasable
-history for release-please. See the repo-root `CONTRIBUTING.md` for the
-Code of Conduct and inbound=outbound MIT contribution license.
+history that `vibey-gh promote` targets. See the repo-root `CONTRIBUTING.md`
+for the Code of Conduct and inbound=outbound MIT contribution license.
 
 ## The branch model (gitflow)
 
 ```
-main         ← always releasable; release-please opens PRs against this
+main         ← always releasable; vibey-gh promote opens a promotion PR against this
   ▲
 develop      ← integration branch; feature branches target this
   ▲
@@ -37,14 +37,18 @@ feature/*    ← your work
    — the `commit-msg` hook rejects anything else. See the type list below.
 3. Open a PR into `develop`. CI (`ci.yml`) runs the full matrix.
 4. **Merge strategy matters**: `feature/*` → `develop` is **squash-merged**
-   with a conventional-commit-formatted title (GitHub's squash-merge box
-   lets you edit the title — make it conventional even if individual commits
-   on the branch weren't perfectly clean). `develop` → `main` is a **merge
-   commit**, not a squash, so the individual conventional commits survive
-   for release-please to parse when deciding the next version bump.
-5. release-please watches `main` and maintains a standing "chore(release):
-   x.y.z" PR accumulating unreleased changes. Merging *that* PR is what cuts
-   a release — see [release-process.md](release-process.md).
+   by `merge-train.yml` (`vibey-gh merge-train`) with a
+   conventional-commit-formatted title, once the PR-automation gate on that
+   PR's head has passed. `develop` → `main` happens via a **promotion PR**
+   opened by `promote-to-main.yml` (`vibey-gh promote`), which compares the
+   two branches by content and derives the next version — that PR is merged
+   by **rebase**, not a plain merge commit.
+5. Merging the promotion PR is what cuts a release — see
+   [release-process.md](release-process.md) for the full loop, including how
+   `release.yml` then publishes to TestPyPI (from `develop`) and PyPI (from
+   `main`). **release-please is not used** in this repo (retired per
+   `.vibey-gh.toml`); `vibey-gh` owns versioning and changelog generation
+   instead.
 
 ## Conventional Commits — the type list
 

@@ -34,7 +34,7 @@ Requires Python 3.10+ on **macOS or Linux**. Windows is not a supported
 target — CI and classifiers are Unix-only; see
 [`docs/getting-started/installation.md`](docs/getting-started/installation.md).
 The GitHub default branch is **`develop`** (the integration branch you PR
-into). `main` is the releasable line that release-please watches.
+into). `main` is the releasable line that `vibey-gh promote` targets.
 
 See [`docs/contributing/development.md`](docs/contributing/development.md) for
 the full version of this page, including where new code belongs in the
@@ -43,8 +43,8 @@ onion architecture.
 ## The branch model (gitflow)
 
 ```
-main         ← always releasable; release-please opens release PRs against this
-  ▲ (merge commit — preserves individual conventional commits)
+main         ← always releasable; vibey-gh promote opens a promotion PR against this
+  ▲ (rebase merge — vibey-gh promote derives the version from develop vs. main content)
 develop      ← integration branch; feature branches target this
   ▲ (squash-merge — one conventional-commit-titled squash per feature)
 feature/*    ← your work
@@ -54,15 +54,21 @@ feature/*    ← your work
 2. Commit using [Conventional Commits](#conventional-commits).
 3. Open a PR **into `develop`**, not `main`. CI runs the full quality-gate
    matrix (Python 3.10–3.13).
-4. Your feature branch is **squash-merged** into `develop` — give the
+4. Your feature branch is **squash-merged** into `develop` by
+   `merge-train.yml` once the PR-automation gate passes — give the
    squash-merge title a conventional-commit-formatted summary of the whole
    PR, even if your individual commits weren't perfectly conventional
    along the way.
-5. Periodically, `develop` is merged into `main` as a **merge commit** (not
-   squashed) so every conventional commit that landed on `develop` survives
-   individually for release-please to parse.
-6. release-please then maintains a standing release PR on `main`; merging
-   *that* PR is what actually cuts a version and publishes to PyPI. See
+5. Periodically, `promote-to-main.yml` runs `vibey-gh promote`, which opens
+   or updates a promotion PR moving `develop` into `main` and bumping the
+   version. That PR is merged by **rebase**, not a squash or a plain merge
+   commit.
+6. **Merging the promotion PR is what actually cuts a version.**
+   `release.yml` then publishes to PyPI directly on that push to `main`
+   (and to TestPyPI on every push to `develop`), gated by a GitHub
+   Environment approval. **release-please is not used** — it was retired in
+   favor of `vibey-gh`, which owns both versioning and changelog
+   generation. See
    [`docs/contributing/release-process.md`](docs/contributing/release-process.md).
 
 ## Conventional Commits
@@ -104,7 +110,7 @@ docs(architecture): add ADR for the retry-watchdog decision
 
 The **scope** (`domain`, `waiting`, `loop`, `cli`, `docs`, ...) in
 parentheses is optional but strongly encouraged — it makes the
-release-please-generated changelog dramatically more scannable.
+`vibey-gh`-generated changelog dramatically more scannable.
 
 ## Git hooks
 

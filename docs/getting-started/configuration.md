@@ -69,6 +69,37 @@ log_level = "DEBUG"
 credits_probe_interval_seconds = 60
 ```
 
+## Predictive wind-down (`WindDownPolicy`)
+
+`domain/forecast.py` implements a *predictive* wind-down: forecasting
+remaining capacity (vendor utilization headroom, turns remaining, dollars
+remaining) and handing off before a hard rejection arrives, rather than
+after. It is controlled by `WindDownPolicy` (`enabled`, `headroom_floor`,
+`min_turns_reserve`, `max_staleness`) — see
+[the domain model reference](../architecture/domain-model.md#forecastpy-headroom-burnrate-capacityforecast-winddownpolicy-winddown)
+for the full F1–F5 behavior.
+
+!!! note "Not yet exposed"
+    This is currently an internal default only — there is no CLI flag, no
+    `CLAUDELOOP_*` environment variable, and no `claudeloop.toml` key for it.
+    `RunnerConfig` has no field for it, and in shipped code `WindDownPolicy()`
+    is only ever constructed with its defaults (`enabled=False`). The feature
+    is fully wired into the run loop's decision logic — it fires if a caller
+    passes a non-default policy into the runner — but nothing in the current
+    CLI/bootstrap path does so.
+
+Do not confuse this with the unrelated `--wind-down-at` flag / `claudeloop
+wind-down` command documented above, which trigger a manual or
+deadline-based handoff and have no connection to `WindDownPolicy`'s
+forecast-driven fields.
+
+| Field | Default | Meaning |
+|---|---|---|
+| `enabled` | `False` | Master switch; predictive wind-down never fires while `False`, regardless of the other fields. |
+| `headroom_floor` | `0.15` | Any known headroom dimension (vendor utilization, dollars) at or below this fraction triggers wind-down. |
+| `min_turns_reserve` | `2` | Wind down when projected turns-until-exhaustion drops to this many or fewer. |
+| `max_staleness` | `timedelta(minutes=15)` | A vendor utilization reading older than this degrades to *unknown* rather than being trusted. |
+
 ## Adding a CLI flag for the config-file/env-only settings
 
 `run`/`resume` currently expose only the highest-traffic flags. Any

@@ -276,8 +276,8 @@ flowchart TD
         WF_provenance["provenance.yml (Provenance)\nserver-side half of commit provenance\n(pre-push hook is the local half)"]
         WF_prauto["pr-automation.yml (PR automation)\nscans + this exact-head review gate"]
         WF_mergetrain["merge-train.yml (Merge train)\nfills the develop integration branch"]
-        WF_promote["promote-to-main.yml (Promote)\nmoves develop → main"]
-        WF_release["release.yml (Release)\ndevelop → TestPyPI (dev build)\nmain → PyPI (release-please + OIDC Trusted Publishing)"]
+        WF_promote["promote-to-main.yml (Promote)\nvibey-gh promote: opens/merges a rebase\npromotion PR, develop → main, derives version"]
+        WF_release["release.yml (Release)\ndevelop → TestPyPI (vibey-gh dev-stamped build)\nmain → PyPI (version from pyproject.toml,\nOIDC Trusted Publishing; release-please NOT used)"]
         WF_relsurfaces["release-surfaces.yml (Release surfaces)\nbranch ProperDocs + companion surfaces\nafter Release completes"]
         WF_bootstrap["automation-bootstrap.yml (Automation bootstrap)\nadmin workflow_dispatch — loads privileged\nworkflows from the trusted base branch\n(a PR can't prove its own privileged-gate repair)"]
 

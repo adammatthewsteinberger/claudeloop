@@ -6,8 +6,8 @@
 ## Branch model
 
 ```
-main         ← always releasable; release-please opens release PRs here
-  ▲ merge commit (preserves commits for release-please)
+main         ← always releasable; vibey-gh promote opens a promotion PR here
+  ▲ rebase merge (vibey-gh promote derives the version from content, not commits)
 develop      ← integration; feature branches target this
   ▲ squash-merge (one conventional-commit-titled squash per feature)
 feature/*    ← branch from develop, never from main
@@ -30,9 +30,13 @@ install`. Types:
 
 Scope in parentheses optional but strongly preferred.
 
-## release-please
+## vibey-gh (release-please is retired)
 
-Fully automated. Opens release PR on `main` from conventional commits.
-Merge → tag + GitHub release + PyPI publish via Trusted Publishing (OIDC).
+`promote-to-main.yml` runs `vibey-gh promote`: compares `develop`/`main` by
+content, derives the version, opens a promotion PR (rebase-merged) bumping
+`pyproject.toml` and `CHANGELOG.md`. On merge, `release.yml` publishes
+straight to PyPI (main) / TestPyPI (develop) via Trusted Publishing (OIDC),
+gated by GitHub Environment approval — no `release: published` event, no
+`publish-to-pypi.yml`.
 
 See `docs/contributing/release-process.md`.
