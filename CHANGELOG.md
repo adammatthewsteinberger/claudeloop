@@ -140,11 +140,10 @@
 
 All notable changes to this project are documented in this file.
 
-This file is maintained automatically by
-[release-please](https://github.com/googleapis/release-please) from
+This file is maintained automatically by `vibey-gh promote` from
 [Conventional Commits](https://www.conventionalcommits.org/) history — see
 [`docs/contributing/release-process.md`](docs/contributing/release-process.md).
-**Do not hand-edit entries below this line**; release-please will overwrite
-manual changes on its next run.
+**Do not hand-edit entries below this line**; `vibey-gh promote` will
+overwrite manual changes the next time it opens or reuses a promotion PR.
 
-<!-- release-please starts and maintains a `## [x.y.z]` section here on every release -->
+<!-- vibey-gh promote starts and maintains a `## [x.y.z]` section here on every release -->

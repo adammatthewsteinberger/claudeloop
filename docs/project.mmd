@@ -18,6 +18,7 @@ flowchart TD
         cli_man["man_page.py (--man)"]
         cli_render["render.py"]
         cli_time["time_parse.py (--wind-down-at)"]
+        cli_asyncio["asyncio.py (async_command — the one anyio.run()\nbridge; SIGTERM→SIGINT so cancellation\nunwinds finally blocks before exit)"]
         subgraph CLI_run["Session lifecycle"]
             cmd_run["commands/run.py"]
             cmd_resume["commands/resume.py"]
@@ -177,6 +178,8 @@ flowchart TD
     Infrastructure -->|"implements ports over"| Application
     Infrastructure -->|"reads/writes"| Domain
     cli_api -.->|generated from| api_registry
+    cli_asyncio -.->|wraps every async command body,\ncalled by| CLI_run
+    cli_asyncio -.->|wraps every async command body,\ncalled by| CLI_midrun
 
     %% ===================================================================
     %% Run-loop state machine (domain/loop.py) — see

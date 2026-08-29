@@ -10,7 +10,7 @@ updates:
     labels: ["dependencies", "python"]
 
   # GitHub Actions — this is what makes SHA-pinning the actions in
-  # publish-to-pypi.yml sustainable rather than rot-inducing: Dependabot
+  # release.yml sustainable rather than rot-inducing: Dependabot
   # understands `# vX.Y.Z` trailing comments on a pinned SHA and opens a PR
   # bumping both together.
   - package-ecosystem: "github-actions"

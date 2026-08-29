@@ -83,6 +83,18 @@ When in doubt, push logic **inward**. A `cli/` command that contains an
 happen — that decision belongs in `domain/classify.py`, where it can be
 property-tested without spinning up a CLI process.
 
+## The async bridge (`cli/asyncio.py`)
+
+Typer command bodies are synchronous, but the agent gateway and
+`AutonomousRunner` are `async`. `cli/asyncio.py`'s `async_command` decorator
+is the **single** `anyio.run()` call site in the codebase — one bridge, not
+one per command. Before that call it converts `SIGTERM` to `SIGINT` at the
+OS level, so both signals get the same well-understood handling: Python's
+default `SIGINT` handler raises `KeyboardInterrupt` in the main thread, which
+`anyio` propagates into the running task tree as a cancellation. That lets
+in-flight `finally` blocks (closing the `AgentGateway`, flushing the audit
+log) run before the process exits, instead of dying mid-write.
+
 ## Status
 
 Milestones **M2–M5** from the architecture plan are implemented: autonomous
