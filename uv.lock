@@ -610,7 +610,7 @@ requires-dist = [
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "typer", specifier = ">=0.12" },
-    { name = "vibey-gh", marker = "python_full_version >= '3.11' and extra == 'dev'", specifier = "==1.50.0" },
+    { name = "vibey-gh", marker = "python_full_version >= '3.11' and extra == 'dev'", specifier = "==1.56.0" },
 ]
 provides-extras = ["dev", "docs", "voice"]
 
@@ -4082,11 +4082,11 @@ wheels = [
 
 [[package]]
 name = "vibey-gh"
-version = "1.50.0"
+version = "1.56.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2a/82/fec08a5f31972a5add99900296194db6a1e9b5f1774e05a45c494e374af8/vibey_gh-1.50.0.tar.gz", hash = "sha256:3bf674c987b3dda1893ad08b1640147822acd73024b9804d5a5399cb7ac8a443", size = 421044, upload-time = "2026-08-29T08:41:13.09Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/5a/6e1da344f2470ac8af5b22e6cfb0a29fa5033ea141717590f3a565e39caa/vibey_gh-1.56.0.tar.gz", hash = "sha256:7cebfdcbf3c8a3ecd16f3e104a0ae570b03be584a28a79b8f842412e1a524581", size = 432879, upload-time = "2026-08-29T14:22:27.623Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/77/32624c25506081d3247df41e023e3f766f54a9e0d17877f303722e308df3/vibey_gh-1.50.0-py3-none-any.whl", hash = "sha256:669ee26c2e483cc0c1ec5638c099c3eed842deb8f1dbf56c4df90c9542675e66", size = 211153, upload-time = "2026-08-29T08:41:11.465Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/77/d97087baa8a654a6a0cc27f2cd2cf746ccf868247a219eb8e5bc36f1991c/vibey_gh-1.56.0-py3-none-any.whl", hash = "sha256:49fa46d0b28cff593244adad44ca59bd29d0de221a2883da8c725ec490aa59e9", size = 215121, upload-time = "2026-08-29T14:22:25.637Z" },
 ]
 
 [[package]]
