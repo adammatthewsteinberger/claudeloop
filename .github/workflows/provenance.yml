@@ -19,11 +19,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Commit that introduced vibey-gh. Earlier commits predate the trailer rule
-  # and remain immutable shared history; every commit after this is enforced.
-  PROVENANCE_ADOPTION_SHA: ad14d9c4cf3e78095de204876ae8dd2970ac9a49
-
 concurrency:
   group: provenance-${{ github.ref }}
   cancel-in-progress: true
@@ -33,13 +28,13 @@ jobs:
     name: Provenance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # Needed to walk the commits a pull request adds.
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -52,7 +47,7 @@ jobs:
             echo "this repository provides the tooling — installing from source"
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
 
       # --ci skips the core.hooksPath assertion, which is per-clone local git config that
@@ -62,26 +57,19 @@ jobs:
       - name: Check provenance
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          INTEGRATION_BRANCH: develop
+          RELEASE_BRANCH: main
         run: |
           set -euo pipefail
-          if [ -n "${BASE_SHA:-}" ]; then
+          if [ "$HEAD_REF" = "$INTEGRATION_BRANCH" ] && \
+             [ "$BASE_REF" = "$RELEASE_BRANCH" ]; then
+            echo "Promotion PR: checking repository provenance without rewriting or re-auditing admitted history."
+            vibey-gh check --ci
+          elif [ -n "${BASE_SHA:-}" ]; then
             git fetch --quiet --depth=50 origin "${BASE_SHA}" 2>/dev/null || true
-            range="${BASE_SHA}..HEAD"
-            if git merge-base --is-ancestor "${PROVENANCE_ADOPTION_SHA}" HEAD \
-              && ! git merge-base --is-ancestor "${PROVENANCE_ADOPTION_SHA}" "${BASE_SHA}"; then
-              # Check only PR commits descended from the adoption commit. A
-              # merge from main also makes main's legacy history reachable;
-              # ^! keeps each invocation scoped to the selected commit itself.
-              mapfile -t commits < <(
-                git rev-list "${range}" --ancestry-path \
-                  "${PROVENANCE_ADOPTION_SHA}..HEAD"
-              )
-              for commit in "${commits[@]}"; do
-                vibey-gh check --ci --commits "${commit}^!"
-              done
-            else
-              vibey-gh check --ci --commits "${range}"
-            fi
+            vibey-gh check --ci --commits "${BASE_SHA}..HEAD"
           else
             vibey-gh check --ci
           fi
