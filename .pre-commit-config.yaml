@@ -74,4 +74,12 @@ repos:
         name: import-linter (onion contract)
         entry: lint-imports
         language: system
+        # `types: [python]`, like mypy and bandit above. An import contract describes
+        # relationships between Python modules, so a commit touching no Python cannot
+        # change whether it holds. Without this the hook ran on EVERY commit — including
+        # YAML-only ones — and failed with "Could not find package 'claudeloop' in your
+        # Python path" whenever the venv lacked the dev extra, because `uv sync` installs
+        # dependency groups but not extras and `import-linter` is declared as an extra.
+        # The result was a contract check blocking commits it had no business judging.
+        types: [python]
         pass_filenames: false
